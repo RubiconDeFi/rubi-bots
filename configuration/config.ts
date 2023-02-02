@@ -231,3 +231,9 @@ export const tokenList: TokenList = {
 };
 
 
+export enum BotType {
+    MarketMaking = 1,
+    Trading = 2,
+    Liquidator = 3,
+    ErrorOrNone = 0
+}
