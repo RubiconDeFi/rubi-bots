@@ -19,7 +19,6 @@ export const marketAddressesByNetwork: Record<number, string> = {
     [Network.OPTIMISM_MAINNET]: getAddress('0x7a512d3609211e719737E82c7bb7271eC05Da70d'),
 };
 
-
 // https://docs.rubicon.finance/docs/protocol/deployments
 export const marketAidFactoriesByNetwork: Record<number, string> = {
     [Network.OPTIMISM_GOERLI]: getAddress('0x528E6d1636bb8578074cc888BD85d561f7847066'),
