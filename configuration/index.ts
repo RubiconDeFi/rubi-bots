@@ -5,7 +5,8 @@
 // 4. What tokens would you like to target in your strategy? (strategy-specific UX flow here!)
 
 import { TokenInfo } from "@uniswap/token-lists";
-import { BotConfiguration, BotType, MarketMakingStrategy, Network, tokenList } from "./config";
+import { BotConfiguration, BotType, ETH_ZERO_ADDRESS, MarketMakingStrategy, Network, tokenList } from "./config";
+import { startMarketMakingBot } from "../executionClients/marketMaking";
 
 // 5. Start
 const readline = require('node:readline');
@@ -106,7 +107,7 @@ async function tokenSelectionCallback(network: Network): Promise<TokenInfo[]> {
             if (answer.toLowerCase() === 'done') {
                 console.log('\n Selected tokens: ', selectedTokens);
                 resolve(selectedTokens);
-            } else if (availableTokensSymbols.includes(answer)) {
+            } else if (availableTokensSymbols.includes(answer) || availableTokensSymbols.map(symbol => symbol.toLowerCase()).includes(answer)) {
                 const selectedToken = availableTokens.find(token => token.symbol === answer);
                 selectedTokens.push(selectedToken);
                 console.log('\n Selected tokens: ', selectedTokens);
@@ -145,11 +146,12 @@ async function main() {
                                 botType: BotType.MarketMaking,
                                 strategy: selectedStrat,
                                 network: selectedNetwork,
-                                targetTokens: selectedTokens
+                                targetTokens: selectedTokens,
                             };
 
-                            console.log("This is the bot configuration", botConfiguration);
-                            // 5. Start
+                            console.log("\nThis is the bot configuration", botConfiguration, "\n");
+                            // 5. Start the bot with the configuration
+                            return startMarketMakingBot(botConfiguration);
                         });
                     });
 

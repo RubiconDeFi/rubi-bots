@@ -245,6 +245,8 @@ export enum MarketMakingStrategy {
     ErrorOrNone = 0
 }
 
+export const ETH_ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
 export type BotConfiguration = {
     botType: BotType;
     strategy: number;
