@@ -24,6 +24,7 @@ export async function startMarketMakingBot(configuration: BotConfiguration, exis
 
 
     // 3. Create a new bot instance
+    // Note: this guy should use a configurable poll for gas-conscious updating
     // const bot = new MarketMakingBot(configuration, marketAidContractInstance,
         // Strategy = Simple book feed that the bot listens to to target on-chain
     //);
