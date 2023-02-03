@@ -159,9 +159,14 @@ async function main() {
 
             // break;
             case BotType.Trading:
-
+                // Configure the trading bot...
+                // Start the trading bot
+                // return startTradingBot();
                 break;
             case BotType.Liquidator:
+                // Configure the liquidator bot...
+                // Start the liquidator bot
+                // return startLiquidatorBot();
 
                 break;
             default:

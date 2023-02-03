@@ -1,0 +1,2 @@
+# Notes
+- Unlike MarketMaking strategies which return a live feed of a target Simple Book to MAKE on-chain, trading strategies generally just TAKE on-chain. These strategies don't return a simple book but rather EMIT trades for the execution client to make?

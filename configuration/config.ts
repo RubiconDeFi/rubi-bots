@@ -253,3 +253,13 @@ export type BotConfiguration = {
     network: Network;
     targetTokens: TokenInfo[];
 };
+
+export type SimpleBook = {
+    bids: GenericOrder[];
+    asks: GenericOrder[];
+};
+
+export type GenericOrder = {
+    price: number;
+    size: number;
+}
