@@ -10,7 +10,8 @@ export enum Network {
     POLYGON_MAINNET = 137,
     POLYGON_MUMBAI = 80001,
     ARBITRUM_MAINNET = 42161,
-    ARBITRUM_TESTNET = 421613
+    ARBITRUM_TESTNET = 421613,
+    ERROR = 0,
 };
 
 // https://docs.rubicon.finance/docs/protocol/deployments
@@ -237,3 +238,16 @@ export enum BotType {
     Liquidator = 3,
     ErrorOrNone = 0
 }
+
+export enum MarketMakingStrategy {
+    RiskMinimizedUpOnly = 1,
+    TargetVenueOutBid = 2,
+    ErrorOrNone = 0
+}
+
+export type BotConfiguration = {
+    botType: BotType;
+    strategy: number;
+    network: Network;
+    targetTokens: TokenInfo[];
+};
