@@ -20,7 +20,6 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
 
     constructor(
         assetPair: AssetPair,
-        targetPoolAddress: string, // is this needed?
         reader: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider,
         uniFee?: number
     ) {
@@ -63,6 +62,7 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
     async updateLiveBook(
         leftSizeLadderWei: Array<BigNumber>,
         rightSizeLadderWei: Array<BigNumber>,
+        stretchScalar?: number
     ) {
         this.liveBook = await tickToBook(
             leftSizeLadderWei,
@@ -71,7 +71,7 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
             this.assetPair.asset,
             this.assetPair.quote,
             BigNumber.from(this.uniFee),
-            1
+            stretchScalar ? stretchScalar : 1
         );
     }
 
