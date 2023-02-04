@@ -3,10 +3,13 @@
 // 2. What strategy would you like to employ?
 // 3. What network(s) would you like to execute this strategy on?
 // 4. What tokens would you like to target in your strategy? (strategy-specific UX flow here!)
+import * as dotenv from "dotenv";
 
 import { TokenInfo } from "@uniswap/token-lists";
 import { BotConfiguration, BotType, ETH_ZERO_ADDRESS, MarketMakingStrategy, Network, tokenList } from "./config";
 import { startMarketMakingBot } from "../executionClients/marketMaking";
+import { ethers } from "ethers";
+dotenv.config();
 
 // 5. Start
 const readline = require('node:readline');
@@ -109,7 +112,11 @@ async function tokenSelectionCallback(network: Network): Promise<TokenInfo[]> {
                 resolve(selectedTokens);
             } else if (availableTokensSymbols.includes(answer) || availableTokensSymbols.map(symbol => symbol.toLowerCase()).includes(answer)) {
                 const selectedToken = availableTokens.find(token => token.symbol === answer);
-                selectedTokens.push(selectedToken);
+                if (!selectedToken) {
+                    selectedTokens.push(availableTokens.find(token => token.symbol.toLowerCase() === answer));
+                } else {
+                    selectedTokens.push(selectedToken);
+                }
                 console.log('\n Selected tokens: ', selectedTokens);
                 resolve(tokenSelectionCallback(network));
             } else {
@@ -118,6 +125,23 @@ async function tokenSelectionCallback(network: Network): Promise<TokenInfo[]> {
             }
         });
     });
+}
+
+function getNetworkConnectionsInfo(network: Network): { jsonRpcProvider: ethers.providers.JsonRpcProvider, signer: ethers.Signer, websocketProvider?: ethers.providers.WebSocketProvider } {
+    // TODO: make clear to the user the patterns they need to provide in their .env file... today env TODO: allow them to also pass them through during the guided start
+    // Note the API that matters is network + '_JSON_RPC_URL' and network + '_WEBSOCKET_URL' for defined variables in .env
+    console.log("this env", process.env);
+
+    const jsonRpcUrl = process.env['JSON_RPC_URL_' + network.toString()];
+    const websocketUrl = process.env['WEBSOCKET_URL_' + network.toString()];
+    if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${network}`);
+    const jsonrpc = new ethers.providers.JsonRpcProvider(jsonRpcUrl); // TODO: perhaps static provider for rpc consumption consciousness
+    if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
+    return {
+        jsonRpcProvider: jsonrpc,
+        signer: new ethers.Wallet(process.env.EOA_PRIVATE_KEY, jsonrpc),
+        websocketProvider: websocketUrl ? new ethers.providers.WebSocketProvider(websocketUrl) : undefined
+    }
 }
 
 async function main() {
@@ -147,11 +171,12 @@ async function main() {
                                 strategy: selectedStrat,
                                 network: selectedNetwork,
                                 targetTokens: selectedTokens,
+                                connections: getNetworkConnectionsInfo(selectedNetwork)
                             };
 
                             console.log("\nThis is the bot configuration", botConfiguration, "\n");
                             // 5. Start the bot with the configuration
-                            return startMarketMakingBot(botConfiguration);
+                            return startMarketMakingBot(botConfiguration, rl);
                         });
                     });
 

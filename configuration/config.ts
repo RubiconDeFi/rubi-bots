@@ -1,4 +1,5 @@
 import { TokenInfo, TokenList } from '@uniswap/token-lists';
+import { ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
 
 export enum Network {
@@ -252,6 +253,7 @@ export type BotConfiguration = {
     strategy: number;
     network: Network;
     targetTokens: TokenInfo[];
+    connections: { jsonRpcProvider: ethers.providers.JsonRpcProvider, signer: ethers.Signer, websocketProvider?: ethers.providers.WebSocketProvider }
 };
 
 export type SimpleBook = {
