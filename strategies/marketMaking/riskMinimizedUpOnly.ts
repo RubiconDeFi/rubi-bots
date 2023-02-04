@@ -2,7 +2,6 @@
 // at a configurable premium to the targeted liquidity venue's perceived curve
 // Takes all fill and dumps it on the targeted liquidity venue for profit
 // Extends the GenericMarketMakingStrategy class and overrides the updateTargetBook method
-// 
 import { GenericMarketMakingStrategy } from "./genericMarketMaking";
 import { GenericLiquidityVenue } from "../../liquidityVenues/generic";
 
@@ -20,10 +19,10 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
             this.targetBook = liveBook;
             this.targetBook.bids.forEach((bid) => {
-                bid.price = bid.price * (1 + this.premium);
+                bid.price = bid.price * (1 - this.premium);
             });
             this.targetBook.asks.forEach((ask) => {
-                ask.price = ask.price * (1 - this.premium);
+                ask.price = ask.price * (1 + this.premium);
             });
         });
     }
