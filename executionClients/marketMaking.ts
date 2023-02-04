@@ -56,12 +56,16 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
     // var targetLiquidityVenues
     // Maybe use a callback here to allow the user to select the liquidity venues they want to target...
 
-
     // 3. Create a new bot instance
     // Note: this guy should use a configurable poll for gas-conscious updating
-    // const bot = new MarketMakingBot(configuration, marketAidContractInstance,
-    // Strategy = Simple book feed that the bot listens to to target on-chain
-    //);
+    // This execution client's job is to simply map the STRATEGY simple book feed on-chain when conditions are met
+    // MUST LISTEN TO IT's OWN MARKET AID BOOK as the Rubicon feed - Note that it DOES NOT need the generic feed
+    // SHOULD BE MODULAR - simple version first, e.g. then single EOA batch boxing...
+    // Conceptually the MarketMakingBot object takes a configuration, a marketAidContractInstance, and a Strategy object and it updates the market aid's on-chain book and liquidity as needed
+    // const bot = new MarketMakingBot(configuration, 
+    //      marketAidContractInstance,
+    //      Strategy = Simple book feed that the bot listens to to target on-chain; technically this is just a node event emitter
+    // );
 
     // 4. Start the bot and listen to log feed
     // await bot.start();
