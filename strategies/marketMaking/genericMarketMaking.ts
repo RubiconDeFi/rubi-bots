@@ -17,10 +17,12 @@ import { AssetPair } from "../../liquidityVenues/generic";
 export class GenericMarketMakingStrategy {
     targetBook: SimpleBook;
     referenceLiquidityVenue: GenericLiquidityVenue;
+    identifier: string;
 
     constructor(referenceLiquidityVenue: GenericLiquidityVenue) {
         this.targetBook = <SimpleBook>{};
         this.referenceLiquidityVenue = referenceLiquidityVenue;
+        this.identifier = 'genericMarketMaking';
     }
 
     // Returns targetBook
