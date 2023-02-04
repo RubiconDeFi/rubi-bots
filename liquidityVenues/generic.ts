@@ -8,17 +8,20 @@
 
 import { TokenInfo } from "@uniswap/token-lists";
 import { GenericOrder, SimpleBook } from "../configuration/config";
-
+///<reference path="./typings/node/node.d.ts" />
+import { EventEmitter } from 'events'
 
 export class GenericLiquidityVenue {
     liveBook: SimpleBook;
     assetPair: AssetPair;
     identifier: string;
+    updateNotifier: EventEmitter;
 
     constructor(assetPair: AssetPair) {
         this.liveBook = <SimpleBook>{};
         this.assetPair = assetPair;
         this.identifier = 'generic';
+        this.updateNotifier = new EventEmitter();
     }
 
     // Returns the best bid and ask from the liveBook
@@ -42,6 +45,11 @@ export class GenericLiquidityVenue {
     // Returns a live feed of a Simple Book
     getLiveBook(): SimpleBook {
         return this.liveBook;
+    }
+
+    // Emit through this.updateNotifier a ping every time the liveBook is updated that also returns the updated liveBook
+    emitUpdate() {
+        this.updateNotifier.emit('update', this.liveBook);
     }
 }
 

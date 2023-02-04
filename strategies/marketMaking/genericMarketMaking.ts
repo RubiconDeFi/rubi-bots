@@ -1,0 +1,1 @@
+// Export a GenericMarketMakingStrategy class that has a property called targetBook that is a Simple Book / the strategy's most real-time target on-chain book they would like to have

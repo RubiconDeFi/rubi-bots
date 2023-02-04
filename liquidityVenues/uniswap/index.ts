@@ -5,9 +5,7 @@
 //      it also allows for the user to define a step size for the query for more granular results
 // 
 import { GenericLiquidityVenue, BidAndAsk, AssetPair } from "../generic";
-import { GenericOrder, SimpleBook } from "../../configuration/config";
-import { getAddress } from "ethers/lib/utils";
-import { TokenInfo } from "@uniswap/token-lists";
+import { SimpleBook } from "../../configuration/config";
 import { ethers, BigNumber } from "ethers";
 import QUOTER_INTERFACE from "../../configuration/abis/Quoter";
 import { tickToBook } from "./data";
