@@ -11,7 +11,7 @@ Welcome to `rubi-bots`! This repo is for operating bots on Rubicon for potential
 4. Launch Guided Start `yarn run guidedStart`
 
 ## Target bots and strategies to build/release:
-- [] Riskless MM strategy - AMM Up Only
+- [WIP] Riskless MM strategy - AMM Up Only
 - [] Competitive MM strategy - AMM Out Bid
 - [] Two Venue Arbitrage - Rubi vs Selected Venue
 - [] v2 Liduidator Bot - Money Market Activist
