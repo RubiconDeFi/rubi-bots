@@ -35,29 +35,6 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
         uniFee ? this.uniFee = uniFee : this.uniFee = 3000;
     }
 
-    // Returns the best bid and ask from the liveBook
-    getBestBidAndAsk(): BidAndAsk {
-        return {
-            bid: this.liveBook.bids[0],
-            ask: this.liveBook.asks[0]
-        }
-    }
-
-    // Returns the asset pair that the liquidity venue is targeting
-    getAssetPair(): AssetPair {
-        return this.assetPair;
-    }
-
-    // Returns the identifier for the liquidity venue itself
-    getIdentifier(): string {
-        return this.identifier;
-    }
-
-    // Returns a live feed of a Simple Book
-    getLiveBook(): SimpleBook {
-        return this.liveBook;
-    }
-
     // function that calls tickToBook and updates the liveBook property with the result while using a defined liquidity ladder as the setp size
     async updateLiveBook(
         leftSizeLadderWei: Array<BigNumber>,
@@ -73,6 +50,7 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
             BigNumber.from(this.uniFee),
             stretchScalar ? stretchScalar : 1
         );
+        this.emitUpdate();
     }
 
     // Polling function that calls updateLiveBook with a defined liquidity ladder as the step size
@@ -86,4 +64,6 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
             this.updateLiveBook(leftSizeLadderWei, rightSizeLadderWei);
         }, interval);
     }
+
+    // TODO: add a websocket listener that calls updateLiveBook every time a relevant swap event occurs and every block? Goal is to speed up the polling interval for more data accuracy
 }

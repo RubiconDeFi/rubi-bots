@@ -11,7 +11,6 @@
 // 
 import { GenericOrder, SimpleBook } from "../../configuration/config";
 import { GenericLiquidityVenue } from "../../liquidityVenues/generic";
-import { EventEmitter } from 'events'
 import { AssetPair } from "../../liquidityVenues/generic";
 
 export class GenericMarketMakingStrategy {
@@ -41,6 +40,7 @@ export class GenericMarketMakingStrategy {
     }
 
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
+    // Generic class naively sets the target book = to the reference book
     updateTargetBook() {
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
             this.targetBook = liveBook;
