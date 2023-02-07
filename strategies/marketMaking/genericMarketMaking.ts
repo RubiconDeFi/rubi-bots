@@ -8,7 +8,7 @@
 // The class has a method that returns the asset pair that the strategy is targeting 
 // The class has a method that returns the identifier for the strategy itself
 // The class has a method that returns a live feed of a Simple Book that is a live feed of the strategy's most real-time target on-chain book they would like to have
-// 
+
 import { GenericOrder, SimpleBook } from "../../configuration/config";
 import { GenericLiquidityVenue } from "../../liquidityVenues/generic";
 import { AssetPair } from "../../liquidityVenues/generic";

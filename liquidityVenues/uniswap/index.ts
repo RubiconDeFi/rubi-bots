@@ -3,7 +3,7 @@
 // Should have a function that queries the Uniswap contract for swap fill at a defined step size and parses the results 
 //      to return a live feed of a Simple Book. This function should be called by the function that polls and queries the Uniswap contract
 //      it also allows for the user to define a step size for the query for more granular results
-// 
+
 import { GenericLiquidityVenue, BidAndAsk, AssetPair } from "../generic";
 import { SimpleBook } from "../../configuration/config";
 import { ethers, BigNumber } from "ethers";

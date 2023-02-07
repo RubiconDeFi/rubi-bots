@@ -48,7 +48,7 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
 
     } else {
         console.log("The user did not provide an existing contract instance. Creating a new one...");
-        // marketAidContractInstance = helpUserCreateNewMarketAidInstance(configuration);
+        // marketAidContractInstance = await helpUserCreateNewMarketAidInstance(configuration);
     }
 
     // 2. Depending on the user's selected strategy, create the strategy and pass it to the bot
