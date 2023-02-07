@@ -1,3 +1,5 @@
+# EXPERIMENTAL AND IN DEVELOPMENT - USE AT YOUR OWN RISK
+
 # rubi-bots
 Open-source bots for activists in the Rubicon ecosystem
 
