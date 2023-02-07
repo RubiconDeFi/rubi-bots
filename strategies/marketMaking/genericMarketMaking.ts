@@ -13,14 +13,16 @@ import EventEmitter from "events";
 import { GenericOrder, SimpleBook } from "../../configuration/config";
 import { GenericLiquidityVenue } from "../../liquidityVenues/generic";
 import { AssetPair } from "../../liquidityVenues/generic";
+import { RiskMinimizedStrategy } from "./riskMinimizedUpOnly";
+import { TargetVenueOutBidStrategy } from "./targetVenueOutBid";
 
 export class GenericMarketMakingStrategy {
     targetBook: SimpleBook;
-    referenceLiquidityVenue: GenericLiquidityVenue;
+    referenceLiquidityVenue: GenericLiquidityVenue | RiskMinimizedStrategy | TargetVenueOutBidStrategy;
     identifier: string;
     updateNotifier: EventEmitter;
 
-    constructor(referenceLiquidityVenue: GenericLiquidityVenue) {
+    constructor(referenceLiquidityVenue: any) {
         this.targetBook = <SimpleBook>{};
         this.referenceLiquidityVenue = referenceLiquidityVenue;
         this.identifier = 'genericMarketMaking';
@@ -33,7 +35,7 @@ export class GenericMarketMakingStrategy {
     }
 
     // Returns referenceLiquidityVenue
-    getReferenceLiquidityVenue(): GenericLiquidityVenue {
+    getReferenceLiquidityVenue(): GenericLiquidityVenue | RiskMinimizedStrategy | TargetVenueOutBidStrategy {
         return this.referenceLiquidityVenue;
     }
 
