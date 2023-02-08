@@ -71,7 +71,8 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
     // Conceptually the MarketMakingBot object takes a configuration, a marketAidContractInstance, and a Strategy object and it updates the market aid's on-chain book and liquidity as needed
     const bot = new GenericMarketMakingBot(configuration,
         marketAidContractInstance, // TODO: listen to the market aid's positioning within this object
-        strat// Strategy = Simple book feed that the bot listens to to target on-chain; technically this is just a node event emitter
+        strat,// Strategy = Simple book feed that the bot listens to to target on-chain; technically this is just a node event emitter
+        configuration.network == 10 ? process.env.MY_LIVE_BOT_EOA_ADDRESS : process.env.MY_TEST_BOT_EOA_ADDRESS // TODO: hacky
     );
 
     // 4. Start the bot and listen to log feed

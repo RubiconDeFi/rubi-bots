@@ -49,6 +49,7 @@ export async function tickToBook(
         SQRT_PRICE_LIMIT_x96_RTL,
         quoterContract
     );
+
     let formatted_book = formatBook(book);
     let stretched_book = stretch_book(formatted_book, STRETCH_FACTOR);
     // let pullbacked_book = pullback_book(stretched_book, ETH_CONVESION_FACTOR);
@@ -161,6 +162,10 @@ export async function buildBook(
     let leftBook = await leftBookPromise;
     let rightBook = await rightBookPromise;
 
+    console.log("This is the left book: " + leftBook);
+    console.log("This is the right book: " + rightBook);
+
+
     // rightBook has to be inverted
     let invPrices = [];
     let invSizes = [];
@@ -240,15 +245,14 @@ export function quoteExactInputSingleStatic(
     // console.log("amountIn", amountIn);
     // console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
 
-
     return poolContract.callStatic.quoteExactInputSingle(
         tokenIn,
         tokenOut,
         fee,
         amountIn,
         sqrtPriceLimitX96,
-        options
-    ).catch((e) => console.log("May have failed calling static", e.reason))
+        // options
+    ).catch((e) => console.log("May have failed calling static", e.reason, e))
 }
 
 // keep
