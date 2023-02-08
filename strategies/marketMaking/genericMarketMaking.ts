@@ -44,11 +44,16 @@ export class GenericMarketMakingStrategy {
         return this.referenceLiquidityVenue.getAssetPair()
     }
 
+    emitUpdate() {
+        this.updateNotifier.emit('update', this.targetBook);
+    }
+
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
     // Generic class naively sets the target book = to the reference book
     updateTargetBook() {
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
             this.targetBook = liveBook;
+            this.emitUpdate();
         });
     }
 }

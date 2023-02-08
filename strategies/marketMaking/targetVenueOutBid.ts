@@ -25,7 +25,7 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
             this.targetBook.asks.forEach((ask) => {
                 ask.price = ask.price * (1 - this.improvement);
             });
-            this.updateNotifier.emit('update', this.targetBook);
+            this.emitUpdate();
         });
     }
 }
