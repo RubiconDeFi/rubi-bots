@@ -162,10 +162,6 @@ export async function buildBook(
     let leftBook = await leftBookPromise;
     let rightBook = await rightBookPromise;
 
-    console.log("This is the left book: " + leftBook);
-    console.log("This is the right book: " + rightBook);
-
-
     // rightBook has to be inverted
     let invPrices = [];
     let invSizes = [];

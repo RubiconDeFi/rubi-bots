@@ -6,10 +6,11 @@
 import { BigNumber, ethers } from "ethers";
 import { BotConfiguration } from "../../configuration/config";
 import { GenericMarketMakingStrategy } from "../../strategies/marketMaking/genericMarketMaking";
-import { GenericLiquidityVenue } from "../../liquidityVenues/generic";
+import { AssetPair, GenericLiquidityVenue } from "../../liquidityVenues/generic";
 import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetVenueOutBid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
+import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -32,6 +33,9 @@ export class GenericMarketMakingBot {
     relativeQuoteBalance: number;
     inventoryManagement: () => void;
     EOAbotAddress: string;
+    assetPair: AssetPair;
+
+    marketAidPositionTracker: MarketAidPositionTracker;
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
         this.config = config;
@@ -42,6 +46,12 @@ export class GenericMarketMakingBot {
         this.relativeQuoteBalance = 0;
         this.availableLiquidity = <MarketAidAvailableLiquidity>{};
         this.EOAbotAddress = _botAddy;
+        this.assetPair = {
+            asset: this.config.targetTokens[0],
+            quote: this.config.targetTokens[1]
+        };
+        const _marketAidPositionTracker = new MarketAidPositionTracker(this.assetPair, this.marketAid, this.EOAbotAddress, this.config);
+        this.marketAidPositionTracker = _marketAidPositionTracker;
     }
 
 
@@ -54,22 +64,12 @@ export class GenericMarketMakingBot {
         // See if we can listen to the underlying strategy's recomended price
         console.log('Launching bot');
 
-        // console.log("This is my market aid contract", this.marketAid);
-
-
         // 1. Get the strategist's available liquidity over time
-
         await this.pullOnChainLiquidity();
         // UPDATER - Poll the strategist's total liquidity every second and populate the availableLiquidity object
         setTimeout(() => {
             this.pullOnChainLiquidity();
         }, 1000) // TODO: move to config
-
-        // TODO: Kickoff a listener that polls the market-aid for the current state of the market
-        // NEED OUR BOOK SPECIFIC LIQUIDITY VENUE TODO - BUILD ABSTRACT MARKET AID BOOK LIQIUDUITY VENUE FOR MARKET AID MM STRATS
-
-        // TODO: Generate ladder on both sides of the book based on 
-        // e.g. OP_LIVE_GLOBAL_QUERY_LADDER = 50-300-700-3000-6000
 
         // Call a function that takes available liquidity and generates a ladder based on a configurable parameter step size
         var _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
@@ -86,12 +86,18 @@ export class GenericMarketMakingBot {
             1000
         );
         this.strategy.updateNotifier.on('update', (liveBook) => {
-            console.log('\nStrategy Feed updated');
+            console.log('\nStrategy Feed updated!');
             console.log(liveBook);
+
+            // TODO: compare against our MarketAidPositionTracker book and execute orders to match
         });
 
-        // TODO: NEED TO PULL RUBICON BOOKS IN PARALLEL THROUGH THE MARKET-AID SPECIFIC ADAPTER THAT RETURNS OUR ORDERS
-
+        // Kickoff a listener that polls the market-aid for the current state of the market
+        // MarketAidPositionTracker will drive a book we compare against strategy book to do everything
+        this.marketAidPositionTracker.updateNotifier.on('update', (liveBook) => {
+            console.log('\nMarket Aid Position Tracker Feed updated!');
+            console.log(liveBook);
+        });
     }
 
     pullOnChainLiquidity(): Promise<MarketAidAvailableLiquidity> {
@@ -119,7 +125,6 @@ export class GenericMarketMakingBot {
     }
 
 }
-// TODO: DRIVE on-chan EXECUTIONS through liquidity venue Rubicon functions for composability
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
     var assetLadder = [];

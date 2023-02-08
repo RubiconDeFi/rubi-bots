@@ -1,5 +1,5 @@
 import { TokenInfo, TokenList } from '@uniswap/token-lists';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
 
 export enum Network {
@@ -232,6 +232,16 @@ export const tokenList: TokenList = {
     ],
 };
 
+export interface StrategistTrade {
+    askId: BigNumber;
+    askPayAmt: BigNumber;
+    askAsset: string;
+    bidId: BigNumber;
+    bidPayAmt: BigNumber;
+    bidAsset: string;
+    strategist: string;
+    timestamp: number;
+};
 
 export enum BotType {
     MarketMaking = 1,
@@ -265,3 +275,11 @@ export type GenericOrder = {
     price: number;
     size: number;
 }
+
+
+// Note this is a shared type and may not always be adhered to given any type
+export type OnChainBookWithData = OnChainBookOrderWithData[] | any[];
+
+// Returns infor for a single strat trade id, could be one order
+// SIZES IMPLICITLY IN THE CLASSIC ASSET amount??
+export type OnChainBookOrderWithData = { askPrice: number, askSize: number, bidPrice: number, bidSize: number, stratTradeID: BigNumber }

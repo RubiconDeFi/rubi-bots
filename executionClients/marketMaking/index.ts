@@ -60,7 +60,7 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
         {
             asset: configuration.targetTokens[0],
             quote: configuration.targetTokens[1]
-        }, configuration.connections.jsonRpcProvider
+        }, configuration.connections.jsonRpcProvider //, 500
     );
     var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 1.01)
     // 3. Create a new bot instance
