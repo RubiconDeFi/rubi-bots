@@ -5,7 +5,8 @@
   "main": "package.json",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "guidedStart": "ts-node ./configuration/index.ts"
+    "guidedStart": "ts-node ./configuration/index.ts",
+    "startServer": "ts-node ./liquidityVenues/rubicon/index.ts"
   },
   "repository": {
     "type": "git",
