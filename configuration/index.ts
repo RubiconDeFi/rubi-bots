@@ -133,7 +133,6 @@ async function tokenSelectionCallback(network: Network): Promise<TokenInfo[]> {
 function getNetworkConnectionsInfo(network: Network): { jsonRpcProvider: ethers.providers.JsonRpcProvider, signer: ethers.Signer, websocketProvider?: ethers.providers.WebSocketProvider } {
     // TODO: make clear to the user the patterns they need to provide in their .env file... today env TODO: allow them to also pass them through during the guided start
     // Note the API that matters is network + '_JSON_RPC_URL' and network + '_WEBSOCKET_URL' for defined variables in .env
-    console.log("this env", process.env);
 
     const jsonRpcUrl = process.env['JSON_RPC_URL_' + network.toString()];
     const websocketUrl = process.env['WEBSOCKET_URL_' + network.toString()];

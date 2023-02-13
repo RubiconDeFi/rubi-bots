@@ -24,7 +24,7 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
             this.targetBook.asks.forEach((ask) => {
                 ask.price = ask.price * (1 + this.premium);
             });
-            this.updateNotifier.emit('update', this.targetBook);
+            this.emitUpdate();
         });
     }
 }
