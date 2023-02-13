@@ -9,6 +9,7 @@ import { SimpleBook } from "../../configuration/config";
 import { ethers, BigNumber } from "ethers";
 import QUOTER_INTERFACE from "../../configuration/abis/Quoter";
 import { tickToBook } from "./data";
+import { formatUnits } from "ethers/lib/utils";
 
 export class UniswapLiquidityVenue extends GenericLiquidityVenue {
     assetPair: AssetPair;
@@ -41,15 +42,25 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
         rightSizeLadderWei: Array<BigNumber>,
         stretchScalar?: number
     ) {
-        this.liveBook = await tickToBook(
-            leftSizeLadderWei,
-            rightSizeLadderWei,
-            this.quoterContract,
-            this.assetPair.asset,
-            this.assetPair.quote,
-            BigNumber.from(this.uniFee),
-            stretchScalar ? stretchScalar : 1
-        );
+        try {
+            this.liveBook = await tickToBook(
+                leftSizeLadderWei,
+                rightSizeLadderWei,
+                this.quoterContract,
+                this.assetPair.quote,
+                this.assetPair.asset,
+                BigNumber.from(this.uniFee),
+                stretchScalar ? stretchScalar : 1
+            );
+            this.liveBook = {
+                bids: this.liveBook.bids.reverse(),
+                asks: this.liveBook.asks.reverse()
+            }
+
+        } catch (error) {
+            console.log("\n Got an error in updateLiveBook for UniswapLiquidity venue: ", error);
+        }
+
         this.emitUpdate();
     }
 
