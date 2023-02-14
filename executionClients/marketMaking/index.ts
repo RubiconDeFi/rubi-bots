@@ -62,7 +62,7 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
             quote: configuration.targetTokens[1]
         }, configuration.connections.jsonRpcProvider //, 500
     );
-    var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 1.01)
+    var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01)
     // 3. Create a new bot instance
     // Note: this guy should use a configurable poll for gas-conscious updating
     // This execution client's job is to simply map the STRATEGY simple book feed on-chain when conditions are met

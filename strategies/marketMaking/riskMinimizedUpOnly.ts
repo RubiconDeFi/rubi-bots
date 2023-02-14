@@ -11,18 +11,30 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
     constructor(referenceLiquidityVenue: GenericLiquidityVenue, premium: number) {
         super(referenceLiquidityVenue);
         this.premium = premium;
-        this.identifier = 'riskMinimizedUpOnly';
+        console.log("This is my premium: ", this.premium);
+        if (this.premium > 1 || this.premium < 0) {
+            throw new Error("Premium must be less than 1 or greater than 0");
+        }
+
+        this.identifier = 'RiskMinimizedUpOnly';
+        this.updateTargetBook();
     }
 
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
     override updateTargetBook() {
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
             this.targetBook = liveBook;
-            this.targetBook.bids.forEach((bid) => {
-                bid.price = bid.price * (1 - this.premium);
+            this.targetBook.bids = liveBook.bids.map((bid) => {
+                return {
+                    price: bid.price * (1 - this.premium),
+                    size: bid.size
+                }
             });
-            this.targetBook.asks.forEach((ask) => {
-                ask.price = ask.price * (1 + this.premium);
+            this.targetBook.asks = liveBook.asks.map((ask) => {
+                return {
+                    price: ask.price * (1 + this.premium),
+                    size: ask.size
+                }
             });
             this.emitUpdate();
         });
