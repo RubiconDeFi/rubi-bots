@@ -2,7 +2,7 @@
 //        has a property that is a Market Aid Instance which it polls to get the liveBook
 
 import { TokenInfo } from "@uniswap/token-lists";
-import { BotConfiguration, OnChainBookWithData, StrategistTrade, marketAddressesByNetwork } from "../../configuration/config";
+import { BotConfiguration, OnChainBookWithData, SimpleBook, StrategistTrade, marketAddressesByNetwork } from "../../configuration/config";
 import { AssetPair, GenericLiquidityVenue } from "../generic";
 import { BigNumber, Contract, ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
@@ -44,7 +44,7 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
         // this.liveBook = this.rubiconInstance.getLiveBook();
         console.log("Query the market aid for the latest book", this.marketAidInstance.address);
         console.log("This strategist's address is", this.myReferenceOperator);
-        
+
         this.getAndSetOnChainBookWithData(this.marketContractInstance);
         this.emitUpdate();
 
@@ -55,17 +55,18 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
         // if (this.onChainBook == undefined) {
         // Have to populate the onChainBook
 
-        console.log("This assetpair is", this.assetPair.asset.address, this.assetPair.quote.address);
-        
+        // console.log("This assetpair is", this.assetPair.asset.address, this.assetPair.quote.address);
+
         return getOutstandingBookFromStrategist(
             this.assetPair.asset.address,
             this.assetPair.quote.address,
             this.marketAidInstance,
             this.myReferenceOperator
         ).then((r: BigNumber[]) => {
-            console.log("Setting this to on-chain book", r);
+            // console.log("Setting this to on-chain book", r);
 
             this.onChainStrategistTrades = r;
+            const _marketAidContract = this.marketAidInstance;
             // Trigger the queries to update the price info too
             // return this.getAndSetOnChainBookWithData(config, this.contract, this.marketContract);
             // }
@@ -81,16 +82,16 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
                     // TODO: Refactor into a single Promise.all
                     const outstandingStratTradeID = currentOnChain[index];
 
-                    const attempt = this.marketAidInstance.strategistTrades(outstandingStratTradeID).then((r: StrategistTrade) => [r.askId, r.bidId]).then((info) => {
+                    const attempt = _marketAidContract.strategistTrades(outstandingStratTradeID).then((r: StrategistTrade) => [r.askId, r.bidId]).then((info) => {
                         // console.log("ARE THESE IDS???", info[0], info[1]);
                         return Promise.all([
-                            getPriceFromID( // IS THIS RIGHT ?? TODO:
+                            getPriceAndSizeFromID( // IS THIS RIGHT ?? TODO:
                                 info[0],
                                 true,
                                 marketContract,
                                 quoteDecimals,
                                 assetDecimals
-                            ), getPriceFromID(
+                            ), getPriceAndSizeFromID(
                                 info[1],
                                 false,
                                 marketContract,
@@ -113,6 +114,19 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
 
             return getPricesFromStratIds(this.config.targetTokens[0].decimals, this.config.targetTokens[1].decimals).then((r: OnChainBookWithData) => {
                 this.onChainBookWithData = r;
+                // this.liveBook
+                // console.log("Setting this to on-chain book with data", r);
+
+                // Loop through the response and extrapolate the prices to populate the liveBook of type SimpleBook
+                var orders: SimpleBook = <SimpleBook>{ asks: [], bids: []};
+                for (let index = 0; index < r.length; index++) {
+                    const element = r[index];
+                    // console.log("Element", element);
+                    orders.asks.push(element[0])
+                    orders.bids.push(element[1])
+                }
+                // console.log("WHAT THIS LOOK LIKE", orders); ``
+                this.liveBook = orders;
                 return true;
             })
         })
@@ -135,13 +149,13 @@ export async function getOutstandingBookFromStrategist(
     return result;
 }
 
-export function getPriceFromID(
+export function getPriceAndSizeFromID(
     id: BigNumber,
     isAsk: boolean,
     marketContract: Contract, // reader only
     quoteDecimals: number,
     assetDecimals: number
-): Promise<{ price: number }> {
+): Promise<{ price: number, size: number }> {
     if (isAsk) {
         return marketContract.getOffer(id).then((askInfo) => {
             let num = BigNumber.from(askInfo[2]); // wei
@@ -153,7 +167,10 @@ export function getPriceFromID(
             const formattedDen = parseFloat(_den);
 
             const outcome = formattedNum / formattedDen; // human price in BigNumber WEI    
-            return outcome;
+            return {
+                price: outcome,
+                size: parseFloat(_den)
+            };
         });
     } else {
         return marketContract.getOffer(id).then((bidInfo) => {
@@ -167,7 +184,10 @@ export function getPriceFromID(
             const formattedDen = parseFloat(_den);
             const outcome = formattedNum / formattedDen;
 
-            return outcome;
+            return {
+                price: outcome,
+                size: parseFloat(_den)
+            };
         });
     }
 }

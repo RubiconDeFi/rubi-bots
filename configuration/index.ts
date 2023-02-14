@@ -173,7 +173,9 @@ async function main() {
                                 connections: getNetworkConnectionsInfo(selectedNetwork)
                             };
 
-                            console.log("\nThis is the bot configuration", botConfiguration, "\n");
+                            // console.log("\nThis is the bot configuration", botConfiguration, "\n");
+                            console.log("\nThe bot is configured and ready to start!");
+
                             // 5. Start the bot with the configuration
                             return startMarketMakingBot(botConfiguration, rl);
                         });
