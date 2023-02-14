@@ -88,8 +88,7 @@ export class GenericMarketMakingBot {
         this.strategy.updateNotifier.on('update', (liveBook) => {
             console.log('\nStrategy Feed updated!');
             console.log(liveBook);
-
-            // TODO: compare against our MarketAidPositionTracker book and execute orders to match
+            this.compareStrategyAndMarketAidBooks();
         });
 
         // Kickoff a listener that polls the market-aid for the current state of the market
@@ -97,8 +96,84 @@ export class GenericMarketMakingBot {
         this.marketAidPositionTracker.updateNotifier.on('update', (liveBook) => {
             console.log('\nMarket Aid Position Tracker Feed updated!');
             console.log(liveBook);
+            this.compareStrategyAndMarketAidBooks();
         });
     }
+
+    // Main logical function that executes orders on the liquidity venue based on the strategy's targetBook
+    compareStrategyAndMarketAidBooks() {
+        // Compare the strategy's targetBook with the market-aid's liveBook
+        // If the strategy's targetBook is different enough from the market-aid's liveBook, then execute orders on the liquidity venue to match
+        const strategyBook = this.strategy.targetBook;
+        const marketAidBook = this.marketAidPositionTracker.liveBook;
+        const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
+
+        if (strategyBook === undefined || marketAidBook === undefined) {
+            console.log('No books to compare');
+            return;
+        }
+
+        // Check if the asks and the bids are not defined in both books
+        // Both books have defined values for asks and bids
+        if (strategyBook.asks !== undefined && strategyBook.bids !== undefined && marketAidBook.asks !== undefined && marketAidBook.bids !== undefined) {
+            console.log("Comparing books");
+            console.log("Strategy Book", strategyBook);
+            console.log("Market Aid Book", marketAidBook);
+
+            // If the asks and bids of marketAidBook are empty then we call placeInitialMarketMakingTrades()
+            if (marketAidBook.asks.length === 0 && marketAidBook.bids.length === 0) {
+                console.log("Market Aid book is empty, placing initial market making trades");
+                this.placeInitialMarketMakingTrades();
+            }
+            // If the asks and the bids of marketAidBook are non-empty then check if they are equal in length to the strategyBook
+            else if (marketAidBook.asks.length === strategyBook.asks.length && marketAidBook.bids.length === strategyBook.bids.length) {
+                console.log("Market Aid book is same length as strategy book, checking for price deltas");
+
+                // Check the differential between the strategyBook and the marketAidBook offers and call updateMarketAidPosition() if the differential is greater than deltaTrigger
+                for (let i = 0; i < strategyBook.asks.length; i++) {
+                    const strategyAsk = strategyBook.asks[i];
+                    const marketAidAsk = marketAidBook.asks[i];
+                    const askDelta = Math.abs(strategyAsk.price - marketAidAsk.price) / strategyAsk.price;
+
+                    if (askDelta > deltaTrigger) {
+                        console.log("Ask delta is greater than deltaTrigger, updating market aid position");
+                        this.requoteMarketAidPosition();
+                    }
+                }
+
+                for (let i = 0; i < strategyBook.bids.length; i++) {
+                    const strategyBid = strategyBook.bids[i];
+                    const marketAidBid = marketAidBook.bids[i];
+                    const bidDelta = Math.abs(strategyBid.price - marketAidBid.price) / strategyBid.price;
+
+                    if (bidDelta > deltaTrigger) {
+                        console.log("Bid delta is greater than deltaTrigger, updating market aid position");
+                        this.requoteMarketAidPosition();
+                    }
+                }
+            }
+            // If the asks and the bids of marketAidBook are non-empty but are not equal in length to the strategyBook then we call requoteMarketAidPosition() if the market aid has a non-zero amount of orders on the book and call placeInitialMarketMakingTrades() if the market aid has a zero amount of orders on the book
+            else if (marketAidBook.asks.length !== strategyBook.asks.length || marketAidBook.bids.length !== strategyBook.bids.length) {
+                this.requoteMarketAidPosition();
+            }
+        }
+    }
+
+    // Function that calls requote() on the market-aid
+    requoteMarketAidPosition(): void {
+        console.log("Requoting market aid position to match the strategy book");
+        // TODO: implement web3 call to requote()
+
+    }
+
+
+    // Function that calls placeMarketMakingTrades() on the market-aid
+    placeInitialMarketMakingTrades(): void {
+        console.log("Initializing a market aid position to match the strategy book");
+        // TODO: implement web3 call to placeMarketMakingTrades()
+    }
+
+
 
     pullOnChainLiquidity(): Promise<MarketAidAvailableLiquidity> {
         console.log("\nQuery Strategist Total Liquidity ",
