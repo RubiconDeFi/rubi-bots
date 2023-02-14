@@ -27,6 +27,13 @@ export const marketAidFactoriesByNetwork: Record<number, string> = {
     // [Network.OPTIMISM_MAINNET]: getAddress(''),
 };
 
+// 0x7Af14ADc8Aea70f063c7eA3B2C1AD0D7A59C4bFf
+// 0x6aaEd1985a0e011ca82BB5Df8ebd92063134fd7c
+export const routerAddressesByNetwork: Record<number, string> = {
+    [Network.OPTIMISM_GOERLI]: getAddress('0x6aaEd1985a0e011ca82BB5Df8ebd92063134fd7c'),
+    [Network.OPTIMISM_MAINNET]: getAddress('0x7Af14ADc8Aea70f063c7eA3B2C1AD0D7A59C4bFf'),
+};
+
 // Input tokens 
 export const tokenList: TokenList = {
     name: 'Rubicon Token List',

@@ -1,3 +1,128 @@
+import { ethers, BigNumber } from 'ethers';
+import { GenericLiquidityVenue,  AssetPair } from "../generic";
+import { GenericOrder, SimpleBook, BotConfiguration, marketAddressesByNetwork, routerAddressesByNetwork } from "../../configuration/config";
+
+import RUBICON_MARKET_INTERFACE from '../../configuration/abis/RubiconMarket';
+import RUBICON_ROUTER_INTERFACE from "../../configuration/abis/RubiconRouter";
+
+export class RubiconLiquidityVenue extends GenericLiquidityVenue {
+    marketContract: ethers.Contract;
+    routerContract: ethers.Contract;
+    provider: ethers.providers.WebSocketProvider;
+
+    constructor(
+        assetPair: AssetPair,
+        reader: ethers.providers.WebSocketProvider,
+        botConfig: BotConfiguration
+    ) {
+        super(assetPair);
+        this.identifier = 'rubicon';
+        this.provider = reader;
+        this.marketContract = new ethers.Contract(marketAddressesByNetwork[botConfig.network], RUBICON_MARKET_INTERFACE, reader);
+        this.routerContract = new ethers.Contract(routerAddressesByNetwork[botConfig.network], RUBICON_ROUTER_INTERFACE, reader);
+    }
+
+    // get the book for a pair 
+    async getBookForPair(
+        asset: AssetPair["asset"],
+        quote: AssetPair["quote"]
+    ): Promise<SimpleBook> {
+        try {
+
+            // get the bid depth 
+            const bidDepth = await this.marketContract.functions.getOfferCount(quote.address, asset.address);
+    
+            // get the ask depth
+            const askDepth = await this.marketContract.functions.getOfferCount(asset.address, quote.address);
+    
+            // get the max depth to use for the book 
+            const askDepthValue = askDepth[0].toNumber();
+            const bidDepthValue = bidDepth[0].toNumber();
+            const depths = bidDepthValue > askDepthValue ? [bidDepthValue, askDepthValue, bidDepthValue] : [askDepthValue, askDepthValue, bidDepthValue];
+            
+            // get the book for the pair
+            const book = await this.routerContract.functions.getBookFromPair(asset.address, quote.address, depths[0]);
+            
+            // parse the book into a simple book
+            let asks: GenericOrder[] = [];
+            let bids: GenericOrder[] = [];
+            
+            for (let i = 0; i < depths[1]; i++) {
+                const pay_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[0][i][0]), asset.decimals));
+                const buy_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[0][i][1]), quote.decimals));
+                const price = buy_amt / pay_amt;
+                asks.push({
+                    price: price,
+                    size: pay_amt,
+                });
+            }
+    
+            for (let i = 0; i < depths[2]; i++) {
+                const pay_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[1][i][0]), quote.decimals));
+                const buy_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[1][i][1]), asset.decimals));
+                const price = pay_amt / buy_amt;
+                bids.push({
+                    price: price,
+                    size: buy_amt,
+                });
+            }
+    
+            const simpleBook: SimpleBook = {
+                asks: asks,
+                bids: bids,
+            };
+
+            // update the book and broadcast the new book
+            this.liveBook = simpleBook;
+            this.emitUpdate()
+    
+            // return the book
+            return Promise.resolve(simpleBook);
+        } catch (error) {
+            return Promise.reject(error);
+        }
+    };
+
+    // set a websocket subscription to poll the market for updates to the book every block
+    async subscribeToBookUpdates(
+        asset: AssetPair["asset"],
+        quote: AssetPair["quote"],
+        callback?: (book: SimpleBook) => void
+    ): Promise<void> {
+        
+        // on every block, get the book for the pair and emit it to the callback
+        this.provider.on('block', async (blockNumber) => {
+
+            // get the book for the pair
+            const book = await this.getBookForPair(asset, quote); // current time to beat: 197ms :we will get there :D
+
+            // emit the book to the callback
+            if (callback) {
+                callback(book);
+            }
+        });
+    };
+}
+
+// this is going to be not that great for right now, we will iterate away from this as fast as possible
+// basically heres the problem: 
+    // - we currently don't have a getBookFromPair function live at market that does not require a depth parameter
+    // - when you pass in an arbitrarily long depth parameter, the function will spend a long time looking through all depth levels and return back a large book with many empty levels
+    // - we have to call `getOfferCount` for both directions to get the number of offers in each direction in order to make sure we get all the offers in the book
+// we could use multicall to speed this up, but im not sure if we are able to do comparisons in a multical to decide the depth parameter or if it would still have to be two separate calls
+
+// TODOS:
+// currently we are having to parse the chain response and then pass it to the SimpleBook and GenericOrder objects
+// i think in an ideal world, we would be able to pass the chain response directly to the SimpleBook and GenericOrder objects
+// this would require us to have a way to map the chain response to the SimpleBook and GenericOrder objects
+// i bet this is possible with some type of transformtation? we could also modify the SimpleBook and GenericOrder objects to be more flexible? 
+// i imagine we will run into this problem multiple times, so we should figure out a way to solve it for one and all
+
+// questions:
+// none for now... but that should change soon :)
+
+// general notes: 
+
 // we are going to do this piece by piece for now, and then abstract it out later
 // this is first going to be a simple server that connects to the market and maintains a live book based on the market events
 
@@ -63,151 +188,3 @@
             // a. if the book in memory is different from the book from the market, update the book in memory and broadcast the new book to all clients that are subscribed to that pair
         // 4. every minute, poll the client to make sure they are still connected
             // a. if the client is not connected, remove them from the list of clients *maybe?*
-
-// for testing and local development, these will be obfuscated to setup later 
-import * as dotenv from "dotenv";
-dotenv.config();   
-
-const jsonRpcUrl = process.env['JSON_RPC_URL_OPTIMISM_MAINNET'];
-const websocketUrl = process.env['WEBSOCKET_URL_OPTIMISM_MAINNET'];
-const marketContractAddress = process.env['RUBICON_MARKET_ADDRESS_OPTIMISM_MAINNET'];
-const routerContractAddress = process.env['RUBICON_ROUTER_ADDRESS_OPTIMISM_MAINNET'];
-
-import * as WebSocket from 'ws';
-import { ethers, BigNumber } from 'ethers';
-import { GenericOrder, SimpleBook } from "../../configuration/config";
-import { tokenList } from "../../configuration/config";
-import { TokenInfo, TokenList } from "@uniswap/token-lists";
-import RUBICON_MARKET_INTERFACE from '../../configuration/abis/RubiconMarket';
-import RUBICON_ROUTER_INTERFACE from "../../configuration/abis/RubiconRouter";
-
-// set up ethers provider
-const jsonProvider = new ethers.providers.JsonRpcProvider(jsonRpcUrl);
-const websocketProvider = new ethers.providers.WebSocketProvider(websocketUrl);
-
-// set up the market contract
-const marketContract = new ethers.Contract(marketContractAddress, RUBICON_MARKET_INTERFACE, websocketProvider);
-const routerContract = new ethers.Contract(routerContractAddress, RUBICON_ROUTER_INTERFACE, websocketProvider);
-
-// get usdc and weth from the token list 
-const usdc = tokenList.tokens.find((token) => token.symbol === 'USDC');
-const weth = tokenList.tokens.find((token) => token.symbol === 'WETH');
-console.log(usdc.address);
-console.log(weth.address);
-
-/*
-// set up the websocket server
-const port = 8080;
-const wss = new WebSocket.Server({ port });
-
-// connect the server and start listening for events to broadcast
-wss.on('connection', (ws) => {
-    console.log('connected');
-
-    // subscribe to the market events
-    marketContract.on('LogMake', (...args) => {
-        console.log('LogMake', args);
-    });
-
-    marketContract.on('LogTake', (...args) => {
-        console.log('LogTake', args);
-    });
-
-    marketContract.on('LogKill', (...args) => {
-        console.log('LogKill', args);
-    });
-});
-
-console.log('listening on port 8080');
-*/
-
-// this is going to be not that great for right now, we will iterate away from this as fast as possible
-// basically heres the problem: 
-    // - we currently don't have a getBookFromPair function live at market that does not require a depth parameter
-    // - when you pass in an arbitrarily long depth parameter, the function will spend a long time looking through all depth levels and return back a large book with many empty levels
-    // - we have to call `getOfferCount` for both directions to get the number of offers in each direction in order to make sure we get all the offers in the book
-// we could use multicall to speed this up, but im not sure if we are able to do comparisons in a multical to decide the depth parameter or if it would still have to be two separate calls
-async function getBookForPair(input: {
-    asset: TokenInfo;
-    quote: TokenInfo;
-}): Promise<SimpleBook> {
-    try {
-        // get the bid depth 
-        const bidDepth = await marketContract.functions.getOfferCount(input.quote.address, input.asset.address);
-
-        // get the ask depth
-        const askDepth = await marketContract.functions.getOfferCount(input.asset.address, input.quote.address);
-
-        // get the max depth to use for the book 
-        const askDepthValue = askDepth[0].toNumber();
-        const bidDepthValue = bidDepth[0].toNumber();
-        const depths = bidDepthValue > askDepthValue ? [bidDepthValue, askDepthValue, bidDepthValue] : [askDepthValue, askDepthValue, bidDepthValue];
-        
-        // get the book for the pair
-        const book = await routerContract.functions.getBookFromPair(input.asset.address, input.quote.address, depths[0]);
-        
-        // parse the book into a simple book
-        let asks: GenericOrder[] = [];
-        let bids: GenericOrder[] = [];
-        
-        for (let i = 0; i < depths[1]; i++) {
-            const pay_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[0][i][0]), input.asset.decimals));
-            const buy_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[0][i][1]), input.quote.decimals));
-            const price = buy_amt / pay_amt;
-            asks.push({
-                price: price,
-                size: pay_amt,
-            });
-        }
-
-        for (let i = 0; i < depths[2]; i++) {
-            const pay_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[1][i][0]), input.quote.decimals));
-            const buy_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[1][i][1]), input.asset.decimals));
-            const price = pay_amt / buy_amt;
-            bids.push({
-                price: price,
-                size: buy_amt,
-            });
-        }
-
-        const simpleBook: SimpleBook = {
-            asks: asks,
-            bids: bids,
-        };
-
-        // return the book
-        return Promise.resolve(simpleBook);
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
-
-// get the weth/usdc book
-const test = getBookForPair({asset: weth, quote: usdc}).then(book => {
-    console.log(book);
-}).catch(error => {
-    console.log(error);
-});
-
-// schedule the book update function to run every minute
-//setInterval(updateBook("0x4200000000000000000000000000000000000006", "0x7F5c764cBc14f9669B88837ca1490cCa17c31607"), 10 * 1000);
-
-// general notes: 
-
-// shared config variables: 
-// - chainId
-    // - market contract address based on chainId
-// - market contract object 
-
-// TODOS:
-// currently we are having to parse the chain response and then pass it to the SimpleBook and GenericOrder objects
-// i think in an ideal world, we would be able to pass the chain response directly to the SimpleBook and GenericOrder objects
-// this would require us to have a way to map the chain response to the SimpleBook and GenericOrder objects
-// i bet this is possible with some type of transformtation? we could also modify the SimpleBook and GenericOrder objects to be more flexible? 
-// i imagine we will run into this problem multiple times, so we should figure out a way to solve it for one and all
-
-// questions:
-// should we be using BigNumber instead of Number?
-
-// within the generic order object, is price always the asset in the quote currency?
-// is size then always the amount of the asset? 
