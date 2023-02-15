@@ -78,3 +78,15 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
     // 4. Start the bot and listen to log feed
     await bot.launchBot();
 }
+
+// Create a main function which is called and parses through proceess.argv to allow for custom configuration
+function main(): void {
+
+    console.log("This is process.argv", process.argv);
+    // Parse through process.argv to get custom configuration details from the user and start the correct bot process
+    // TODO:
+
+    return
+}
+
+main();

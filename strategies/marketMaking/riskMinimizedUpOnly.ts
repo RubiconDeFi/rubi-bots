@@ -23,6 +23,10 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
     override updateTargetBook() {
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
+            if (liveBook == undefined) {
+                console.log("Live book is undefined, therefore do nothing and return");
+                return;
+            }
             this.targetBook = liveBook;
             this.targetBook.bids = liveBook.bids.map((bid) => {
                 return {
