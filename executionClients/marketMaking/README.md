@@ -1,4 +1,4 @@
-Note that via `yarn run startMarketMakingBot -- PARAMS` where params are the custom configuration for the bot you want to run. This avoids the need to use the guidedStart and allows for bot processes to be quickly spun up in the cloud for operators.
+Note that via `yarn run startGenericMarketMakingBot -- PARAMS` where params are the custom configuration for the bot you want to run. This avoids the need to use the guidedStart and allows for bot processes to be quickly spun up in the cloud for operators.
 
 The API for the `MarketMakingBot` command-line parameters is as follows:
 API with the following hierarchy of arguments:

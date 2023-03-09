@@ -28,18 +28,22 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
                 return;
             }
             this.targetBook = liveBook;
-            this.targetBook.bids = liveBook.bids.map((bid) => {
-                return {
-                    price: bid.price * (1 - this.premium),
-                    size: bid.size
-                }
-            });
-            this.targetBook.asks = liveBook.asks.map((ask) => {
-                return {
-                    price: ask.price * (1 + this.premium),
-                    size: ask.size
-                }
-            });
+            if (liveBook.bids) {
+                this.targetBook.bids = liveBook.bids.map((bid) => {
+                    return {
+                        price: bid.price * (1 - this.premium),
+                        size: bid.size
+                    }
+                });
+            }
+            if (liveBook.asks) {
+                this.targetBook.asks = liveBook.asks.map((ask) => {
+                    return {
+                        price: ask.price * (1 + this.premium),
+                        size: ask.size
+                    }
+                });
+            }
             this.emitUpdate();
         });
     }

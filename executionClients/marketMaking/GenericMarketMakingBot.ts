@@ -179,22 +179,28 @@ export class GenericMarketMakingBot {
         console.log("\nQuery Strategist Total Liquidity ",
             this.config.targetTokens[0].address,
             this.config.targetTokens[1].address,
-            this.EOAbotAddress
+            this.EOAbotAddress,
+            this.marketAid.address
         );
 
-        return this.marketAid.getStrategistTotalLiquidity(
-            this.config.targetTokens[0].address,
-            this.config.targetTokens[1].address,
-            this.EOAbotAddress
-        ).then((r: MarketAidAvailableLiquidity) => {
-            console.log("Got this after getStratTotalLiquidity", r);
+        try {
+            return this.marketAid.getStrategistTotalLiquidity(
+                this.config.targetTokens[0].address,
+                this.config.targetTokens[1].address,
+                this.EOAbotAddress
+            ).then((r: MarketAidAvailableLiquidity) => {
+                // console.log("Got this after getStratTotalLiquidity", r);
 
-            // TODO: IF THERE's a pool split then implement it???????????/
-            // console.log("this config", this.config);
+                // TODO: IF THERE's a pool split then implement it???????????/
+                // console.log("this config", this.config);
 
-            this.availableLiquidity = r;
-            return r;
-        });
+                this.availableLiquidity = r;
+                return r;
+            });
+        } catch (error) {
+            console.log("\nError in pullOnChainLiquidity", error);
+        }
+
 
 
     }

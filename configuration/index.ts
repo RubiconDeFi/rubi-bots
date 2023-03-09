@@ -7,7 +7,7 @@ import * as dotenv from "dotenv";
 
 import { TokenInfo } from "@uniswap/token-lists";
 import { BotConfiguration, BotType, ETH_ZERO_ADDRESS, MarketMakingStrategy, Network, tokenList } from "./config";
-import { startMarketMakingBot } from "../executionClients/marketMaking";
+import { startGenericMarketMakingBot } from "../executionClients/marketMaking";
 import { ethers } from "ethers";
 dotenv.config();
 
@@ -177,7 +177,7 @@ async function main() {
                             console.log("\nThe bot is configured and ready to start!");
 
                             // 5. Start the bot with the configuration
-                            return startMarketMakingBot(botConfiguration, rl);
+                            return startGenericMarketMakingBot(botConfiguration, rl);
                         });
                     });
 

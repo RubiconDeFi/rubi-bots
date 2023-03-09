@@ -1,10 +1,14 @@
+import * as dotenv from "dotenv";
+
 import { ethers } from "ethers";
-import { BotConfiguration } from "../../configuration/config";
+import { BotConfiguration, BotType, MarketMakingStrategy, tokenList } from "../../configuration/config";
 import { getAddress } from "ethers/lib/utils";
 import MARKET_AID_INTERFACE from "../../configuration/abis/MarketAid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
+
+dotenv.config();
 
 // function to prompt the user to select an existing contract instance or create a new one
 function userMarketAidCheckCallback(rl): Promise<string> {
@@ -28,7 +32,7 @@ function userMarketAidCheckCallback(rl): Promise<string> {
 }
 
 // Function 
-export async function startMarketMakingBot(configuration: BotConfiguration, rl?: any) {
+export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string) {
     // TODO: WIRE THIS UP TO THE NETWORK THEY WANNA USE
     var myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider;
     // pass through from config
@@ -40,8 +44,13 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
 
     // call function to prompt the user to select an existing contract instance or create a new one
     // if they select an existing one, we need to make sure it's on the right network and has the right approvals and balances
-    var userMarketAidAddress = await userMarketAidCheckCallback(rl);
-    console.log("userMarketAid", userMarketAidAddress);
+    var userMarketAidAddress: string;
+    if (providedMarketAidAddress) {
+        userMarketAidAddress = providedMarketAidAddress;
+    } else {
+        userMarketAidAddress = await userMarketAidCheckCallback(rl);
+    }
+    // console.log("\nGeneric market-making bot targetting this userMarketAid", userMarketAidAddress);
 
     // TODO: guided start flow to ask them if they want to use an existing contract instance or create a new one
     if (userMarketAidAddress) {
@@ -80,13 +89,50 @@ export async function startMarketMakingBot(configuration: BotConfiguration, rl?:
 }
 
 // Create a main function which is called and parses through proceess.argv to allow for custom configuration
-function main(): void {
+function main(): Promise<void> {
 
     console.log("This is process.argv", process.argv);
     // Parse through process.argv to get custom configuration details from the user and start the correct bot process
     // TODO:
+    const chainId = parseFloat(process.argv[2]);
+    if (!chainId) throw new Error('No chain ID found in process.argv');
+    const marketAidContractAddress = process.argv[3];
+    const jsonRpcUrl = process.env['JSON_RPC_URL_' + chainId.toString()];
+    const websocketUrl = process.env['WEBSOCKET_URL_' + chainId.toString()];
+    if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${chainId}`);
+    const staticJsonRpc = new ethers.providers.StaticJsonRpcProvider(jsonRpcUrl, chainId); // TODO: perhaps static provider for rpc consumption consciousness
+    if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
+    const asset = process.argv[4];
+    const quote = process.argv[5];
+    const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
+    const quoteTokenInfo = tokenList.tokens.find(token => token.address == quote && token.chainId == chainId);
 
-    return
+    if (!assetTokenInfo) throw new Error(`No token found for symbol ${asset} on network ${chainId}`);
+    if (!quoteTokenInfo) throw new Error(`No token found for symbol ${quote} on network ${chainId}`);
+    // TODO: clean this up to also have Strategy configured in the cli process.argv
+
+    var config = {
+        network: chainId,
+        targetTokens: [assetTokenInfo, quoteTokenInfo],
+        connections: {
+            jsonRpcProvider: staticJsonRpc,
+            websocketProvider: websocketUrl ? new ethers.providers.WebSocketProvider(websocketUrl, chainId) : undefined,
+            signer: new ethers.Wallet(process.env.EOA_PRIVATE_KEY, staticJsonRpc)
+        },
+        botType: BotType.MarketMaking,
+        strategy: MarketMakingStrategy.RiskMinimizedUpOnly
+    };
+    var referenceLiquidityVenue = new UniswapLiquidityVenue(
+        {
+            asset: config.targetTokens[0],
+            quote: config.targetTokens[1]
+        }, config.connections.jsonRpcProvider //, 500
+    );
+    var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
+
+    return startGenericMarketMakingBot(config, undefined,
+        marketAidContractAddress);
+
 }
 
 main();

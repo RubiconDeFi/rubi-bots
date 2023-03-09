@@ -87,6 +87,7 @@ export async function buildPairedLadderHuman(
 
     let rightSizePDF: Array<BigNumber> = [];
     for (let i = rightSizeCDF.length - 1; i > 0; i--) {
+        if (rightSizeCDF[i] == undefined) throw "Got an undefined response on quoteExactInputSingleStatic calls"
         rightSizePDF.push(rightSizeCDF[i].sub(rightSizeCDF[i - 1]));
     }
     // we gotta adjust the last bit of the PDF
@@ -248,7 +249,7 @@ export function quoteExactInputSingleStatic(
         amountIn,
         sqrtPriceLimitX96,
         // options
-    ).catch((e) => console.log("May have failed calling static", e.reason, e))
+    ).catch((e) => console.log("May have failed calling static", e.reason, e, "called with these params", tokenIn, tokenOut, fee.toString(), amountIn.toString(), sqrtPriceLimitX96.toString()));
 }
 
 // keep
