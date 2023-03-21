@@ -23,6 +23,10 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
         this.identifier = 'rubicon';
         this.myReferenceOperator = strategistReferenceAddress;
         this.config = configuration;
+        // If marketAddressesByNetwork does not have a market aid address for the network, throw an error
+        if (!marketAddressesByNetwork[this.config.network]) {
+            throw new Error(`No market address for this network ${this.config.network}`);
+        }
         this.marketContractInstance = new ethers.Contract(
             marketAddressesByNetwork[this.config.network],
             MARKET_INTERFACE,
@@ -118,7 +122,7 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
                 // console.log("Setting this to on-chain book with data", r);
 
                 // Loop through the response and extrapolate the prices to populate the liveBook of type SimpleBook
-                var orders: SimpleBook = <SimpleBook>{ asks: [], bids: []};
+                var orders: SimpleBook = <SimpleBook>{ asks: [], bids: [] };
                 for (let index = 0; index < r.length; index++) {
                     const element = r[index];
                     // console.log("Element", element);

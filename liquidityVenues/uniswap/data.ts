@@ -1,6 +1,7 @@
 import { GenericOrder, SimpleBook } from "../../configuration/config";
 import { TokenInfo } from "@uniswap/token-lists";
 import { ethers, BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 
 const SQRT_PRICE_LIMIT_x96_LTR = BigNumber.from(0);
 const SQRT_PRICE_LIMIT_x96_RTL = BigNumber.from(0);
@@ -29,8 +30,6 @@ export async function tickToBook(
     );
     console.log("leftSizeLadderWei: " + leftSizeLadderWei);
     console.log("leftSizeLadder: " + leftSizeLadder);*/
-
-
     const LEFT_ADDRESS = leftQuoteBIDERC20.address; // needs to be an Address type
     const RIGHT_ADDRESS = rightAssetASKERC20.address; // needs to be an Address type
     const LEFT_DECIMALS = leftQuoteBIDERC20.decimals; // needs to be a number type
@@ -235,12 +234,12 @@ export function quoteExactInputSingleStatic(
     sqrtPriceLimitX96: BigNumber
 ): Promise<BigNumber> {
     let options = { gasLimit: 8500000 }; // cost us 35000 gas I think
-    // console.log("\nquoteExactInputSingleStatic");
-    // console.log("tokenIn", tokenIn);
-    // console.log("tokenOut", tokenOut);
-    // console.log("fee", fee.toString());
-    // console.log("amountIn", amountIn);
-    // console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
+    console.log("\nquoteExactInputSingleStatic");
+    console.log("tokenIn", tokenIn);
+    console.log("tokenOut", tokenOut);
+    console.log("fee", fee.toString());
+    console.log("amountIn", formatUnits(amountIn));
+    console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
 
     return poolContract.callStatic.quoteExactInputSingle(
         tokenIn,

@@ -107,8 +107,8 @@ function main(): Promise<void> {
     const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
     const quoteTokenInfo = tokenList.tokens.find(token => token.address == quote && token.chainId == chainId);
 
-    if (!assetTokenInfo) throw new Error(`No token found for symbol ${asset} on network ${chainId}`);
-    if (!quoteTokenInfo) throw new Error(`No token found for symbol ${quote} on network ${chainId}`);
+    if (!assetTokenInfo) throw new Error(`No token found for address ${asset} on network ${chainId}`);
+    if (!quoteTokenInfo) throw new Error(`No token found for address ${quote} on network ${chainId}`);
     // TODO: clean this up to also have Strategy configured in the cli process.argv
 
     var config = {
@@ -122,6 +122,8 @@ function main(): Promise<void> {
         botType: BotType.MarketMaking,
         strategy: MarketMakingStrategy.RiskMinimizedUpOnly
     };
+    console.log("Spin up UNI reference venue with these tokens", config.targetTokens[0], config.targetTokens[1]);
+    
     var referenceLiquidityVenue = new UniswapLiquidityVenue(
         {
             asset: config.targetTokens[0],

@@ -50,6 +50,10 @@ export class GenericMarketMakingBot {
             asset: this.config.targetTokens[0],
             quote: this.config.targetTokens[1]
         };
+        // If any params passed to the constructor are undefined, throw an error
+        if (config === undefined || marketAid === undefined || _botAddy === undefined || this.assetPair === undefined) {
+            throw new Error("GenericMarketMakingBot constructor params cannot be undefined");
+        }
         const _marketAidPositionTracker = new MarketAidPositionTracker(this.assetPair, this.marketAid, this.EOAbotAddress, this.config);
         this.marketAidPositionTracker = _marketAidPositionTracker;
     }
