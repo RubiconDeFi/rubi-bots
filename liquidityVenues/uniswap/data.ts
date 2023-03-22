@@ -233,13 +233,13 @@ export function quoteExactInputSingleStatic(
     amountIn: BigNumber,
     sqrtPriceLimitX96: BigNumber
 ): Promise<BigNumber> {
-    let options = { gasLimit: 8500000 }; // cost us 35000 gas I think
-    console.log("\nquoteExactInputSingleStatic");
-    console.log("tokenIn", tokenIn);
-    console.log("tokenOut", tokenOut);
-    console.log("fee", fee.toString());
-    console.log("amountIn", formatUnits(amountIn));
-    console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
+    // let options = { gasLimit: 8500000 }; // cost us 35000 gas I think
+    // console.log("\nquoteExactInputSingleStatic");
+    // console.log("tokenIn", tokenIn);
+    // console.log("tokenOut", tokenOut);
+    // console.log("fee", fee.toString());
+    // console.log("amountIn", formatUnits(amountIn));
+    // console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
 
     return poolContract.callStatic.quoteExactInputSingle(
         tokenIn,
