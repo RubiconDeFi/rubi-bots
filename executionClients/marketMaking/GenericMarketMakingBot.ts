@@ -194,8 +194,8 @@ export class GenericMarketMakingBot {
         }
 
         for (let i = 0; i < this.strategy.targetBook.bids.length; i++) {
-            bidNumerators.push(parseUnits((this.strategy.targetBook.bids[0].price * this.strategy.targetBook.bids[0].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
-            bidDenominators.push(parseUnits(this.strategy.targetBook.bids[0].size.toString(), this.assetPair.asset.decimals));
+            bidNumerators.push(parseUnits((this.strategy.targetBook.bids[i].price * this.strategy.targetBook.bids[i].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
+            bidDenominators.push(parseUnits(this.strategy.targetBook.bids[i].size.toString(), this.assetPair.asset.decimals));
         }
 
         // Here is what a single offer might look like via placeMarketMakingTrades()
@@ -205,11 +205,6 @@ export class GenericMarketMakingBot {
         // const bidNumerator = parseUnits((this.strategy.targetBook.bids[0].price * this.strategy.targetBook.bids[0].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
         // const bidDenominator = parseUnits(this.strategy.targetBook.bids[0].size.toString(), this.assetPair.asset.decimals);
 
-        console.log("\nRipping these params",
-            askNumerators.toString(),
-            askDenominators.toString(),
-            bidDenominators.toString(),
-            bidNumerators.toString());
 
         if (this.makingInitialBook) return;
         // console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
@@ -224,6 +219,13 @@ export class GenericMarketMakingBot {
 
             if (r) {
                 if (this.makingInitialBook) return;
+
+
+                console.log("\nRipping these params",
+                    askNumerators.toString(),
+                    askDenominators.toString(),
+                    bidDenominators.toString(),
+                    bidNumerators.toString());
 
                 this.makingInitialBook = true;
                 this.marketAid.connect(this.config.connections.signer)['batchMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[])'](
@@ -286,17 +288,15 @@ export class GenericMarketMakingBot {
         } catch (error) {
             console.log("\nError in pullOnChainLiquidity", error);
         }
-
-
-
     }
 
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
-    console.log("I think this is my available liquidity", availableLiquidity);
+    // console.log("I think this is my available liquidity", availableLiquidity);
 
     // Chat GPT helped me with this lol
+    // TODO: update this from linear to exponential
     const s = stepSize * (stepSize + 1) / 2;
     const assetStep = availableLiquidity.assetWeiAmount.div(s);
     const quoteStep = availableLiquidity.quoteWeiAmount.div(s);
@@ -324,8 +324,8 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
     }
 
     // Print out the ladder in human readable format using formatUnits
-    console.log("Asset Ladder", assetLadder.map((a) => formatUnits(a, 18)));
-    console.log("Quote Ladder", quoteLadder.map((a) => formatUnits(a, 18)));
+    // console.log("Asset Ladder", assetLadder.map((a) => formatUnits(a, 18)));
+    // console.log("Quote Ladder", quoteLadder.map((a) => formatUnits(a, 18)));
 
     return {
         assetLadder: assetLadder,
