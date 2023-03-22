@@ -40,6 +40,8 @@ export class GenericMarketMakingBot {
 
     // Logic gates to help with execution flows
     makingInitialBook: boolean;
+    requotingOutstandingBook: boolean;
+
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
         this.config = config;
@@ -169,15 +171,72 @@ export class GenericMarketMakingBot {
 
     // Function that calls requote() on the market-aid
     requoteMarketAidPosition(): void {
-        console.log("Requoting market aid position to match the strategy book");
+        console.log("\nRequoting market aid position to match the strategy book");
         // TODO: implement web3 call to requote()
+        console.log("target this book with batchRequote", this.strategy.targetBook);
+        console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
+
+
+        const assetSideBias = 1;
+        const quoteSideBias = 1;
+        // console.log("\n APPLY THESE BIASES, asset, quote", assetSideBias, quoteSideBias);
+        // // ************************************
+        // const askNumerator = parseUnits((this.strategy.targetBook.asks[0].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
+        // const askDenominator = parseUnits((this.strategy.targetBook.asks[0].price * (this.strategy.targetBook.asks[0].size * assetSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+        // const bidNumerator = parseUnits((this.strategy.targetBook.bids[0].price * (this.strategy.targetBook.bids[0].size * quoteSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+        // const bidDenominator = parseUnits((this.strategy.targetBook.bids[0].size * quoteSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
+
+        // // TODO: we need to know the relevant strategist trade ID to pass into requote()
+        // if (this.requotingOutstandingBook) return;
+        // this.marketAid.connect(this.config.connections.signer).estimateGas.requote(
+        //     this.onChainBookWithData[0].stratTradeID,
+        //     [this.assetPair.asset.address, this.assetPair.quote.address],
+        //     askNumerator,
+        //     askDenominator,
+        //     bidNumerator,
+        //     bidDenominator,
+        // ).then((r) => {
+        //     if (r) {
+        //         if (this.requotingOutstandingBook) return;
+
+        //         this.requotingOutstandingBook = true;
+
+        //         this.marketAid.connect(this.config.connections.signer).requote(
+        //             this.onChainBookWithData[0].stratTradeID,
+        //             [this.assetPair.asset.address, this.assetPair.quote.address],
+        //             askNumerator,
+        //             askDenominator,
+        //             bidNumerator,
+        //             bidDenominator,
+        //         ).then(async (r) => {
+        //             const out = await r.wait();
+        //             this.requotingOutstandingBook = false;
+
+        //             if (out.status == true) {
+        //                 console.log("\nREQUOTE SUCCESSFUL!!!! 🎉");
+        //                 // TODO??? Chase the transaction and update what info on this we can
+        //             }
+
+        //         }).catch((e) => {
+        //             console.log("This error IN SHIPPING REQUOTE", e);
+        //             this.requotingOutstandingBook = false;
+        //             // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
+        //         })
+        //     }
+        // }).catch((e) => {
+        //     console.log("This error estimating REQUOTE gas", e.reason);
+        //     // Should this one be here?
+        //     // this.requotingOutstandingBook = false;
+        //     // updateNonceManagerTip(this.config.signer as NonceManager, this.config.reader);
+        // })
+
 
     }
 
 
     // Function that calls placeMarketMakingTrades() on the market-aid
     placeInitialMarketMakingTrades(): void {
-        console.log("Initializing a market aid position to match the strategy book");
+        console.log("\nInitializing a market aid position to match the strategy book");
         // Target this book
         console.log("target this book with place market making trades", this.strategy.targetBook);
 
@@ -206,7 +265,10 @@ export class GenericMarketMakingBot {
         // const bidDenominator = parseUnits(this.strategy.targetBook.bids[0].size.toString(), this.assetPair.asset.decimals);
 
 
-        if (this.makingInitialBook) return;
+        if (this.makingInitialBook) {
+            console.log("Already making initial book, not making another - 0");
+            return
+        };
         // console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
 
         this.marketAid.connect(this.config.connections.signer).estimateGas['batchMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[])'](
@@ -218,8 +280,10 @@ export class GenericMarketMakingBot {
         ).then(async (r) => {
 
             if (r) {
-                if (this.makingInitialBook) return;
-
+                if (this.makingInitialBook) {
+                    console.log("Already making initial book, not making another - 1");
+                    return
+                };
 
                 console.log("\nRipping these params",
                     askNumerators.toString(),

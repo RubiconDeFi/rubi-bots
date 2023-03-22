@@ -16,6 +16,10 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
             throw new Error("Premium must be less than 1 or greater than 0");
         }
 
+        // referenceLiquidityVenue.fee?
+        // TODO: pass UNIfee here? 
+        // TODO: Add a check to ensure that the premium is greater than the implied minimum from the uniFee
+
         this.identifier = 'RiskMinimizedUpOnly';
         this.updateTargetBook();
     }
