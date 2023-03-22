@@ -1,5 +1,5 @@
 import { TokenInfo, TokenList } from '@uniswap/token-lists';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, Transaction, ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
 
 export enum Network {
@@ -292,6 +292,26 @@ export type GenericOrder = {
     size: number;
 }
 
+
+// https://docs.ethers.io/v5/api/providers/types/#providers-TransactionResponse
+export interface TransactionResponse extends Transaction {
+    wait(confirms?: number): Promise<TransactionReceipt>;
+    blockNumber: number;
+    blockHash: string;
+    timestamp: number;
+    confirmations: number;
+}
+
+// https://docs.ethers.io/v5/api/providers/types/#providers-TransactionReceipt
+export interface TransactionReceipt extends Transaction {
+    confirmations: number;
+    blockNumber: number;
+    transactionIndex: number;
+    effectiveGasPrice: BigNumber;
+    status: boolean;
+    logs: any[];
+    gasUsed: BigNumber;
+}
 
 // Note this is a shared type and may not always be adhered to given any type
 export type OnChainBookWithData = OnChainBookOrderWithData[] | any[];

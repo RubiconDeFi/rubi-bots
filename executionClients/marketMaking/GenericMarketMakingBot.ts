@@ -4,13 +4,14 @@
 // enough based on a configurable threshold from the liquidity venue's liveBook
 
 import { BigNumber, ethers } from "ethers";
-import { BotConfiguration } from "../../configuration/config";
+import { BotConfiguration, TransactionResponse } from "../../configuration/config";
 import { GenericMarketMakingStrategy } from "../../strategies/marketMaking/genericMarketMaking";
 import { AssetPair, GenericLiquidityVenue } from "../../liquidityVenues/generic";
 import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetVenueOutBid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
+import { formatUnits, parseUnits } from "ethers/lib/utils";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -36,6 +37,9 @@ export class GenericMarketMakingBot {
     assetPair: AssetPair;
 
     marketAidPositionTracker: MarketAidPositionTracker;
+
+    // Logic gates to help with execution flows
+    makingInitialBook: boolean;
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
         this.config = config;
@@ -174,7 +178,85 @@ export class GenericMarketMakingBot {
     // Function that calls placeMarketMakingTrades() on the market-aid
     placeInitialMarketMakingTrades(): void {
         console.log("Initializing a market aid position to match the strategy book");
-        // TODO: implement web3 call to placeMarketMakingTrades()
+        // Target this book
+        console.log("target this book with place market making trades", this.strategy.targetBook);
+
+        // Loop through target book, and using the pattern below populate an array of values for askNumerators, askDenominators, bidNumerators, and bidDenominators
+        var askNumerators = [];
+        var askDenominators = [];
+        var bidNumerators = [];
+        var bidDenominators = [];
+
+        // Loop through the asks and bids of the target book and populate the above arrays using the pattern below
+        for (let i = 0; i < this.strategy.targetBook.asks.length; i++) {
+            askNumerators.push(parseUnits(this.strategy.targetBook.asks[i].size.toString(), this.assetPair.asset.decimals));
+            askDenominators.push(parseUnits((this.strategy.targetBook.asks[i].price * this.strategy.targetBook.asks[i].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
+        }
+
+        for (let i = 0; i < this.strategy.targetBook.bids.length; i++) {
+            bidNumerators.push(parseUnits((this.strategy.targetBook.bids[0].price * this.strategy.targetBook.bids[0].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
+            bidDenominators.push(parseUnits(this.strategy.targetBook.bids[0].size.toString(), this.assetPair.asset.decimals));
+        }
+
+        // Here is what a single offer might look like via placeMarketMakingTrades()
+        // Note this assumes that strategy.targetBook size all references asset amounts
+        // const askNumerator = parseUnits(this.strategy.targetBook.asks[0].size.toString(), this.assetPair.asset.decimals);
+        // const askDenominator = parseUnits((this.strategy.targetBook.asks[0].price * this.strategy.targetBook.asks[0].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+        // const bidNumerator = parseUnits((this.strategy.targetBook.bids[0].price * this.strategy.targetBook.bids[0].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+        // const bidDenominator = parseUnits(this.strategy.targetBook.bids[0].size.toString(), this.assetPair.asset.decimals);
+
+        console.log("\nRipping these params",
+            askNumerators.toString(),
+            askDenominators.toString(),
+            bidDenominators.toString(),
+            bidNumerators.toString());
+
+        if (this.makingInitialBook) return;
+        // console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
+
+        this.marketAid.connect(this.config.connections.signer).estimateGas['batchMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[])'](
+            [this.assetPair.asset.address, this.assetPair.quote.address],
+            askNumerators,
+            askDenominators,
+            bidNumerators,
+            bidDenominators
+        ).then(async (r) => {
+
+            if (r) {
+                if (this.makingInitialBook) return;
+
+                this.makingInitialBook = true;
+                this.marketAid.connect(this.config.connections.signer)['batchMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[])'](
+                    [this.assetPair.asset.address, this.assetPair.quote.address],
+                    askNumerators,
+                    askDenominators,
+                    bidNumerators,
+                    bidDenominators,
+                    { gasLimit: r.add(BigNumber.from(100000)) }
+                ).then(async (r: TransactionResponse) => {
+
+                    // console.log("reposns", r);
+
+                    const out = await r.wait();
+                    this.makingInitialBook = false;
+                    if (out.status == true) {
+                        // PlaceMarketMakingTrades and TODO listen to status all the way through to update what you can on the object...
+                        console.log("Market-Making Trades Successful!");
+
+                    }
+                }).catch((e) => {
+                    console.log("🥺 Error shipping place market-making trades!!!", e);
+                    this.makingInitialBook = false;
+                    // updateNonceManagerTip(this.config.signer as NonceManager, this.config.reader);
+                });
+            }
+
+        }).catch((e) => {
+            console.log("Couldn't estimate gas on place market-marking trades", e);
+            // Should this one be included??
+            this.makingInitialBook = false;
+            // updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.reader);
+        });
     }
 
 
@@ -212,16 +294,38 @@ export class GenericMarketMakingBot {
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
-    var assetLadder = [];
-    var quoteLadder = [];
+    console.log("I think this is my available liquidity", availableLiquidity);
 
-    var assetStep = availableLiquidity.assetWeiAmount.div(BigNumber.from(stepSize));
-    var quoteStep = availableLiquidity.quoteWeiAmount.div(BigNumber.from(stepSize));
+    // Chat GPT helped me with this lol
+    const s = stepSize * (stepSize + 1) / 2;
+    const assetStep = availableLiquidity.assetWeiAmount.div(s);
+    const quoteStep = availableLiquidity.quoteWeiAmount.div(s);
 
-    for (var i = 0; i < stepSize; i++) {
-        assetLadder.push(assetStep.mul(BigNumber.from(i + 1)));
-        quoteLadder.push(quoteStep.mul(BigNumber.from(i + 1)));
+    const assetLadder = [];
+    const quoteLadder = [];
+
+    let totalProvidedAssetLiquidity = BigNumber.from(0);
+    let totalProvidedQuoteLiquidity = BigNumber.from(0);
+
+    for (let i = 1; i <= stepSize; i++) {
+        const assetAmount = assetStep.mul(i);
+        const quoteAmount = quoteStep.mul(i);
+
+        // Check if providing this amount of liquidity will exceed availableLiquidity
+        if (totalProvidedAssetLiquidity.add(assetAmount).gt(availableLiquidity.assetWeiAmount) || totalProvidedQuoteLiquidity.add(quoteAmount).gt(availableLiquidity.quoteWeiAmount)) {
+            break;
+        }
+
+        assetLadder.push(assetAmount);
+        quoteLadder.push(quoteAmount);
+
+        totalProvidedAssetLiquidity = totalProvidedAssetLiquidity.add(assetAmount);
+        totalProvidedQuoteLiquidity = totalProvidedQuoteLiquidity.add(quoteAmount);
     }
+
+    // Print out the ladder in human readable format using formatUnits
+    console.log("Asset Ladder", assetLadder.map((a) => formatUnits(a, 18)));
+    console.log("Quote Ladder", quoteLadder.map((a) => formatUnits(a, 18)));
 
     return {
         assetLadder: assetLadder,
