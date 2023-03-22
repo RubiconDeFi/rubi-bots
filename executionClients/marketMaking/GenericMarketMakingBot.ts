@@ -176,59 +176,89 @@ export class GenericMarketMakingBot {
         console.log("target this book with batchRequote", this.strategy.targetBook);
         console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
 
+        // Grab all of the strategist trade IDs from MarketAid position tracker
+        const strategistTradeIDs: BigNumber[] = [];
+        for (let i = 0; i < this.marketAidPositionTracker.onChainBookWithData.length; i++) {
+            strategistTradeIDs.push(this.marketAidPositionTracker.onChainBookWithData[i].stratTradeID);
+        }
+
+        // console.log("These are the relevant ids", strategistTradeIDs);
 
         const assetSideBias = 1;
         const quoteSideBias = 1;
-        // console.log("\n APPLY THESE BIASES, asset, quote", assetSideBias, quoteSideBias);
-        // // ************************************
-        // const askNumerator = parseUnits((this.strategy.targetBook.asks[0].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
+        console.log("\n APPLY THESE BIASES, asset, quote", assetSideBias, quoteSideBias);
+
+        var askNumerators = [];
+        var askDenominators = [];
+        var bidNumerators = [];
+        var bidDenominators = [];
+        // TODO: adapt this to drive on batchRequote
+        // ************************************
+        // TODO: check that this works?
+        for (let index = 0; index < this.strategy.targetBook.asks.length; index++) {
+            const ask = this.strategy.targetBook.asks[index];
+            const askNumerator = parseUnits((this.strategy.targetBook.asks[index].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
+            const askDenominator = parseUnits((this.strategy.targetBook.asks[index].price * (this.strategy.targetBook.asks[index].size * assetSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+            const bidNumerator = parseUnits((this.strategy.targetBook.bids[index].price * (this.strategy.targetBook.bids[index].size * quoteSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+            const bidDenominator = parseUnits((this.strategy.targetBook.bids[index].size * quoteSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
+
+            askNumerators.push(askNumerator);
+            askDenominators.push(askDenominator);
+            bidNumerators.push(bidNumerator);
+            bidDenominators.push(bidDenominator);
+
+        }
+        // const askNumerator = parseUnits((this.strategy.targetBook.asks[index].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
         // const askDenominator = parseUnits((this.strategy.targetBook.asks[0].price * (this.strategy.targetBook.asks[0].size * assetSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
         // const bidNumerator = parseUnits((this.strategy.targetBook.bids[0].price * (this.strategy.targetBook.bids[0].size * quoteSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
         // const bidDenominator = parseUnits((this.strategy.targetBook.bids[0].size * quoteSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
 
         // // TODO: we need to know the relevant strategist trade ID to pass into requote()
-        // if (this.requotingOutstandingBook) return;
-        // this.marketAid.connect(this.config.connections.signer).estimateGas.requote(
-        //     this.onChainBookWithData[0].stratTradeID,
-        //     [this.assetPair.asset.address, this.assetPair.quote.address],
-        //     askNumerator,
-        //     askDenominator,
-        //     bidNumerator,
-        //     bidDenominator,
-        // ).then((r) => {
-        //     if (r) {
-        //         if (this.requotingOutstandingBook) return;
+        if (this.requotingOutstandingBook) return;
+        // Note, conversely batchRequoteAllOffers could be used
+        console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
 
-        //         this.requotingOutstandingBook = true;
+        this.marketAid.connect(this.config.connections.signer).estimateGas['batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])'](
+            strategistTradeIDs,
+            [this.assetPair.asset.address, this.assetPair.quote.address],
+            askNumerators,
+            askDenominators,
+            bidNumerators,
+            bidDenominators,
+        ).then((r) => {
+            if (r) {
+                if (this.requotingOutstandingBook) return;
 
-        //         this.marketAid.connect(this.config.connections.signer).requote(
-        //             this.onChainBookWithData[0].stratTradeID,
-        //             [this.assetPair.asset.address, this.assetPair.quote.address],
-        //             askNumerator,
-        //             askDenominator,
-        //             bidNumerator,
-        //             bidDenominator,
-        //         ).then(async (r) => {
-        //             const out = await r.wait();
-        //             this.requotingOutstandingBook = false;
+                this.requotingOutstandingBook = true;
 
-        //             if (out.status == true) {
-        //                 console.log("\nREQUOTE SUCCESSFUL!!!! 🎉");
-        //                 // TODO??? Chase the transaction and update what info on this we can
-        //             }
+                this.marketAid.connect(this.config.connections.signer)['batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])'](
+                    strategistTradeIDs,
+                    [this.assetPair.asset.address, this.assetPair.quote.address],
+                    askNumerators,
+                    askDenominators,
+                    bidNumerators,
+                    bidDenominators,
+                ).then(async (r) => {
+                    const out = await r.wait();
+                    this.requotingOutstandingBook = false;
 
-        //         }).catch((e) => {
-        //             console.log("This error IN SHIPPING REQUOTE", e);
-        //             this.requotingOutstandingBook = false;
-        //             // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
-        //         })
-        //     }
-        // }).catch((e) => {
-        //     console.log("This error estimating REQUOTE gas", e.reason);
-        //     // Should this one be here?
-        //     // this.requotingOutstandingBook = false;
-        //     // updateNonceManagerTip(this.config.signer as NonceManager, this.config.reader);
-        // })
+                    if (out.status == true) {
+                        console.log("\nREQUOTE SUCCESSFUL!!!! 🎉");
+                        // TODO??? Chase the transaction and update what info on this we can
+                    }
+
+                }).catch((e) => {
+                    console.log("This error IN SHIPPING REQUOTE", e);
+                    this.requotingOutstandingBook = false;
+                    // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
+                })
+            }
+        }).catch((e) => {
+            console.log("This error estimating REQUOTE gas", e.reason);
+            // Should this one be here?
+            // this.requotingOutstandingBook = false;
+            // updateNonceManagerTip(this.config.signer as NonceManager, this.config.reader);
+        })
 
 
     }

@@ -58,89 +58,6 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
 
     }
 
-    // TODO: This is a naive v0 of how to listen to market aid orders. The three-query query chain in place now should be replaced with an improved view function or multicall
-    // async getAndSetOnChainBookWithData(marketContract: ethers.Contract): Promise<boolean> {
-    //     // if (this.onChainBook == undefined) {
-    //     // Have to populate the onChainBook
-
-    //     // console.log("This assetpair is", this.assetPair.asset.address, this.assetPair.quote.address);
-
-    //     return getOutstandingBookFromStrategist(
-    //         this.assetPair.asset.address,
-    //         this.assetPair.quote.address,
-    //         this.marketAidInstance,
-    //         this.myReferenceOperator
-    //     ).then((r: BigNumber[]) => {
-    //         // console.log("Setting this to on-chain book", r);
-
-    //         this.onChainStrategistTrades = r;
-    //         const _marketAidContract = this.marketAidInstance;
-    //         // Trigger the queries to update the price info too
-    //         // return this.getAndSetOnChainBookWithData(config, this.contract, this.marketContract);
-    //         // }
-    //         // Get true on-chain book with prices and return 
-    //         const currentOnChain = r;
-    //         async function getPricesFromStratIds(assetDecimals: number, quoteDecimals: number): Promise<any[]> {
-
-    //             var promises = [];
-    //             for (let index = 0; index < currentOnChain.length; index++) {
-    //                 // console.log("Loop and index", index);
-
-    //                 // Likely the bottleneck of the requoting process
-    //                 // TODO: Refactor into a single Promise.all
-    //                 const outstandingStratTradeID = currentOnChain[index];
-
-    //                 const attempt = _marketAidContract.strategistTrades(outstandingStratTradeID).then((r: StrategistTrade) => [r.askId, r.bidId]).then((info) => {
-    //                     // console.log("ARE THESE IDS???", info[0], info[1]);
-    //                     return Promise.all([
-    //                         getPriceAndSizeFromID( // IS THIS RIGHT ?? TODO:
-    //                             info[0],
-    //                             true,
-    //                             marketContract,
-    //                             quoteDecimals,
-    //                             assetDecimals
-    //                         ), getPriceAndSizeFromID(
-    //                             info[1],
-    //                             false,
-    //                             marketContract,
-    //                             quoteDecimals,
-    //                             assetDecimals
-    //                         ),
-    //                         outstandingStratTradeID
-    //                     ])
-    //                 });
-    //                 promises.push(attempt);
-
-    //             }
-
-    //             // TODO: probably room for query optimization...
-    //             const queryResults = await Promise.all(promises);
-
-    //             return queryResults;
-
-    //         }
-
-    //         return getPricesFromStratIds(this.config.targetTokens[0].decimals, this.config.targetTokens[1].decimals).then((r: OnChainBookWithData) => {
-    //             this.onChainBookWithData = r;
-    //             // this.liveBook
-    //             // console.log("Setting this to on-chain book with data", r);
-
-    //             // Loop through the response and extrapolate the prices to populate the liveBook of type SimpleBook
-    //             var orders: SimpleBook = <SimpleBook>{ asks: [], bids: [] };
-    //             for (let index = 0; index < r.length; index++) {
-    //                 const element = r[index];
-    //                 // console.log("Element", element);
-    //                 orders.asks.push(element[0])
-    //                 orders.bids.push(element[1])
-    //             }
-    //             // console.log("WHAT THIS LOOK LIKE", orders); ``
-    //             this.liveBook = orders;
-    //             return true;
-    //         })
-    //     })
-
-    // }
-
     getAndSetOnChainBookWithData(): Promise<boolean | void> {
         // TODO: Wire this up to new MARKET AID STACK on TestNET!!!
         return this.marketAidInstance.getStrategistBookWithPriceData(
@@ -150,8 +67,8 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
         ).then((r: any) => {
             // console.log("\nThis book!!!", r);
 
-            // this.updateOnChainBook()
-
+            // this.updateOnChainBook();
+            
             // Define an empty ({ askPrice: number, askSize: number, bidPrice: number, bidSize: number, stratTradeID: BigNumber }) 
             this.onChainBookWithData = r.map((a: {
                 relevantStratTradeId: BigNumber,
