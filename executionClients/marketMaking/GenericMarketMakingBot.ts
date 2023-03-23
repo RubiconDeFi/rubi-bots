@@ -4,14 +4,15 @@
 // enough based on a configurable threshold from the liquidity venue's liveBook
 
 import { BigNumber, ethers } from "ethers";
-import { BotConfiguration, TransactionResponse } from "../../configuration/config";
+import { BotConfiguration, TransactionResponse, marketAddressesByNetwork } from "../../configuration/config";
 import { GenericMarketMakingStrategy } from "../../strategies/marketMaking/genericMarketMaking";
 import { AssetPair, GenericLiquidityVenue } from "../../liquidityVenues/generic";
 import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetVenueOutBid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
-import { formatUnits, parseUnits } from "ethers/lib/utils";
+import { formatUnits, getAddress, parseUnits } from "ethers/lib/utils";
+import MARKET_INTERFACE from "../../configuration/abis/Market";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -42,6 +43,7 @@ export class GenericMarketMakingBot {
     makingInitialBook: boolean;
     requotingOutstandingBook: boolean;
 
+    marketContract: ethers.Contract;
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
         this.config = config;
@@ -62,6 +64,12 @@ export class GenericMarketMakingBot {
         }
         const _marketAidPositionTracker = new MarketAidPositionTracker(this.assetPair, this.marketAid, this.EOAbotAddress, this.config);
         this.marketAidPositionTracker = _marketAidPositionTracker;
+
+        this.marketContract = new ethers.Contract(
+            marketAddressesByNetwork[this.config.network],
+            MARKET_INTERFACE,
+            this.config.connections.websocketProvider ? this.config.connections.websocketProvider : this.config.connections.jsonRpcProvider
+        );
     }
 
 
@@ -108,6 +116,11 @@ export class GenericMarketMakingBot {
             console.log(liveBook);
             this.compareStrategyAndMarketAidBooks();
         });
+
+        // Check the type of this.strategy, and if it is RiskMinimizedStrategy, then call the function tailOffModule on this
+        if (this.strategy instanceof RiskMinimizedStrategy) {
+            this.tailOffModule();
+        }
     }
 
     // Main logical function that executes orders on the liquidity venue based on the strategy's targetBook
@@ -382,6 +395,62 @@ export class GenericMarketMakingBot {
         } catch (error) {
             console.log("\nError in pullOnChainLiquidity", error);
         }
+    }
+
+    // ** For use in RiskMinimized Strategy **
+    tailOffModule(): void {
+        console.log("Tail off module called");
+
+        console.log("Listening to takes on my orders from this market aid contract", this.marketAid.address);
+
+        const maker = this.marketAid.address;
+        this.marketContract.on(this.marketContract.filters.LogTake(null, null, maker), (id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event) => {
+            // console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event);
+
+
+            console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
+            // TODO: determine exactly what to dump
+
+
+            if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
+                console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
+                const val = formatUnits(give_amt, this.assetPair.asset.decimals);
+                console.log("QUOTE AMOUNT:", formatUnits(take_amt, this.assetPair.quote.decimals));
+                console.log("ASSET AMOUNT:", val);
+
+                // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.asset.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
+                console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
+
+                // SELL THE ASSET AMOUNT ON CEX
+                // dumpERC20onFTX(false, parseFloat(val), this.config.asset.symbol);
+
+                // TODO: Adapt to rubi-bots
+                // this.dumpFillOnKraken(parseFloat(val), true, parseFloat(formatUnits(take_amt, this.assetPair.quote.decimals)) / parseFloat(val), parseFloat(val), parseFloat(formatUnits(take_amt, this.assetPair.quote.decimals)));
+
+                // this.dumpFillOnCoinbase(parseFloat(val), true, parseFloat(formatUnits(take_amt, this.config.quote.decimals)) / parseFloat(val), parseFloat(val), parseFloat(formatUnits(take_amt, this.config.quote.decimals)));
+            } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
+                console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
+                const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
+                console.log("QUOTE AMOUNT:", val);
+                console.log("ASSET AMOUNT:", formatUnits(take_amt, this.assetPair.asset.decimals));
+
+                // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.quote.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
+
+                // different than above... avoids any price math?
+                const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
+                console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
+
+                // Note: BUY THE ASSET AMOUNT ON CEX
+                // dumpERC20onFTX(true, parseFloat(valueUsedInTail), this.config.quote.symbol);
+
+                // TODO: Determine if we can ship a quote amount - IF NOT can use valueUsedInTail instead!!!
+
+                // TODO: Adapt to rubi-bots
+                // this.dumpFillOnKraken(parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), false, parseFloat(val) / parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(val));
+            }
+        });
+
+
     }
 
 }
