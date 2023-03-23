@@ -404,7 +404,7 @@ export class GenericMarketMakingBot {
         console.log("Listening to takes on my orders from this market aid contract", this.marketAid.address);
 
         const maker = this.marketAid.address;
-        this.marketContract.on(this.marketContract.filters.LogTake(null, null, maker), (id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event) => {
+        this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), (id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event) => {
             // console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event);
 
 
