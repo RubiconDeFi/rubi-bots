@@ -449,8 +449,6 @@ export class GenericMarketMakingBot {
                 // this.dumpFillOnKraken(parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), false, parseFloat(val) / parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(val));
             }
         });
-
-
     }
 
 }

@@ -71,6 +71,9 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
             quote: configuration.targetTokens[1]
         }, configuration.connections.jsonRpcProvider //, 500
     );
+
+    // TODO: take another argument from argv to determine which strategy to use
+    
     var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01)
     // 3. Create a new bot instance
     // Note: this guy should use a configurable poll for gas-conscious updating
