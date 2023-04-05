@@ -34,6 +34,8 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
             reader
         );
         uniFee ? this.uniFee = uniFee : this.uniFee = 3000;
+        // console.log("this is the uniFee: ", this.uniFee);
+        
     }
 
     // function that calls tickToBook and updates the liveBook property with the result while using a defined liquidity ladder as the setp size

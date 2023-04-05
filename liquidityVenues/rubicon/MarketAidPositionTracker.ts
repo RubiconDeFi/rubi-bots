@@ -2,7 +2,7 @@
 //        has a property that is a Market Aid Instance which it polls to get the liveBook
 
 import { TokenInfo } from "@uniswap/token-lists";
-import { BotConfiguration, OnChainBookWithData, StrategistTrade, marketAddressesByNetwork } from "../../configuration/config";
+import { BotConfiguration, OnChainBookWithData, SimpleBook, StrategistTrade, marketAddressesByNetwork } from "../../configuration/config";
 import { AssetPair, GenericLiquidityVenue } from "../generic";
 import { BigNumber, Contract, ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
@@ -23,11 +23,19 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
         this.identifier = 'rubicon';
         this.myReferenceOperator = strategistReferenceAddress;
         this.config = configuration;
+        // If marketAddressesByNetwork does not have a market aid address for the network, throw an error
+        if (!marketAddressesByNetwork[this.config.network]) {
+            throw new Error(`No market address for this network ${this.config.network}`);
+        }
         this.marketContractInstance = new ethers.Contract(
             marketAddressesByNetwork[this.config.network],
             MARKET_INTERFACE,
             this.config.connections.jsonRpcProvider // TODO: use websocket
         );
+        // this.assetPair = {
+        //     asset: this.config.targetTokens[0],
+        //     quote: this.config.targetTokens[1]
+        // };
         this.pollForStrategistBook();
     }
 
@@ -44,79 +52,59 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
         // this.liveBook = this.rubiconInstance.getLiveBook();
         console.log("Query the market aid for the latest book", this.marketAidInstance.address);
         console.log("This strategist's address is", this.myReferenceOperator);
-        
-        this.getAndSetOnChainBookWithData(this.marketContractInstance);
+
+        this.getAndSetOnChainBookWithData();
         this.emitUpdate();
 
     }
 
-    // TODO: This is a naive v0 of how to listen to market aid orders. The three-query query chain in place now should be replaced with an improved view function or multicall
-    async getAndSetOnChainBookWithData(marketContract: ethers.Contract): Promise<boolean> {
-        // if (this.onChainBook == undefined) {
-        // Have to populate the onChainBook
-
-        console.log("This assetpair is", this.assetPair.asset.address, this.assetPair.quote.address);
-        
-        return getOutstandingBookFromStrategist(
+    getAndSetOnChainBookWithData(): Promise<boolean | void> {
+        // TODO: Wire this up to new MARKET AID STACK on TestNET!!!
+        return this.marketAidInstance.getStrategistBookWithPriceData(
             this.assetPair.asset.address,
             this.assetPair.quote.address,
-            this.marketAidInstance,
             this.myReferenceOperator
-        ).then((r: BigNumber[]) => {
-            console.log("Setting this to on-chain book", r);
+        ).then((r: any) => {
+            // console.log("\nThis book!!!", r);
 
-            this.onChainStrategistTrades = r;
-            // Trigger the queries to update the price info too
-            // return this.getAndSetOnChainBookWithData(config, this.contract, this.marketContract);
-            // }
-            // Get true on-chain book with prices and return 
-            const currentOnChain = r;
-            async function getPricesFromStratIds(assetDecimals: number, quoteDecimals: number): Promise<any[]> {
-
-                var promises = [];
-                for (let index = 0; index < currentOnChain.length; index++) {
-                    // console.log("Loop and index", index);
-
-                    // Likely the bottleneck of the requoting process
-                    // TODO: Refactor into a single Promise.all
-                    const outstandingStratTradeID = currentOnChain[index];
-
-                    const attempt = this.marketAidInstance.strategistTrades(outstandingStratTradeID).then((r: StrategistTrade) => [r.askId, r.bidId]).then((info) => {
-                        // console.log("ARE THESE IDS???", info[0], info[1]);
-                        return Promise.all([
-                            getPriceFromID( // IS THIS RIGHT ?? TODO:
-                                info[0],
-                                true,
-                                marketContract,
-                                quoteDecimals,
-                                assetDecimals
-                            ), getPriceFromID(
-                                info[1],
-                                false,
-                                marketContract,
-                                quoteDecimals,
-                                assetDecimals
-                            ),
-                            outstandingStratTradeID
-                        ])
-                    });
-                    promises.push(attempt);
-
+            // this.updateOnChainBook();
+            
+            // Define an empty ({ askPrice: number, askSize: number, bidPrice: number, bidSize: number, stratTradeID: BigNumber }) 
+            this.onChainBookWithData = r.map((a: {
+                relevantStratTradeId: BigNumber,
+                bidPay: BigNumber,
+                bidBuy: BigNumber,
+                askPay: BigNumber,
+                askBuy: BigNumber
+            }) => {
+                return {
+                    askPrice: parseFloat(formatUnits(a.askBuy, this.assetPair.quote.decimals)) / parseFloat(formatUnits(a.askPay, this.assetPair.asset.decimals)),
+                    askSize: parseFloat(formatUnits(a.askPay, this.assetPair.asset.decimals)),
+                    bidPrice: parseFloat(formatUnits(a.bidPay, this.assetPair.quote.decimals)) / parseFloat(formatUnits(a.bidBuy, this.assetPair.asset.decimals)),
+                    bidSize: parseFloat(formatUnits(a.bidBuy, this.assetPair.asset.decimals)),
+                    stratTradeID: a.relevantStratTradeId
                 }
+            });
+            // this.onChainBook = r.map((a: any) => a.relevantStratTradeId);
 
-                // TODO: probably room for query optimization...
-                const queryResults = await Promise.all(promises);
 
-                return queryResults;
-
+            // Parse through the onChainBookWithData and populate the liveBook
+            var orders: SimpleBook = <SimpleBook>{ asks: [], bids: [] };
+            for (let index = 0; index < this.onChainBookWithData.length; index++) {
+                const element = this.onChainBookWithData[index];
+                // console.log("Element", element);
+                orders.asks.push({ price: element.askPrice, size: element.askSize })
+                orders.bids.push({ price: element.bidPrice, size: element.bidSize })
             }
 
-            return getPricesFromStratIds(this.config.targetTokens[0].decimals, this.config.targetTokens[1].decimals).then((r: OnChainBookWithData) => {
-                this.onChainBookWithData = r;
-                return true;
-            })
-        })
-
+            // Sort orders by price so the highest priced bid is first and the lowest priced ask is first
+            orders.asks.sort((a, b) => a.price - b.price);
+            orders.bids.sort((a, b) => b.price - a.price);
+            this.liveBook = orders;
+            // Also trigger a requote of liquidity
+            return true;
+            // TODO: Trigger next level of query that grabs the OnChainBookWithData and populate that
+        });
     }
 }
 
@@ -135,13 +123,13 @@ export async function getOutstandingBookFromStrategist(
     return result;
 }
 
-export function getPriceFromID(
+export function getPriceAndSizeFromID(
     id: BigNumber,
     isAsk: boolean,
     marketContract: Contract, // reader only
     quoteDecimals: number,
     assetDecimals: number
-): Promise<{ price: number }> {
+): Promise<{ price: number, size: number }> {
     if (isAsk) {
         return marketContract.getOffer(id).then((askInfo) => {
             let num = BigNumber.from(askInfo[2]); // wei
@@ -153,7 +141,10 @@ export function getPriceFromID(
             const formattedDen = parseFloat(_den);
 
             const outcome = formattedNum / formattedDen; // human price in BigNumber WEI    
-            return outcome;
+            return {
+                price: outcome,
+                size: parseFloat(_den)
+            };
         });
     } else {
         return marketContract.getOffer(id).then((bidInfo) => {
@@ -167,7 +158,10 @@ export function getPriceFromID(
             const formattedDen = parseFloat(_den);
             const outcome = formattedNum / formattedDen;
 
-            return outcome;
+            return {
+                price: outcome,
+                size: parseFloat(_den)
+            };
         });
     }
 }

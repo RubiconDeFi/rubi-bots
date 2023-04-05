@@ -1,5 +1,5 @@
 import { TokenInfo, TokenList } from '@uniswap/token-lists';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, Transaction, ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
 
 export enum Network {
@@ -19,6 +19,7 @@ export enum Network {
 export const marketAddressesByNetwork: Record<number, string> = {
     [Network.OPTIMISM_GOERLI]: getAddress('0x6cD8666aBB003073e45D69E5b3aa0b0Fe9CDBF91'),
     [Network.OPTIMISM_MAINNET]: getAddress('0x7a512d3609211e719737E82c7bb7271eC05Da70d'),
+    [Network.POLYGON_MUMBAI]: getAddress('0x10418D9e730fa659b0Baf0b640ee41FcF4EA2aaE'),
 };
 
 // https://docs.rubicon.finance/docs/protocol/deployments
@@ -228,6 +229,21 @@ export const tokenList: TokenList = {
                 underlyingAssetGeckoID: 'usd-coin',
             },
         },
+        // Mumbai testing
+        {
+            address: "0xcC5f8571D858DAD7fA2238FB9df4Ad384493013C",
+            chainId: Network.POLYGON_MUMBAI,
+            symbol: "USDC",
+            decimals: 18,
+            name: "USDC Stablecoin",
+        },
+        {
+            address: "0x6aeda41c98ab5399044fc36162B57d39c13b658a",
+            chainId: Network.POLYGON_MUMBAI,
+            symbol: "TEST",
+            decimals: 18,
+            name: "Test Coin",
+        }
 
     ],
 };
@@ -276,6 +292,26 @@ export type GenericOrder = {
     size: number;
 }
 
+
+// https://docs.ethers.io/v5/api/providers/types/#providers-TransactionResponse
+export interface TransactionResponse extends Transaction {
+    wait(confirms?: number): Promise<TransactionReceipt>;
+    blockNumber: number;
+    blockHash: string;
+    timestamp: number;
+    confirmations: number;
+}
+
+// https://docs.ethers.io/v5/api/providers/types/#providers-TransactionReceipt
+export interface TransactionReceipt extends Transaction {
+    confirmations: number;
+    blockNumber: number;
+    transactionIndex: number;
+    effectiveGasPrice: BigNumber;
+    status: boolean;
+    logs: any[];
+    gasUsed: BigNumber;
+}
 
 // Note this is a shared type and may not always be adhered to given any type
 export type OnChainBookWithData = OnChainBookOrderWithData[] | any[];
