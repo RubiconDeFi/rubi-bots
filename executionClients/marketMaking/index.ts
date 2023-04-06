@@ -94,6 +94,7 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
 function getStrategyFromArg(strategyArg, referenceLiquidityVenue) {
     switch (strategyArg.toLowerCase()) {
+        // TODO extrapolate the identifiers to dictionary?
         case "riskminimized":
             return new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
         case "targetvenueoutbid":
