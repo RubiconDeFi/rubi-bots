@@ -397,7 +397,7 @@ export class GenericMarketMakingBot {
         }
     }
 
-    // ** For use in RiskMinimized Strategy **
+    // *** For use in RiskMinimized Strategy ***
     tailOffModule(): void {
         console.log("Tail off module called");
 
@@ -421,13 +421,7 @@ export class GenericMarketMakingBot {
                 // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.asset.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
                 console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                // SELL THE ASSET AMOUNT ON CEX
-                // dumpERC20onFTX(false, parseFloat(val), this.config.asset.symbol);
-
-                // TODO: Adapt to rubi-bots
-                // this.dumpFillOnKraken(parseFloat(val), true, parseFloat(formatUnits(take_amt, this.assetPair.quote.decimals)) / parseFloat(val), parseFloat(val), parseFloat(formatUnits(take_amt, this.assetPair.quote.decimals)));
-
-                // this.dumpFillOnCoinbase(parseFloat(val), true, parseFloat(formatUnits(take_amt, this.config.quote.decimals)) / parseFloat(val), parseFloat(val), parseFloat(formatUnits(take_amt, this.config.quote.decimals)));
+                this.dumpFillViaMarketAid(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
             } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
                 console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
                 const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
@@ -443,13 +437,35 @@ export class GenericMarketMakingBot {
                 // Note: BUY THE ASSET AMOUNT ON CEX
                 // dumpERC20onFTX(true, parseFloat(valueUsedInTail), this.config.quote.symbol);
 
-                // TODO: Determine if we can ship a quote amount - IF NOT can use valueUsedInTail instead!!!
-
-                // TODO: Adapt to rubi-bots
-                // this.dumpFillOnKraken(parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), false, parseFloat(val) / parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(val));
+                // Call the function at the specified line numbers
+                this.dumpFillViaMarketAid(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
             }
         });
     }
+
+    // *** For use in RiskMinimized Strategy ***
+    async dumpFillViaMarketAid(
+        assetToSell: string,
+        amountToSell: BigNumber,
+        assetToTarget: string,
+    ): Promise<boolean | void> {
+        const poolFee: number = this.strategy.getReferenceLiquidityVenue().uniFee;
+
+        try {
+            const amountOut: BigNumber = await this.marketAid.strategistRebalanceFunds(
+                assetToSell,
+                amountToSell,
+                assetToTarget,
+                poolFee,
+            );
+        } catch (error) {
+            console.error("Error while executing dumpFillViaMarketAid:", error);
+            return false;
+        }
+
+        return true;
+    }
+
 
 }
 
