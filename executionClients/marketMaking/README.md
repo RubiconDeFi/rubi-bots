@@ -3,8 +3,17 @@ Note that via `yarn run startGenericMarketMakingBot -- PARAMS` where params are 
 The API for the `MarketMakingBot` command-line parameters is as follows:
 API with the following hierarchy of arguments:
 
-`ChainID (e.g. 10 for OP) Pair(s) (e.g. WETH-USDC) Strategy (e.g. TARGETOUTBID)`
-Each argument should be separated by a space to delineate between them.
+bash
+yarn run startMarketMakingBot -- <chainId> <marketAidContractAddress> <asset> <quote>
+Parameters
+<chainId>: The Chain ID of the network you want to run the bot on (e.g., 1 for Ethereum mainnet, 3 for Ropsten).
+<marketAidContractAddress>: The address of the MarketAid contract.
+<asset>: The address of the asset token.
+<quote>: The address of the quote token.
+
+Example
+bash
+yarn run startMarketMakingBot -- 1 0xMarketAidAddress 0xAssetAddress 0xQuoteAddress
 
 Argument Details
 ChainID

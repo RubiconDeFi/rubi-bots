@@ -458,6 +458,8 @@ export class GenericMarketMakingBot {
                 assetToTarget,
                 poolFee,
             );
+            console.log("\n Succesfully dumped fill!!!!", amountOut.toString(), "of", assetToTarget, "for", amountToSell.toString(), "of", assetToSell, "on", this.strategy.referenceLiquidityVenue.identifier, "with a fee of", poolFee, "%");
+
         } catch (error) {
             console.error("Error while executing dumpFillViaMarketAid:", error);
             return false;
@@ -465,8 +467,6 @@ export class GenericMarketMakingBot {
 
         return true;
     }
-
-
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
