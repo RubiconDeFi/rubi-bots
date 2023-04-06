@@ -449,7 +449,7 @@ export class GenericMarketMakingBot {
         amountToSell: BigNumber,
         assetToTarget: string,
     ): Promise<boolean | void> {
-        const poolFee: number = this.strategy.getReferenceLiquidityVenue().uniFee;
+        const poolFee: number = (this.strategy.getReferenceLiquidityVenue() as UniswapLiquidityVenue).uniFee;
 
         try {
             const amountOut: BigNumber = await this.marketAid.strategistRebalanceFunds(
