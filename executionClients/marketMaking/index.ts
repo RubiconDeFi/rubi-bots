@@ -7,6 +7,7 @@ import MARKET_AID_INTERFACE from "../../configuration/abis/MarketAid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
+import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetVenueOutBid";
 
 dotenv.config();
 
@@ -91,13 +92,25 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     await bot.launchBot();
 }
 
+function getStrategyFromArg(strategyArg, referenceLiquidityVenue) {
+    switch (strategyArg.toLowerCase()) {
+        case "riskminimized":
+            return new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
+        case "targetvenueoutbid":
+            return new TargetVenueOutBidStrategy(referenceLiquidityVenue, 0.01);
+        default:
+            throw new Error(`Invalid strategy argument: ${strategyArg}`);
+    }
+}
+
+
 // Create a main function which is called and parses through proceess.argv to allow for custom configuration
 function main(): Promise<void> {
 
     console.log("This is process.argv", process.argv);
     // Parse through process.argv to get custom configuration details from the user and start the correct bot process
     // TODO:
-    const chainId = parseFloat(process.argv[2]);
+    const chainId = parseFloat(process.argv[4]);
     if (!chainId) throw new Error('No chain ID found in process.argv');
     const marketAidContractAddress = process.argv[3];
     const jsonRpcUrl = process.env['JSON_RPC_URL_' + chainId.toString()];
@@ -105,8 +118,10 @@ function main(): Promise<void> {
     if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${chainId}`);
     const staticJsonRpc = new ethers.providers.StaticJsonRpcProvider(jsonRpcUrl, chainId); // TODO: perhaps static provider for rpc consumption consciousness
     if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
-    const asset = process.argv[4];
-    const quote = process.argv[5];
+    const strategyArg = process.argv[3];
+
+    const asset = process.argv[5];
+    const quote = process.argv[6];
     const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
     const quoteTokenInfo = tokenList.tokens.find(token => token.address == quote && token.chainId == chainId);
 
@@ -127,13 +142,13 @@ function main(): Promise<void> {
     };
     console.log("Spin up UNI reference venue with these tokens", config.targetTokens[0], config.targetTokens[1]);
     
-    var referenceLiquidityVenue = new UniswapLiquidityVenue(
-        {
-            asset: config.targetTokens[0],
-            quote: config.targetTokens[1]
-        }, config.connections.jsonRpcProvider //, 500
-    );
-    var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
+    // var referenceLiquidityVenue = new UniswapLiquidityVenue(
+    //     {
+    //         asset: config.targetTokens[0],
+    //         quote: config.targetTokens[1]
+    //     }, config.connections.jsonRpcProvider //, 500
+    // );
+    // var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
 
     return startGenericMarketMakingBot(config, undefined,
         marketAidContractAddress);

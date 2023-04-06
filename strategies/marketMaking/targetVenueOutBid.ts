@@ -17,7 +17,7 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
             throw new Error("Premium must be less than 1 or greater than 0");
         }
 
-        this.identifier = 'TargetVenueOutBidStrategy';
+        this.identifier = 'targetvenueoutbid';
         this.updateTargetBook();
     }
 
