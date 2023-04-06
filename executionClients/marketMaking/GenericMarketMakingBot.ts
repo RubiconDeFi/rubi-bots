@@ -229,7 +229,7 @@ export class GenericMarketMakingBot {
         // // TODO: we need to know the relevant strategist trade ID to pass into requote()
         if (this.requotingOutstandingBook) return;
         // Note, conversely batchRequoteAllOffers could be used
-        console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
+        // console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
 
         this.marketAid.connect(this.config.connections.signer).estimateGas['batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])'](
             strategistTradeIDs,
