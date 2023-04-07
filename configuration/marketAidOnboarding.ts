@@ -10,6 +10,7 @@
 import * as dotenv from "dotenv";
 
 import { TokenInfo } from "@uniswap/token-lists";
+import { tokenList } from "../configuration/config";
 import { BotConfiguration, OnChainBookWithData, SimpleBook, StrategistTrade, marketAddressesByNetwork, Network, marketAidFactoriesByNetwork } from "../configuration/config";
 import { AssetPair, GenericLiquidityVenue } from "../liquidityVenues/generic" // "../generic";
 import { BigNumber, Contract, ethers } from "ethers";
@@ -21,6 +22,7 @@ import MARKET_AID_INTERFACE from "./abis/MarketAid";
 import MARKET_AID_FACTORY_INTERFACE from "./abis/MarketAidFactory";
 import { approveTokensForContract } from "../utilities/index";
 
+import { ERC20 } from "../utilities/contracts/ERC20";
 import { MarketAid } from "../utilities/contracts/MarketAid" 
 import { MarketAidFactory } from "../utilities/contracts/MarketAidFactory"
 
@@ -60,6 +62,43 @@ async function networkCallback(): Promise<Network> {
                     break;
             }
         })
+    });
+}
+
+function getTokensByNetwork(network: Network): TokenInfo[] {
+    return tokenList.tokens.filter((token) => token.chainId === network);
+}
+
+async function selectToken(tokens: TokenInfo[]): Promise<TokenInfo> {
+    return new Promise((resolve) => {
+        console.log("\nSelect the token you want to manage:");
+
+        tokens.forEach((token, index) => {
+            console.log(`${index + 1}. ${token.symbol} (${token.name})`);
+        });
+
+        rl.question("Enter the number corresponding to the token you want to manage: ", (answer) => {
+            const selectedIndex = parseInt(answer.trim()) - 1;
+            if (selectedIndex >= 0 && selectedIndex < tokens.length) {
+                resolve(tokens[selectedIndex]);
+            } else {
+                console.log("Invalid selection. Please try again.");
+                resolve(selectToken(tokens));
+            }
+        });
+    });
+}
+
+async function askTokenApprovalAmount(): Promise<string> {
+    return new Promise((resolve) => {
+        rl.question("Enter the amount of tokens you want to approve for the MarketAid: ", (answer) => {
+            if (!isNaN(parseFloat(answer))) {
+                resolve(answer.trim());
+            } else {
+                console.log("Invalid input! Please enter a valid amount.");
+                resolve(askTokenApprovalAmount());
+            }
+        });
     });
 }
 
@@ -125,6 +164,81 @@ async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
     });
 }
 
+async function manageERC20Token(erc20: ERC20, marketAid: MarketAid, signer: ethers.Signer): Promise<void> {
+    console.log("\nWhat would you like to do with the selected token?");
+    console.log("1. Check the balance of the token");
+    console.log("2. Check the allowance of the token");
+    console.log("3. Approve the token for the MarketAid");
+    console.log("4. Go back");
+
+    rl.question("Enter the number corresponding to the action you want to perform: ", async (answer) => {
+        const userAddress = await signer.getAddress();
+        switch (answer.trim()) {
+            case '1':
+                // 5b1. Check the balance of the token
+                const balance = await erc20.balanceOf(userAddress);
+                console.log(`Your ${await erc20.symbol()} balance: ${balance}`);
+                await manageERC20Token(erc20, marketAid, signer);
+                break;
+            case '2':
+                // 5b2. Check the allowance of the token
+                const allowance = await erc20.allowance(userAddress, marketAid.address);
+                console.log(`Your ${await erc20.symbol()} allowance for the MarketAid: ${allowance}`);
+                await manageERC20Token(erc20, marketAid, signer);
+                break;
+            case '3':
+                // 5b3. Approve the token for the MarketAid
+                const amount = await askTokenApprovalAmount();
+                const formattedAmount = ethers.utils.parseUnits(amount, await erc20.decimals());
+                const tx = await erc20.approve(signer, marketAid.address, formattedAmount);
+                await tx.wait();
+                console.log(`Successfully approved ${amount} ${await erc20.symbol()} for the MarketAid.`);
+                await manageERC20Token(erc20, marketAid, signer);
+                break;
+            case '4':
+                // Go back
+                break;
+            default:
+                console.log("Invalid input! Please choose a valid option.");
+                await manageERC20Token(erc20, marketAid, signer);
+                break;
+        }
+    });
+}
+
+async function askMarketAidManagementAction(network: Network): Promise<{ action: string; token?: TokenInfo }> {
+    return new Promise(async (resolve) => {
+        console.log("\nWhat would you like to do with your MarketAid?");
+        console.log("1. Check the admin address");
+        console.log("2. Check the market address");
+        console.log("3. Manage an ERC20 related to the market aid");
+        console.log("4. Exit");
+
+        rl.question("Enter the number corresponding to the action you want to perform: ", async (answer) => {
+            switch (answer.trim()) {
+                case '1':
+                    resolve({ action: 'admin' });
+                    break;
+                case '2':
+                    resolve({ action: 'market' });
+                    break;
+                case '3':
+                    const tokens = getTokensByNetwork(network);
+                    const selectedToken = await selectToken(tokens);
+                    resolve({ action: 'erc20', token: selectedToken });
+                    break;
+                case '4':
+                    resolve({ action: 'exit' });
+                    break;
+                default:
+                    console.log("Invalid input! Please choose a valid option.");
+                    resolve(await askMarketAidManagementAction(network));
+                    break;
+            }
+        });
+    });
+}
+
 // relevant to this file for interacting with the market aid 
 function getMarketAidFactoryContract(network: Network, signer: ethers.Signer): MarketAidFactory {
     const factoryAddress = marketAidFactoriesByNetwork[network];
@@ -138,151 +252,113 @@ function getMarketAidFactoryContract(network: Network, signer: ethers.Signer): M
     return marketAidFactory;
 }
 
-// a function to get the existing market aid instances from an EOA from the factory contract
-export async function getUserMarketAids(
-    contract: ethers.Contract,
-    strategist: string
-): Promise<String[] | undefined> {
-    const result = contract.getUserMarketAids(
-        strategist
-    )
-
-    return result;
-}
-
-// a function to create a new market aid instance 
-async function createMarketAidInstance(
-    marketAidFactoryContract: ethers.Contract
-  ): Promise<string> {
-    const createMarketAidTx = await marketAidFactoryContract.createMarketAidInstance();
-    await createMarketAidTx.wait(); // Wait for the transaction to be mined
-  
-    // Get the event logs
-    const eventFilter = marketAidFactoryContract.filters.NotifyMarketAidSpawn(null);
-    const eventLogs = await marketAidFactoryContract.queryFilter(eventFilter, createMarketAidTx.blockNumber, "latest");
-  
-    if (eventLogs.length === 0) {
-      throw new Error("MarketAid instance creation event not found");
-    }
-  
-    // Extract the new MarketAid instance address from the event
-    const newMarketAidAddress = eventLogs[0].args[0];
-  
-    return newMarketAidAddress;
-}
 
 async function main(): Promise<void> {
-    try {
+
+    try { 
+
+        // 1. ask the user what network they want to use to manage their market aid instance
         const network = await networkCallback();
         if (network === Network.ERROR) {
             console.log("Error selecting network. Exiting...");
             process.exit(1);
         }
+
+        // collect the relevant info from the user's .env file
         const { jsonRpcProvider, signer, websocketProvider } = getNetworkConnectionsInfo(network);
-        const address = await signer.getAddress();
+        const userAddress = await signer.getAddress();
 
-        console.log("Network:", network);
-        console.log("Signer:", address);
+        // check that the relevant info was properly loaded from the .env file
+        if (!jsonRpcProvider || !signer) {
+            console.log("Error loading network info from .env file. Exiting...");
+            process.exit(1);
+        }
 
-        // Get the market aid factory object for the network
-        const marketAidFactoryContract = getMarketAidFactoryContract(network, signer);
-        console.log("MarketAidFactory address:", marketAidFactoryContract.address);
+        // 2a. check the factory on that network 
+        const marketAidFactory = getMarketAidFactoryContract(network, signer);
+        console.log("the market aid factory is: ", marketAidFactory.address);
 
-        // See if the user has any existing market aids
-        console.log("Fetching existing market aids for address:", address);
-        const aidCheck = await marketAidFactoryContract.getUserMarketAids(address);
-        console.log("aidCheck:", aidCheck);
-        console.log("Existing market aids:", aidCheck);
+        // 2b. check the market aid instances that the user has already created
+        const aidCheck = await marketAidFactory.getUserMarketAids(userAddress);
+        console.log("the market aids that the user has created are: ", aidCheck);
 
-        let marketAidAddress = "";
-
-        // If the user has existing MarketAid instances, ask if they want to connect to one or create a new one
+        // 3a. if they want to connect to an existing market aid, ask them which one they want to connect to
         if (aidCheck.length > 0) {
             const connectToExisting = await confirmConnectToExistingMarketAid();
             if (connectToExisting) {
-                marketAidAddress = await selectExistingMarketAid(aidCheck);
-                console.log("Connecting to existing MarketAid instance at:", marketAidAddress);
-            } else {
-                const createNewMarketAid = await confirmNewMarketAid();
-                if (createNewMarketAid) {
-                    marketAidAddress = await marketAidFactoryContract.createMarketAidInstance();
-                    console.log("New MarketAid instance created at:", marketAidAddress);
-                } else {
-                    console.log("User chose not to create a new MarketAid instance or connect to an existing one.");
-                    return;
-                }
+                const selectedMarketAid = await selectExistingMarketAid(aidCheck);
+                console.log("the selected market aid is: ", selectedMarketAid);
+
+                // create an object for the selected market aid
+                var marketAid = new MarketAid(selectedMarketAid, signer);
             }
         } else {
+            console.log("You have not created any MarketAid instances yet.");
+
+            // 3b. if they want to create a new market aid, create a new market aid instance and connect to it
             const createNewMarketAid = await confirmNewMarketAid();
             if (createNewMarketAid) {
-                marketAidAddress = await marketAidFactoryContract.createMarketAidInstance();
-                console.log("New MarketAid instance created at:", marketAidAddress);
-            } else {
-                console.log("User chose not to create a new MarketAid instance.");
-                return;
+                const newMarketAid = await marketAidFactory.createMarketAidInstance();
+
+                // create an object for the newly created market aid
+                var marketAid = new MarketAid(newMarketAid, signer);
+
+                console.log("the market aid address is: ", marketAid.address);
             }
         }
 
-        // Create the MarketAid instance object
-        console.log("Creating MarketAid object at:", marketAidAddress, "with signer:", signer)
+        // 4. after the user is connected to the market aid, ask them what they would like to do with it. the user can: 
+            // 4a. check the admin address
+            // 4b. check the market address 
+            // 4c. manage an erc20 related to the market aid
+        let continueManaging = true;
+        while (continueManaging) {
+            const managementInfo = await askMarketAidManagementAction(network);
+            switch (managementInfo.action) {
+                case 'admin':
+                    // 4a. Check the admin address
+                    const admin = await marketAid.getAdmin();
+                    console.log("Admin address:", admin);
+                    break;
+                case 'market':
+                    // 4b. Check the market address
+                    const marketAddress = await marketAid.getRubiconMarketAddress();
+                    console.log("Market address:", marketAddress);
+                    break;
+                case 'erc20':
+                    // 4c. Manage an ERC20 related to the market aid
+                    const selectedToken = managementInfo.token;
+                    if (selectedToken) {
+                        console.log(`Managing token: ${selectedToken.symbol} (${selectedToken.name})`);
+                        
+                        // Your code to manage the selected ERC20 token
+                        const erc20 = new ERC20(selectedToken.address, signer);
 
-        const marketAid = new MarketAid(marketAidAddress, signer);
-        console.log("MarketAid object created at:", marketAidAddress);
+                        // Manage the selected ERC20 token
+                        await manageERC20Token(erc20, marketAid, signer);
 
+                    } else {
+                        console.log("No token selected.");
+                    }
+                    break;
+                case 'exit':
+                    continueManaging = false;
+                    break;
+            }
+        }
     } catch (error) {
-        console.error("Error in main function:", error.message);
-    } finally {
-        rl.close();
+        console.log(error);
     }
 }
-
-
-// main function
-/*
-async function main(): Promise<void> {
-    try {
-      const network = await networkCallback();
-      if (network === Network.ERROR) {
-        console.log("Error selecting network. Exiting...");
-        process.exit(1);
-      }
-      const { jsonRpcProvider, signer, websocketProvider } = getNetworkConnectionsInfo(network);
-      const address = await signer.getAddress();
-  
-      console.log("Network:", network);
-      console.log("Signer:", address);
-  
-      // Get the market aid factory object for the network
-      const marketAidFactoryContract = getMarketAidFactoryContract(network, signer);
-      console.log(marketAidFactoryContract.address);
-  
-      // See if the user has a market aid
-      const aidCheck = await marketAidFactoryContract.getUserMarketAids(address);
-      console.log("here are the existing market aids: ", aidCheck);
-  
-      // Check if the user wants to create a new MarketAid instance
-      const createNewMarketAid = await confirmNewMarketAid();
-      if (createNewMarketAid) {
-        const newMarketAidAddress = await marketAidFactoryContract.createMarketAidInstance();
-        console.log("New MarketAid instance created at:", newMarketAidAddress);
-
-        // create the market aid instance object
-        const marketAid = new MarketAid(newMarketAidAddress, signer);
-        console.log("MarketAid object created at:", marketAid.address);
-
-      } else {
-        console.log("User chose not to create a new MarketAid instance.");
-      }
-      
-
-    } catch (error) {
-      console.error("Error in main function:", error.message);
-    } finally {
-      rl.close();
-    }
-}
-*/
 
 if (require.main === module) {
     main();
 }
+
+
+
+// here are the flows we want: 
+
+
+
+        

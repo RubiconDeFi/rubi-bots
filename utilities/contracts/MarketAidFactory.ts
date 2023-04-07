@@ -1,4 +1,4 @@
-import { BigNumber, Contract, Signer } from "ethers";
+import { Contract, Signer, ethers } from "ethers";
 import MARKET_AID_FACTORY_INTERFACE from "../../configuration/abis/MarketAidFactory" 
 
 /**
@@ -24,18 +24,23 @@ export class MarketAidFactory {
      */
     public async createMarketAidInstance(): Promise<string> {
         const createMarketAidTx = await this.contract.createMarketAidInstance();
-        await createMarketAidTx.wait();
-
-        const eventFilter = this.contract.filters.NotifyMarketAidSpawn(null);
-        const eventLogs = await this.contract.queryFilter(eventFilter, createMarketAidTx.blockNumber, "latest");
-
-    if (eventLogs.length === 0) {
-        throw new Error("MarketAid instance creation event not found");
-    }
-
-    const newMarketAidAddress = eventLogs[0].args[0];
+        const receipt = await createMarketAidTx.wait();
+    
+        // Find the NotifyMarketAidSpawn event in the receipt logs
+        const eventTopic = this.contract.interface.getEventTopic("NotifyMarketAidSpawn");
+        const eventLog = receipt.logs.find(log => log.topics[0] === eventTopic);
+    
+        if (!eventLog) {
+            throw new Error("MarketAid instance creation event not found");
+        }
+    
+        // Decode the log data to get the newMarketAidAddress
+        const decodedLog = this.contract.interface.decodeEventLog("NotifyMarketAidSpawn", eventLog.data, eventLog.topics);
+        const newMarketAidAddress = decodedLog[0]; // Assuming the first indexed parameter is the newMarketAidAddress
+    
         return newMarketAidAddress;
     }
+    
 
     /**
      * Retrieves the MarketAid instances associated with the specified user.
