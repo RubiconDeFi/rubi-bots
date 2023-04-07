@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "guidedStart": "ts-node ./configuration/index.ts",
-    "startGenericMarketMakingBot": "ts-node ./executionClients/marketMaking/index.ts"
+    "startGenericMarketMakingBot": "ts-node ./executionClients/marketMaking/index.ts",
+    "aidStartup": "ts-node ./configuration/marketAidOnboarding.ts"
   },
   "repository": {
     "type": "git",
