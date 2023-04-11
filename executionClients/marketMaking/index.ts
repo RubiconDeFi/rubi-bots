@@ -74,7 +74,7 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     );
 
     // TODO: take another argument from argv to determine which strategy to use
-    
+
     var strat = getStrategyFromArg(strategyArg, referenceLiquidityVenue);
     // 3. Create a new bot instance
     // Note: this guy should use a configurable poll for gas-conscious updating
@@ -92,9 +92,9 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     await bot.launchBot();
 }
 
-function getStrategyFromArg(strategyArg, referenceLiquidityVenue) {\
-    console.log();
-    
+function getStrategyFromArg(strategyArg, referenceLiquidityVenue) {
+    // console.log();
+
     switch (strategyArg.toLowerCase()) {
         // TODO extrapolate the identifiers to dictionary?
         case "riskminimized":
@@ -142,9 +142,9 @@ function main(): Promise<void> {
         },
         botType: BotType.MarketMaking
     };
-    
+
     console.log("Spin up UNI reference venue with these tokens", config.targetTokens[0], config.targetTokens[1]);
-    
+
     // var referenceLiquidityVenue = new UniswapLiquidityVenue(
     //     {
     //         asset: config.targetTokens[0],
