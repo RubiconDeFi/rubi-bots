@@ -12,7 +12,7 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
     constructor(referenceLiquidityVenue: GenericLiquidityVenue, premium: number) {
         super(referenceLiquidityVenue);
         this.improvement = premium;
-        console.log("This is my premium: ", this.improvement);
+        console.log("This is my IMPROVEMENT: ", this.improvement);
         if (this.improvement > 1 || this.improvement < 0) {
             throw new Error("Premium must be less than 1 or greater than 0");
         }
@@ -43,7 +43,7 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
                         return;
                     }
                     const newPrice = bid.price * (1 + this.improvement);
-                    const adjustedPrice = Math.min(newPrice, midpoint) === midpoint ? (midpoint * (1 - MIN_SPREAD / 2)) : newPrice;
+                    const adjustedPrice = Math.min(newPrice, midpoint) === midpoint ? (midpoint * (1 - (MIN_SPREAD / 2))) : newPrice;
                     return {
                         price: adjustedPrice,
                         size: bid.size
@@ -56,7 +56,7 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
                         return;
                     }
                     const newPrice = ask.price * (1 - this.improvement);
-                    const adjustedPrice = Math.max(newPrice, midpoint) === midpoint ? (midpoint * (1 + MIN_SPREAD / 2)) : newPrice;
+                    const adjustedPrice = Math.max(newPrice, midpoint) === midpoint ? (midpoint * (1 + (MIN_SPREAD / 2))) : newPrice;
                     return {
                         price: adjustedPrice,
                         size: ask.size

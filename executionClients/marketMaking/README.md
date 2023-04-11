@@ -14,7 +14,7 @@ The API for the `MarketMakingBot` command-line parameters is as follows:
 API with the following hierarchy of arguments:
 
 ```
-yarn run startMarketMakingBot -- <chainId> <marketAidContractAddress> <asset> <quote>
+yarn run startMarketMakingBot -- <chainId> <marketAidContractAddress> <asset> <quote> <premium>
 ```
 
 ### Parameters
@@ -24,6 +24,7 @@ yarn run startMarketMakingBot -- <chainId> <marketAidContractAddress> <asset> <q
 - `<strategy>`: The string identifier of the strategy.
 - `<asset>`: The address of the asset token.
 - `<quote>`: The address of the quote token.
+- `<premium>`: The premium or discount to apply when using RiskMinimized or TargetVenueOutBid strategies
 
 ### Available Market-Making strategies:
 - `riskminimized`: Use the RiskMinimized strategy.

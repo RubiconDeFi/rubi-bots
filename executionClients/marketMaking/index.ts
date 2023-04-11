@@ -33,7 +33,7 @@ function userMarketAidCheckCallback(rl): Promise<string> {
 }
 
 // Function 
-export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string, strategyArg?: string) {
+export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string, strategyArg?: string,  premium?:number) {
     // TODO: WIRE THIS UP TO THE NETWORK THEY WANNA USE
     var myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider;
     // pass through from config
@@ -75,7 +75,7 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
     // TODO: take another argument from argv to determine which strategy to use
 
-    var strat = getStrategyFromArg(strategyArg, referenceLiquidityVenue);
+    var strat = getStrategyFromArg(strategyArg, referenceLiquidityVenue, premium ? premium :  0.005); // TODO: cleanup
     // 3. Create a new bot instance
     // Note: this guy should use a configurable poll for gas-conscious updating
     // This execution client's job is to simply map the STRATEGY simple book feed on-chain when conditions are met
@@ -92,15 +92,15 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     await bot.launchBot();
 }
 
-function getStrategyFromArg(strategyArg, referenceLiquidityVenue) {
+function getStrategyFromArg(strategyArg, referenceLiquidityVenue, premium: number) {
     // console.log();
 
     switch (strategyArg.toLowerCase()) {
         // TODO extrapolate the identifiers to dictionary?
         case "riskminimized":
-            return new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
+            return new RiskMinimizedStrategy(referenceLiquidityVenue,premium);
         case "targetvenueoutbid":
-            return new TargetVenueOutBidStrategy(referenceLiquidityVenue, 0.01);
+            return new TargetVenueOutBidStrategy(referenceLiquidityVenue, premium);
         default:
             throw new Error(`Invalid strategy argument: ${strategyArg}`);
     }
@@ -132,6 +132,11 @@ function main(): Promise<void> {
     if (!quoteTokenInfo) throw new Error(`No token found for address ${quote} on network ${chainId}`);
     // TODO: clean this up to also have Strategy configured in the cli process.argv
 
+
+      // Read the premium value from the command line arguments
+      const premium = parseFloat(process.argv[7]);
+      if (!premium) throw new Error('No premium value found in process.argv');
+  
     var config = {
         network: chainId,
         targetTokens: [assetTokenInfo, quoteTokenInfo],
@@ -154,7 +159,7 @@ function main(): Promise<void> {
     // var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
 
     return startGenericMarketMakingBot(config, undefined,
-        marketAidContractAddress, strategyArg);
+        marketAidContractAddress, strategyArg, premium);
 
 }
 
