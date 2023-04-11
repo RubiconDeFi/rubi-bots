@@ -92,7 +92,9 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     await bot.launchBot();
 }
 
-function getStrategyFromArg(strategyArg, referenceLiquidityVenue) {
+function getStrategyFromArg(strategyArg, referenceLiquidityVenue) {\
+    console.log();
+    
     switch (strategyArg.toLowerCase()) {
         // TODO extrapolate the identifiers to dictionary?
         case "riskminimized":

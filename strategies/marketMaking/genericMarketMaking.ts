@@ -51,6 +51,7 @@ export class GenericMarketMakingStrategy {
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
     // Generic class naively sets the target book = to the reference book
     updateTargetBook() {
+        console.log("GENERIC Listening to referenceLiquidityVenue's updateNotifier");
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
             this.targetBook = liveBook;
             this.emitUpdate();

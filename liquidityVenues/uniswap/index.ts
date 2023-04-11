@@ -54,10 +54,13 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
                 BigNumber.from(this.uniFee),
                 stretchScalar ? stretchScalar : 1
             );
+
             this.liveBook = {
                 bids: this.liveBook.bids.reverse(),
                 asks: this.liveBook.asks.reverse()
             }
+
+            console.log("this is the liveBook: ", this.liveBook);
 
         } catch (error) {
             console.log("\n Got an error in updateLiveBook for UniswapLiquidity venue: ", error);
