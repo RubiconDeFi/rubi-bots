@@ -12,42 +12,53 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
     constructor(referenceLiquidityVenue: GenericLiquidityVenue, premium: number) {
         super(referenceLiquidityVenue);
         this.improvement = premium;
-        console.log("This is my premium: ", this.improvement);
+        console.log("This is my IMPROVEMENT: ", this.improvement);
         if (this.improvement > 1 || this.improvement < 0) {
             throw new Error("Premium must be less than 1 or greater than 0");
         }
 
-        this.identifier = 'TargetVenueOutBidStrategy';
+        this.identifier = 'targetvenueoutbid';
         this.updateTargetBook();
     }
 
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
     override updateTargetBook() {
+        const MIN_SPREAD = 0.0001;
+
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
             if (liveBook == undefined) {
                 console.log("Live book is undefined, therefore do nothing and return");
                 return;
             }
             this.targetBook = liveBook;
+
+            // Calculate the midpoint of the initial liveBook
+            const highestBid = liveBook.bids.length > 0 ? liveBook.bids[0].price : 0;
+            const lowestAsk = liveBook.asks.length > 0 ? liveBook.asks[0].price : Infinity;
+            const midpoint = (highestBid + lowestAsk) / 2;
+
             if (liveBook.bids) {
                 this.targetBook.bids = liveBook.bids.map((bid) => {
                     if (bid.price == Infinity || isNaN(bid.price) || bid.price == undefined || bid.price == 0 || bid.size == 0) {
                         return;
                     }
+                    const newPrice = bid.price * (1 + this.improvement);
+                    const adjustedPrice = Math.min(newPrice, midpoint) === midpoint ? (midpoint * (1 - (MIN_SPREAD / 2))) : newPrice;
                     return {
-                        price: bid.price * (1 + this.improvement),
+                        price: adjustedPrice,
                         size: bid.size
                     }
                 });
             }
             if (liveBook.asks) {
                 this.targetBook.asks = liveBook.asks.map((ask) => {
-                    // If price is infinity, NaN, undefined, or zero, exclude that ask. Also, if size is zero then exclude that ask
                     if (ask.price == Infinity || isNaN(ask.price) || ask.price == undefined || ask.price == 0 || ask.size == 0) {
                         return;
                     }
+                    const newPrice = ask.price * (1 - this.improvement);
+                    const adjustedPrice = Math.max(newPrice, midpoint) === midpoint ? (midpoint * (1 + (MIN_SPREAD / 2))) : newPrice;
                     return {
-                        price: ask.price * (1 - this.improvement),
+                        price: adjustedPrice,
                         size: ask.size
                     }
                 });

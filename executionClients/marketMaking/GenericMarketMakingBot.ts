@@ -195,7 +195,10 @@ export class GenericMarketMakingBot {
             strategistTradeIDs.push(this.marketAidPositionTracker.onChainBookWithData[i].stratTradeID);
         }
 
-        // console.log("These are the relevant ids", strategistTradeIDs);
+        console.log("These are the relevant ids", strategistTradeIDs);
+        // Print the map formatted
+        console.log("these ids formatted", strategistTradeIDs.map((id) => id.toString()));
+
 
         const assetSideBias = 1;
         const quoteSideBias = 1;
@@ -221,6 +224,16 @@ export class GenericMarketMakingBot {
             bidDenominators.push(bidDenominator);
 
         }
+
+
+        // New code to print out the price of each trade
+        for (let i = 0; i < askNumerators.length; i++) {
+            const askPrice = parseFloat(formatUnits(askDenominators[i], this.assetPair.quote.decimals)) / parseFloat(formatUnits(askNumerators[i], this.assetPair.asset.decimals));
+            const bidPrice = parseFloat(formatUnits(bidNumerators[i], this.assetPair.quote.decimals)) / parseFloat(formatUnits(bidDenominators[i], this.assetPair.asset.decimals));
+
+            console.log(`Ask price for trade ${i + 1}: ${askPrice}`);
+            console.log(`Bid price for trade ${i + 1}: ${bidPrice}`);
+        }
         // const askNumerator = parseUnits((this.strategy.targetBook.asks[index].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
         // const askDenominator = parseUnits((this.strategy.targetBook.asks[0].price * (this.strategy.targetBook.asks[0].size * assetSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
         // const bidNumerator = parseUnits((this.strategy.targetBook.bids[0].price * (this.strategy.targetBook.bids[0].size * quoteSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
@@ -229,49 +242,59 @@ export class GenericMarketMakingBot {
         // // TODO: we need to know the relevant strategist trade ID to pass into requote()
         if (this.requotingOutstandingBook) return;
         // Note, conversely batchRequoteAllOffers could be used
-        console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
+        // console.log(this.marketAid.connect(this.config.connections.signer).estimateGas);
 
-        this.marketAid.connect(this.config.connections.signer).estimateGas['batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])'](
+
+        // LOG ALL INPUTS
+        console.log("strategistTradeIDs", strategistTradeIDs.map((n) => n.toString()));
+        console.log("this.assetPair.asset.address", this.assetPair.asset.address);
+        console.log("this.assetPair.quote.address", this.assetPair.quote.address);
+        console.log("askNumerators", askNumerators.map((n) => formatUnits(n, this.assetPair.asset.decimals)));
+        console.log("askDenominators", askDenominators.map((n) => formatUnits(n, this.assetPair.quote.decimals)));
+        console.log("bidNumerators", bidNumerators.map((n) => formatUnits(n, this.assetPair.quote.decimals)));
+        console.log("bidDenominators", bidDenominators.map((n) => formatUnits(n, this.assetPair.asset.decimals)));
+
+        // this.marketAid.connect(this.config.connections.signer).estimateGas['batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])'](
+        //     strategistTradeIDs,
+        //     [this.assetPair.asset.address, this.assetPair.quote.address],
+        //     askNumerators,
+        //     askDenominators,
+        //     bidNumerators,
+        //     bidDenominators,
+        // ).then((r) => {
+        // if (r) {
+        if (this.requotingOutstandingBook) return;
+
+        this.requotingOutstandingBook = true;
+
+        this.marketAid.connect(this.config.connections.signer)['batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])'](
             strategistTradeIDs,
             [this.assetPair.asset.address, this.assetPair.quote.address],
             askNumerators,
             askDenominators,
             bidNumerators,
             bidDenominators,
-        ).then((r) => {
-            if (r) {
-                if (this.requotingOutstandingBook) return;
+        ).then(async (r) => {
+            const out = await r.wait();
+            this.requotingOutstandingBook = false;
 
-                this.requotingOutstandingBook = true;
-
-                this.marketAid.connect(this.config.connections.signer)['batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])'](
-                    strategistTradeIDs,
-                    [this.assetPair.asset.address, this.assetPair.quote.address],
-                    askNumerators,
-                    askDenominators,
-                    bidNumerators,
-                    bidDenominators,
-                ).then(async (r) => {
-                    const out = await r.wait();
-                    this.requotingOutstandingBook = false;
-
-                    if (out.status == true) {
-                        console.log("\nREQUOTE SUCCESSFUL!!!! 🎉");
-                        // TODO??? Chase the transaction and update what info on this we can
-                    }
-
-                }).catch((e) => {
-                    console.log("This error IN SHIPPING REQUOTE", e);
-                    this.requotingOutstandingBook = false;
-                    // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
-                })
+            if (out.status == true) {
+                console.log("\nREQUOTE SUCCESSFUL!!!! 🎉");
+                // TODO??? Chase the transaction and update what info on this we can
             }
+
         }).catch((e) => {
-            console.log("This error estimating REQUOTE gas", e.reason);
-            // Should this one be here?
-            // this.requotingOutstandingBook = false;
-            // updateNonceManagerTip(this.config.signer as NonceManager, this.config.reader);
+            console.log("This error IN SHIPPING REQUOTE", e);
+            this.requotingOutstandingBook = false;
+            // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
         })
+        // }
+        // }).catch((e) => {
+        //     console.log("This error estimating REQUOTE gas", e.reason);
+        //     // Should this one be here?
+        //     // this.requotingOutstandingBook = false;
+        //     // updateNonceManagerTip(this.config.signer as NonceManager, this.config.reader);
+        // })
 
 
     }
@@ -368,8 +391,6 @@ export class GenericMarketMakingBot {
         });
     }
 
-
-
     pullOnChainLiquidity(): Promise<MarketAidAvailableLiquidity> {
         console.log("\nQuery Strategist Total Liquidity ",
             this.config.targetTokens[0].address,
@@ -384,20 +405,29 @@ export class GenericMarketMakingBot {
                 this.config.targetTokens[1].address,
                 this.EOAbotAddress
             ).then((r: MarketAidAvailableLiquidity) => {
-                // console.log("Got this after getStratTotalLiquidity", r);
+                console.log("Got this after getStratTotalLiquidity", r);
 
-                // TODO: IF THERE's a pool split then implement it???????????/
-                // console.log("this config", this.config);
+                // Log formatted the response
+                console.log("Formatted Liquidity - Asset Amount:", formatUnits(r.assetWeiAmount, 18));
+                console.log("Formatted Liquidity - Quote Amount:", formatUnits(r.quoteWeiAmount, 18));
 
-                this.availableLiquidity = r;
-                return r;
+                // Create a new object with the same properties as r
+                const newR: MarketAidAvailableLiquidity = {
+                    assetWeiAmount: BigNumber.from(r.assetWeiAmount).mul(10).div(100),
+                    quoteWeiAmount: BigNumber.from(r.quoteWeiAmount).mul(10).div(100),
+                    status: r.status
+                };
+
+                this.availableLiquidity = newR;
+                return newR;
             });
         } catch (error) {
             console.log("\nError in pullOnChainLiquidity", error);
         }
     }
 
-    // ** For use in RiskMinimized Strategy **
+
+    // *** For use in RiskMinimized Strategy ***
     tailOffModule(): void {
         console.log("Tail off module called");
 
@@ -421,13 +451,7 @@ export class GenericMarketMakingBot {
                 // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.asset.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
                 console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                // SELL THE ASSET AMOUNT ON CEX
-                // dumpERC20onFTX(false, parseFloat(val), this.config.asset.symbol);
-
-                // TODO: Adapt to rubi-bots
-                // this.dumpFillOnKraken(parseFloat(val), true, parseFloat(formatUnits(take_amt, this.assetPair.quote.decimals)) / parseFloat(val), parseFloat(val), parseFloat(formatUnits(take_amt, this.assetPair.quote.decimals)));
-
-                // this.dumpFillOnCoinbase(parseFloat(val), true, parseFloat(formatUnits(take_amt, this.config.quote.decimals)) / parseFloat(val), parseFloat(val), parseFloat(formatUnits(take_amt, this.config.quote.decimals)));
+                this.dumpFillViaMarketAid(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
             } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
                 console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
                 const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
@@ -443,18 +467,43 @@ export class GenericMarketMakingBot {
                 // Note: BUY THE ASSET AMOUNT ON CEX
                 // dumpERC20onFTX(true, parseFloat(valueUsedInTail), this.config.quote.symbol);
 
-                // TODO: Determine if we can ship a quote amount - IF NOT can use valueUsedInTail instead!!!
-
-                // TODO: Adapt to rubi-bots
-                // this.dumpFillOnKraken(parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), false, parseFloat(val) / parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(formatUnits(take_amt, this.assetPair.asset.decimals)), parseFloat(val));
+                // Call the function at the specified line numbers
+                this.dumpFillViaMarketAid(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
             }
         });
     }
 
+    // *** For use in RiskMinimized Strategy ***
+    async dumpFillViaMarketAid(
+        assetToSell: string,
+        amountToSell: BigNumber,
+        assetToTarget: string,
+    ): Promise<boolean | void> {
+        const poolFee: number = (this.strategy.getReferenceLiquidityVenue() as UniswapLiquidityVenue).uniFee;
+
+        try {
+            const amountOut: BigNumber = await this.marketAid.strategistRebalanceFunds(
+                assetToSell,
+                amountToSell,
+                assetToTarget,
+                poolFee,
+            );
+            console.log("\n Succesfully dumped fill!!!!", amountOut.toString(), "of", assetToTarget, "for", amountToSell.toString(), "of", assetToSell, "on", this.strategy.referenceLiquidityVenue.identifier, "with a fee of", poolFee, "%");
+
+        } catch (error) {
+            console.error("Error while executing dumpFillViaMarketAid:", error);
+            return false;
+        }
+
+        return true;
+    }
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
-    // console.log("I think this is my available liquidity", availableLiquidity);
+    console.log("I think this is my available liquidity", availableLiquidity);
+
+    // Print as formatted values
+    console.log("I think this is my available liquidity", formatUnits(availableLiquidity.assetWeiAmount, 18), formatUnits(availableLiquidity.quoteWeiAmount, 18));
 
     // Chat GPT helped me with this lol
     // TODO: update this from linear to exponential
@@ -485,8 +534,19 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
     }
 
     // Print out the ladder in human readable format using formatUnits
-    // console.log("Asset Ladder", assetLadder.map((a) => formatUnits(a, 18)));
-    // console.log("Quote Ladder", quoteLadder.map((a) => formatUnits(a, 18)));
+    console.log("Asset Ladder", assetLadder.map((a) => formatUnits(a, 18)));
+    console.log("Quote Ladder", quoteLadder.map((a) => formatUnits(a, 18)));
+
+
+    // Calculate the total asset and quote amounts
+    const totalAssetAmount = assetLadder.reduce((acc, curr) => acc.add(curr), BigNumber.from(0));
+    const totalQuoteAmount = quoteLadder.reduce((acc, curr) => acc.add(curr), BigNumber.from(0));
+
+    // Log the total amounts in human readable format
+    console.log("Total Asset Amount:", formatUnits(totalAssetAmount, 18));
+    console.log("Total Quote Amount:", formatUnits(totalQuoteAmount, 18));
+
+
 
     return {
         assetLadder: assetLadder,

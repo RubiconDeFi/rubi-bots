@@ -7,6 +7,7 @@ import MARKET_AID_INTERFACE from "../../configuration/abis/MarketAid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
+import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetVenueOutBid";
 
 dotenv.config();
 
@@ -32,7 +33,7 @@ function userMarketAidCheckCallback(rl): Promise<string> {
 }
 
 // Function 
-export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string) {
+export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string, strategyArg?: string,  premium?:number) {
     // TODO: WIRE THIS UP TO THE NETWORK THEY WANNA USE
     var myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider;
     // pass through from config
@@ -73,8 +74,8 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     );
 
     // TODO: take another argument from argv to determine which strategy to use
-    
-    var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01)
+
+    var strat = getStrategyFromArg(strategyArg, referenceLiquidityVenue, premium ? premium :  0.005); // TODO: cleanup
     // 3. Create a new bot instance
     // Note: this guy should use a configurable poll for gas-conscious updating
     // This execution client's job is to simply map the STRATEGY simple book feed on-chain when conditions are met
@@ -91,6 +92,21 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     await bot.launchBot();
 }
 
+function getStrategyFromArg(strategyArg, referenceLiquidityVenue, premium: number) {
+    // console.log();
+
+    switch (strategyArg.toLowerCase()) {
+        // TODO extrapolate the identifiers to dictionary?
+        case "riskminimized":
+            return new RiskMinimizedStrategy(referenceLiquidityVenue,premium);
+        case "targetvenueoutbid":
+            return new TargetVenueOutBidStrategy(referenceLiquidityVenue, premium);
+        default:
+            throw new Error(`Invalid strategy argument: ${strategyArg}`);
+    }
+}
+
+
 // Create a main function which is called and parses through proceess.argv to allow for custom configuration
 function main(): Promise<void> {
 
@@ -105,8 +121,10 @@ function main(): Promise<void> {
     if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${chainId}`);
     const staticJsonRpc = new ethers.providers.StaticJsonRpcProvider(jsonRpcUrl, chainId); // TODO: perhaps static provider for rpc consumption consciousness
     if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
-    const asset = process.argv[4];
-    const quote = process.argv[5];
+    const strategyArg = process.argv[4];
+
+    const asset = process.argv[5];
+    const quote = process.argv[6];
     const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
     const quoteTokenInfo = tokenList.tokens.find(token => token.address == quote && token.chainId == chainId);
 
@@ -114,6 +132,11 @@ function main(): Promise<void> {
     if (!quoteTokenInfo) throw new Error(`No token found for address ${quote} on network ${chainId}`);
     // TODO: clean this up to also have Strategy configured in the cli process.argv
 
+
+      // Read the premium value from the command line arguments
+      const premium = parseFloat(process.argv[7]);
+      if (!premium) throw new Error('No premium value found in process.argv');
+  
     var config = {
         network: chainId,
         targetTokens: [assetTokenInfo, quoteTokenInfo],
@@ -122,21 +145,21 @@ function main(): Promise<void> {
             websocketProvider: websocketUrl ? new ethers.providers.WebSocketProvider(websocketUrl, chainId) : undefined,
             signer: new ethers.Wallet(process.env.EOA_PRIVATE_KEY, staticJsonRpc)
         },
-        botType: BotType.MarketMaking,
-        strategy: MarketMakingStrategy.RiskMinimizedUpOnly
+        botType: BotType.MarketMaking
     };
+
     console.log("Spin up UNI reference venue with these tokens", config.targetTokens[0], config.targetTokens[1]);
-    
-    var referenceLiquidityVenue = new UniswapLiquidityVenue(
-        {
-            asset: config.targetTokens[0],
-            quote: config.targetTokens[1]
-        }, config.connections.jsonRpcProvider //, 500
-    );
-    var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
+
+    // var referenceLiquidityVenue = new UniswapLiquidityVenue(
+    //     {
+    //         asset: config.targetTokens[0],
+    //         quote: config.targetTokens[1]
+    //     }, config.connections.jsonRpcProvider //, 500
+    // );
+    // var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
 
     return startGenericMarketMakingBot(config, undefined,
-        marketAidContractAddress);
+        marketAidContractAddress, strategyArg, premium);
 
 }
 
