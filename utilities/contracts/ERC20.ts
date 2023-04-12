@@ -98,6 +98,18 @@ export class ERC20 {
     }
 
     /**
+     * Approve a spender to spend the maximum amount of tokens on behalf of the message sender.
+     * @param signer - The signer to send the transaction from.
+     * @param spender - The address of the spender.
+     * @returns The transaction receipt.
+     */
+    public async maxApprove(signer: ethers.Signer, spender: string): Promise<ethers.ContractTransaction> {
+        const MAX_UINT256 = ethers.constants.MaxUint256;
+        const contractWithSigner = this.contract.connect(signer);
+        return await contractWithSigner.approve(spender, MAX_UINT256);
+    }
+
+    /**
      * Transfer tokens from the message sender to another address.
      * @param signer - The signer to send the transaction from.
      * @param to - The address to transfer tokens to.

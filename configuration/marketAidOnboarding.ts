@@ -38,7 +38,7 @@ let rl = readline.createInterface({
 
 async function networkCallback(): Promise<Network> {
     return new Promise(resolve => {
-        rl.question('\n What network would you like to access a market aid on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n4. Arbitrum Goerli\n:', (answer) => {
+        rl.question('\n What network would you like to access a market aid on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n4. Arbitrum Goerli\n5. Polygon Mumbai:', (answer) => {
             switch (answer.toLowerCase()) {
                 case '1':
                     console.log('\n Selected Optimism');

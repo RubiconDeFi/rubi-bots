@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "guidedStart": "ts-node ./configuration/index.ts",
     "startGenericMarketMakingBot": "ts-node ./executionClients/marketMaking/index.ts",
-    "aidStartup": "ts-node ./configuration/marketAidOnboarding.ts"
+    "aidStartup": "ts-node ./configuration/marketAidOnboarding.ts", 
+    "aid": "ts-node ./configuration/marketAid.ts" 
   },
   "repository": {
     "type": "git",
