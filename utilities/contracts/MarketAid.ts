@@ -66,7 +66,7 @@ export class MarketAid {
      * @param amounts - An array of amounts for each token.
      * @returns a dictionary of token addresses to amounts that were actually deposited.
      */
-    public async adminDepositToBook(erc20s: string[], amounts: number[]): Promise<{[token: string]: BigNumber}> {
+    public async adminDepositToBook(erc20s: string[], amounts: BigNumber[]): Promise<{[token: string]: BigNumber}> {
         const depositTx = await this.contract.adminDepositToBook(erc20s, amounts);
         const receipt = await depositTx.wait();
     
@@ -97,7 +97,7 @@ export class MarketAid {
      * @param amounts - An array of amounts for each token.
      * @returns a dictionary of token addresses to amounts that were actually withdrawn.
      */
-    public async adminWithdrawFromBook(erc20s: string[], amounts: number[]): Promise<{[token: string]: BigNumber}> {
+    public async adminWithdrawFromBook(erc20s: string[], amounts: BigNumber[]): Promise<{[token: string]: BigNumber}> {
         const withdrawTx = await this.contract.adminWithdrawFromBook(erc20s, amounts);
         const receipt = await withdrawTx.wait();
     
@@ -150,5 +150,38 @@ export class MarketAid {
             }
         }
         return pulledFunds;
+    }
+
+    /**
+     * Allows the admin to approve a new permissioned strategist.
+     * @param strategist - The address of the strategist to be approved.
+     * @returns The transaction hash of the approveStrategist function call.
+     */
+    public async approveStrategist(strategist: string): Promise<string> {
+        const approveTx = await this.contract.approveStrategist(strategist);
+        const receipt = await approveTx.wait();
+        return receipt.transactionHash;
+    }
+
+    /**
+     * Allows the admin to remove a permissioned strategist.
+     * @param strategist - The address of the strategist to be removed.
+     * @returns The transaction hash of the removeStrategist function call.
+     */
+    public async removeStrategist(strategist: string): Promise<string> {
+        const removeTx = await this.contract.removeStrategist(strategist);
+        const receipt = await removeTx.wait();
+        return receipt.transactionHash;
+    }
+
+    /**
+     * Allows the admin to assign a kill-switch operator.
+     * @param kso - The address of the kill-switch operator to be assigned.
+     * @returns The transaction hash of the assignKillSwitchOperator function call.
+     */
+    public async assignKillSwitchOperator(kso: string): Promise<string> {
+        const assignTx = await this.contract.assignKillSwitchOperator(kso);
+        const receipt = await assignTx.wait();
+        return receipt.transactionHash;
     }
 }

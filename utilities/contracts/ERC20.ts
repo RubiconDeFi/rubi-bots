@@ -86,27 +86,31 @@ export class ERC20 {
     }
 
     /**
-     * Approve a spender to spend tokens on behalf of the message sender.
-     * @param signer - The signer to send the transaction from.
-     * @param spender - The address of the spender.
-     * @param value - The amount of tokens to approve.
-     * @returns The transaction receipt.
-     */
-    public async approve(signer: ethers.Signer, spender: string, value: ethers.BigNumberish): Promise<ethers.ContractTransaction> {
+         * Approve a spender to spend tokens on behalf of the message sender.
+         * @param signer - The signer to send the transaction from.
+         * @param spender - The address of the spender.
+         * @param value - The amount of tokens to approve.
+         * @returns The approved value.
+         */
+    public async approve(signer: ethers.Signer, spender: string, value: ethers.BigNumberish): Promise<ethers.BigNumber> {
         const contractWithSigner = this.contract.connect(signer);
-        return await contractWithSigner.approve(spender, value);
+        const tx = await contractWithSigner.approve(spender, value);
+        await tx.wait();
+        return ethers.BigNumber.from(value);
     }
 
     /**
      * Approve a spender to spend the maximum amount of tokens on behalf of the message sender.
      * @param signer - The signer to send the transaction from.
      * @param spender - The address of the spender.
-     * @returns The transaction receipt.
+     * @returns The approved maximum value.
      */
-    public async maxApprove(signer: ethers.Signer, spender: string): Promise<ethers.ContractTransaction> {
+    public async maxApprove(signer: ethers.Signer, spender: string): Promise<ethers.BigNumber> {
         const MAX_UINT256 = ethers.constants.MaxUint256;
         const contractWithSigner = this.contract.connect(signer);
-        return await contractWithSigner.approve(spender, MAX_UINT256);
+        const tx = await contractWithSigner.approve(spender, MAX_UINT256);
+        await tx.wait();
+        return MAX_UINT256;
     }
 
     /**
@@ -114,11 +118,13 @@ export class ERC20 {
      * @param signer - The signer to send the transaction from.
      * @param to - The address to transfer tokens to.
      * @param value - The amount of tokens to transfer.
-     * @returns The transaction receipt.
+     * @returns The transferred value.
      */
-    public async transfer(signer: ethers.Signer, to: string, value: ethers.BigNumberish): Promise<ethers.ContractTransaction> {
+    public async transfer(signer: ethers.Signer, to: string, value: ethers.BigNumberish): Promise<ethers.BigNumber> {
         const contractWithSigner = this.contract.connect(signer);
-        return await contractWithSigner.transfer(to, value);
+        const tx = await contractWithSigner.transfer(to, value);
+        await tx.wait();
+        return ethers.BigNumber.from(value);
     }
 
     /**
@@ -127,10 +133,12 @@ export class ERC20 {
      * @param from - The address to transfer tokens from.
      * @param to - The address to transfer tokens to.
      * @param value - The amount of tokens to transfer.
-     * @returns The transaction receipt.
+     * @returns The transferred value.
      */
-    public async transferFrom(signer: ethers.Signer, from: string, to: string, value: ethers.BigNumberish): Promise<ethers.ContractTransaction> {
+    public async transferFrom(signer: ethers.Signer, from: string, to: string, value: ethers.BigNumberish): Promise<ethers.BigNumber> {
         const contractWithSigner = this.contract.connect(signer);
-        return await contractWithSigner.transferFrom(from, to, value);
+        const tx = await contractWithSigner.transferFrom(from, to, value);
+        await tx.wait();
+        return ethers.BigNumber.from(value);
     }
 }

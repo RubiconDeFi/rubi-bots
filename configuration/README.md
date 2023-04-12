@@ -56,7 +56,7 @@ EOA_PRIVATE_KEY = <insert your developer EOA private key here>
 
 the user has two options when it comes to interacting with their market-aid contract: 1) limited access when running `npm run guidedStart` #TODO: update guided start to work 2) full access when running `npm run aidStartup`
 
-### npm run aidStartup
+### npm run aid
 
 this script provides the following functionality: 
 
@@ -73,17 +73,17 @@ this script provides the following functionality:
             - [] check the outstanding offers and get their totals
         - [] check who the kill switch operator is 
         - [] check if the aid is shut down 
-    - [] allow the user to connect to the market aid and do
-        - [] deposit to the aid 
-        - [] withdraw from the aid 
-        - [] pull all funds 
-        - [] approve a target venue 
-        - [] approve a strategist 
-        - [] remove a strategist 
-    - [] allow the user to connect to an erc20 and see
+    - [x] allow the user to connect to the market aid and do
+        - [x] deposit to the aid 
+        - [x] withdraw from the aid 
+        - [x] pull all funds 
+        - [x] approve a target venue 
+        - [x] approve a strategist 
+        - [x] remove a strategist 
+    - [x] allow the user to connect to an erc20 and see
         - [] their balance 
-        - [] the market aid balance 
-    - [] allow the user to connect to an erc20 and do
-        - [] approve the market aid 
-        - [] approve the market 
+        - [x] the market aid balance 
+    - [x] allow the user to connect to an erc20 and do
+        - [x] approve the market aid 
+        - [x] approve the market 
 
