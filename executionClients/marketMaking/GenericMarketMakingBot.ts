@@ -143,7 +143,11 @@ export class GenericMarketMakingBot extends EventEmitter {
         );
         this.strategy.updateNotifier.on('update', (liveBook) => {
             console.log('\nStrategy Feed updated!');
-            console.log(liveBook);
+            // console.log(liveBook);
+
+            // Ping new TargetBook via websocket
+            this.emit('targetOrderBookUpdated', liveBook);
+
             this.compareStrategyAndMarketAidBooks();
         });
 
@@ -151,7 +155,11 @@ export class GenericMarketMakingBot extends EventEmitter {
         // MarketAidPositionTracker will drive a book we compare against strategy book to do everything
         this.marketAidPositionTracker.updateNotifier.on('update', (liveBook) => {
             console.log('\nMarket Aid Position Tracker Feed updated!');
-            console.log(liveBook);
+            // console.log(liveBook);
+
+            // Ping new CurrentBook via websocket
+            this.emit('currentOrderBookUpdated', liveBook);
+            
             this.compareStrategyAndMarketAidBooks();
         });
 
