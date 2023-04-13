@@ -13,6 +13,7 @@ import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
 import { formatUnits, getAddress, parseUnits } from "ethers/lib/utils";
 import MARKET_INTERFACE from "../../configuration/abis/Market";
+import { EventEmitter } from "stream";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -23,7 +24,7 @@ export type MarketAidAvailableLiquidity = {
 
 
 // Takes a configuration, market aid instance, and strategy in the constructor
-export class GenericMarketMakingBot {
+export class GenericMarketMakingBot extends EventEmitter {
     config: BotConfiguration;
     marketAid: ethers.Contract;
     strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy;
@@ -46,6 +47,7 @@ export class GenericMarketMakingBot {
     marketContract: ethers.Contract;
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
+        super();
         this.config = config;
         this.marketAid = marketAid;
         this.strategy = strategy;
@@ -70,6 +72,8 @@ export class GenericMarketMakingBot {
             MARKET_INTERFACE,
             this.config.connections.websocketProvider ? this.config.connections.websocketProvider : this.config.connections.jsonRpcProvider
         );
+
+        // TODO Establish websocket broadcaster for updates
     }
 
 
