@@ -1,42 +1,42 @@
-# configuring your bot to run properly 
+# Configuring Your Bot to Run Properly
 
-## env 
+This README file will help you set up your bot with the necessary environment variables and provide information on how to interact with the Market-Aid contract.
 
-# Optimism Mainnet
-JSON_RPC_URL_10 = <insert your optimism mainnet node http endpoint here>
-WEBSOCKET_URL_10 = <insert your optimism mainnet node websocket endpoint here>
+## Environment Variables
 
-# Optimism Goerli
-JSON_RPC_URL_420 = <insert your optimism goerli node http endpoint here>
-WEBSOCKET_URL_420 = <insert your optimism goerli node websocket endpoint here>
+Set up the environment variables in your `.env` file with the appropriate values:
 
-# Arbitrum One
-JSON_RPC_URL_42161 = <insert your arbitrum one node http endpoint here>
-WEBSOCKET_URL_42161 = <insert your arbitrum one node websocket endpoint here>
+```
+JSON_RPC_URL_10 = **insert your optimism mainnet node http endpoint here**
+WEBSOCKET_URL_10 = **insert your optimism mainnet node websocket endpoint here**
 
-# Arbitrum Goerli
-JSON_RPC_URL_421613 = <insert your arbitrum goerli node http endpoint here>
-WEBSOCKET_URL_421613 = <insert your arbitrum goerli node websocket endpoint here>
+JSON_RPC_URL_420 = **insert your optimism goerli node http endpoint here**
+WEBSOCKET_URL_420 = **insert your optimism goerli node websocket endpoint here**
 
-# Polygon Mainnet
-JSON_RPC_URL_137 = <insert your polygon mainnet node http endpoint here>
-WEBSOCKET_URL_137 = <insert your polygon mainnet node websocket endpoint here>
+JSON_RPC_URL_42161 = **insert your arbitrum one node http endpoint here**
+WEBSOCKET_URL_42161 = **insert your arbitrum one node websocket endpoint here**
 
-# Polygon Mumbai
-JSON_RPC_URL_80001 = <insert your polygon mumbai node http endpoint here>
-WEBSOCKET_URL_80001 = <insert your polygon mumbai node websocket endpoint here>
+JSON_RPC_URL_421613 = **insert your arbitrum goerli node http endpoint here**
+WEBSOCKET_URL_421613 = **insert your arbitrum goerli node websocket endpoint here**
 
-# Base
-JSON_RPC_URL_8453 = <insert your base node http endpoint here>
-WEBSOCKET_URL_8453 = <insert your base node websocket endpoint here>
+JSON_RPC_URL_137 = **insert your polygon mainnet node http endpoint here**
+WEBSOCKET_URL_137 = **insert your polygon mainnet node websocket endpoint here**
 
-# Base Goerli
-JSON_RPC_URL_84531 = <insert your base goerli node http endpoint here>
-WEBSOCKET_URL_84531 = <insert your base goerli node websocket endpoint here>
+JSON_RPC_URL_80001 = **insert your polygon mumbai node http endpoint here**
+WEBSOCKET_URL_80001 = **insert your polygon mumbai node websocket endpoint here**
 
-# Developer account
-DEV_EOA = <insert your developer EOA address here>
-EOA_PRIVATE_KEY = <insert your developer EOA private key here>
+JSON_RPC_URL_8453 = **insert your base node http endpoint here**
+WEBSOCKET_URL_8453 = **insert your base node websocket endpoint here**
+
+JSON_RPC_URL_84531 = **insert your base goerli node http endpoint here**
+WEBSOCKET_URL_84531 = **insert your base goerli node websocket endpoint here**
+
+DEV_EOA = **insert your developer EOA address here**
+EOA_PRIVATE_KEY = **insert your developer EOA private key here**
+
+MY_LIVE_BOT_EOA_ADDRESS_OR_REF = **insert the EOA that manages the bot**
+MY_TEST_BOT_EOA_ADDRESS = **insert the testing EOA that manages the bot**
+```
 
 *make sure to remove the #comments from your .env file*
 
