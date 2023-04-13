@@ -4,15 +4,28 @@ import './CurrentOrderBook.css';
 import { SimpleBook } from '../../../../configuration/config';
 
 const CurrentOrderBook: React.FC = () => {
-  const [orderBook, setOrderBook] = useState<SimpleBook | null>(null);
+  const [currentOrderBook, setCurrentOrderBook] = useState<SimpleBook>({ bids: [], asks: [] });
+  const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    // Fetch order book data from the bot and update the state
+    const ws = new WebSocket('ws://localhost:8080');
+    setSocket(ws);
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'CURRENT_ORDER_BOOK') {
+        setCurrentOrderBook(message.data);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
   return (
     <div className="current-order-book">
-      {/* Render order book data */}
+      {currentOrderBook.toString()}
     </div>
   );
 };

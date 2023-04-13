@@ -2,6 +2,8 @@
 // Has a function called inventoryMangagement that listens to this.relativeAssetBalance and this.relativeQuoteBalance to determine biases for market-making behavior
 // Has a function called execute that listens to the strategy's targetBook and executes orders on the liquidity venue once the strategy's targetBook is different 
 // enough based on a configurable threshold from the liquidity venue's liveBook
+import { EventEmitter } from 'events';
+import WebSocket from 'ws';
 
 import { BigNumber, ethers } from "ethers";
 import { BotConfiguration, TransactionResponse, marketAddressesByNetwork } from "../../configuration/config";
@@ -13,7 +15,6 @@ import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
 import { formatUnits, getAddress, parseUnits } from "ethers/lib/utils";
 import MARKET_INTERFACE from "../../configuration/abis/Market";
-import { EventEmitter } from "stream";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -25,6 +26,8 @@ export type MarketAidAvailableLiquidity = {
 
 // Takes a configuration, market aid instance, and strategy in the constructor
 export class GenericMarketMakingBot extends EventEmitter {
+    private wss: WebSocket.Server;
+
     config: BotConfiguration;
     marketAid: ethers.Contract;
     strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy;
@@ -73,9 +76,40 @@ export class GenericMarketMakingBot extends EventEmitter {
             this.config.connections.websocketProvider ? this.config.connections.websocketProvider : this.config.connections.jsonRpcProvider
         );
 
-        // TODO Establish websocket broadcaster for updates
-    }
-
+        this.wss = new WebSocket.Server({ port: 8080 });
+        this.setupWebSocketServer();
+      }
+    
+      private setupWebSocketServer() {
+        this.wss.on('connection', (ws) => {
+          console.log('Client connected');
+          ws.send(JSON.stringify({ type: 'INITIAL_DATA', data: {/* ... */} }));
+    
+          this.on('currentOrderBookUpdated', (orderBook) => {
+            this.broadcast(JSON.stringify({ type: 'CURRENT_ORDER_BOOK', data: orderBook }));
+          });
+    
+          this.on('targetOrderBookUpdated', (targetOrderBook) => {
+            this.broadcast(JSON.stringify({ type: 'TARGET_ORDER_BOOK', data: targetOrderBook }));
+          });
+    
+          this.on('tradeActionLogged', (tradeAction) => {
+            this.broadcast(JSON.stringify({ type: 'TRADE_ACTION', data: tradeAction }));
+          });
+        });
+    
+        process.on('exit', () => {
+          this.wss.close();
+        });
+      }
+    
+      private broadcast(data: string) {
+        this.wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(data);
+          }
+        });
+      }
 
     // Function that updates the on-chain book on the liquidity venue based on the strategy's targetBook
     // updateOnChainBook() {

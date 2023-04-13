@@ -4,10 +4,23 @@ import './TargetOrderBook.css';
 import { SimpleBook } from '../../../../configuration/config';
 
 const TargetOrderBook: React.FC = () => {
-  const [targetOrderBook, setTargetOrderBook] = useState<SimpleBook | null>(null);
+  const [targetOrderBook, setTargetOrderBook] = useState<SimpleBook>({ bids: [], asks: [] });
+  const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    // Fetch target order book data from the bot and update the state
+    const ws = new WebSocket('ws://localhost:8080');
+    setSocket(ws);
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'TARGET_ORDER_BOOK') {
+        setTargetOrderBook(message.data);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
   return (
