@@ -25,9 +25,47 @@ const TargetOrderBook: React.FC = () => {
 
   return (
     <div className="target-order-book">
-      {targetOrderBook.toString()}
+      <div className="bids">
+        <h3>Bids</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Price</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {targetOrderBook.bids.map((bid, index) => (
+              <tr key={index}>
+                <td>{bid.price}</td>
+                <td>{bid.quantity}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="asks">
+        <h3>Asks</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Price</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {targetOrderBook.asks.map((ask, index) => (
+              <tr key={index}>
+                <td>{ask.price}</td>
+                <td>{ask.quantity}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
+  
 };
 
 export default TargetOrderBook;

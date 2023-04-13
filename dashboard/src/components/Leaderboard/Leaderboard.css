@@ -4,5 +4,20 @@
     align-items: flex-start;
     padding: 20px;
     gap: 20px;
+    height: 100vh;
+    flex-direction: column;
   }
   
+  .leaderboard > div {
+    flex: 1;
+    margin-bottom: 20px;
+  }
+  
+  .trade-history {
+    margin-top: auto;
+    overflow: auto;
+  }
+  
+  .current-order-book, .target-order-book {
+    height: 50%;
+  }

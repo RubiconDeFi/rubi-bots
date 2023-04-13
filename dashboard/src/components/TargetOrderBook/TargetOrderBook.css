@@ -1,0 +1,38 @@
+.target-order-book {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem;
+  }
+  
+  .target-order-book h3 {
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  
+  .target-order-book table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  .target-order-book th,
+  .target-order-book td {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    text-align: center;
+  }
+  
+  .target-order-book thead {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+  
+  .target-order-book tbody tr:nth-child(even) {
+    background-color: #f8f8f8;
+  }
+  
+  .target-order-book tbody tr:hover {
+    background-color: #e0e0e0;
+    cursor: pointer;
+  }
+  

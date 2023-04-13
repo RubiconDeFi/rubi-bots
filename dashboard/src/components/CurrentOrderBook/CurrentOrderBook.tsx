@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-// import './CurrentOrderBook.css';
+import './CurrentOrderBook.css';
 import { SimpleBook } from '../../../../configuration/config';
 
 const CurrentOrderBook: React.FC = () => {
@@ -25,7 +25,22 @@ const CurrentOrderBook: React.FC = () => {
 
   return (
     <div className="current-order-book">
-      {currentOrderBook.toString()}
+      <table className="order-book-table">
+        <thead>
+          <tr>
+            <th>Bids</th>
+            <th>Asks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentOrderBook.bids.map((bid, index) => (
+            <tr key={index}>
+              <td>{`${bid.price} x ${bid.amount}`}</td>
+              <td>{currentOrderBook.asks[index] && `${currentOrderBook.asks[index].price} x ${currentOrderBook.asks[index].amount}`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
