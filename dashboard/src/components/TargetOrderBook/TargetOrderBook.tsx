@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import './TargetOrderBook.css';
+// import './TargetOrderBook.css';
 import { SimpleBook } from '../../../../configuration/config';
 
 const TargetOrderBook: React.FC = () => {
@@ -25,7 +25,7 @@ const TargetOrderBook: React.FC = () => {
 
   return (
     <div className="target-order-book">
-      {/* Render target order book data */}
+      {targetOrderBook.toString()}
     </div>
   );
 };

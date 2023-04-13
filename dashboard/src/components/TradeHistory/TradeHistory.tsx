@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "./TradeHistory.css";
+// import "./TradeHistory.css";
 
 export type TradeAction = {
   action: string;
@@ -31,7 +31,7 @@ const TradeHistory: React.FC = () => {
     };
   }, []);
 
-  return <div className="trade-history">{/* Render trade history data */}</div>;
+  return <div className="trade-history">{tradeHistory.toString()}</div>;
 };
 
 export default TradeHistory;

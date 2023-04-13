@@ -1,7 +1,7 @@
 import React from 'react';
-import CurrentOrderBook from '../CurrentOrderBook/CurrentOrderBook';
-import TargetOrderBook from '../TargetOrderBook/TargetOrderBook';
-import TradeHistory from '../TradeHistory/TradeHistory';
+import CurrentOrderBook from '../CurrentOrderBook/CurrentOrderBook.tsx';
+import TargetOrderBook from '../TargetOrderBook/TargetOrderBook.tsx';
+import TradeHistory from '../TradeHistory/TradeHistory.tsx';
 import './Leaderboard.css';
 
 const Leaderboard: React.FC = () => {

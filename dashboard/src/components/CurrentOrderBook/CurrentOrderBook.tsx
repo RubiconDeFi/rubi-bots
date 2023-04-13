@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import './CurrentOrderBook.css';
+// import './CurrentOrderBook.css';
 import { SimpleBook } from '../../../../configuration/config';
 
 const CurrentOrderBook: React.FC = () => {

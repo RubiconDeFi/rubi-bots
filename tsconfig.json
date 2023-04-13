@@ -14,11 +14,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "noFallthroughCasesInSwitch": true,
-    // "types": ["vite/client"]
+    "types": ["vite/client"]
   },
   "ts-node": {
     "compilerOptions": {
       "module": "commonjs"
     }
   },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }
