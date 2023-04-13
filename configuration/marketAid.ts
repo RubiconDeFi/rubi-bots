@@ -645,17 +645,22 @@ async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void>
         switch (answer.toLowerCase()) {
             case '1':
                 console.log("\n Connect to an existing Market Aid \n");
-
+    
                 aids = await marketAidFactory.getUserMarketAids(signer.address);
-                // console.log("Market Aids: ", aids);
-
+                
+                if (aids.length === 0) {
+                    console.log("You have no Market Aids. Returning to Network Menu...\n");
+                    networkMenu();
+                    break;
+                }
+    
                 selectedAidAddress = await selectExistingMarketAid(aids);
                 marketAid = new MarketAid(selectedAidAddress, signer);
                 console.log("Connected to Market Aid: ", marketAid.address);
-
+    
                 // connect to the market aid menu
                 aidMenu(marketAid);
-
+    
                 break;
 
             case '2':
