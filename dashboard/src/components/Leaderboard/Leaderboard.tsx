@@ -7,9 +7,13 @@ import './Leaderboard.css';
 const Leaderboard: React.FC = () => {
   return (
     <div className="leaderboard">
-      <CurrentOrderBook />
-      <TargetOrderBook />
-      <TradeHistory />
+      <div className="order-books-row">
+        <CurrentOrderBook />
+        <TargetOrderBook />
+      </div>
+      <div className="trade-history-row">
+        <TradeHistory />
+      </div>
     </div>
   );
 };

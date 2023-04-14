@@ -1,23 +1,20 @@
 .leaderboard {
     display: flex;
-    justify-content: space-around;
-    align-items: flex-start;
-    padding: 20px;
-    gap: 20px;
-    height: 100vh;
     flex-direction: column;
+    width: 100%;
   }
   
-  .leaderboard > div {
-    flex: 1;
-    margin-bottom: 20px;
+  .order-books-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
   }
   
-  .trade-history {
-    margin-top: auto;
-    overflow: auto;
+  .trade-history-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
   }
   
-  .current-order-book, .target-order-book {
-    height: 50%;
-  }

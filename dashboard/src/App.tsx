@@ -6,7 +6,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        {/* Remove the logo and other unnecessary elements */}
+        {"SHOW ME THE MONEY!"}
       </header>
 
       <Leaderboard />
