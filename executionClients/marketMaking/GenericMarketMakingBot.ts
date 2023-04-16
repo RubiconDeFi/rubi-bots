@@ -14,6 +14,7 @@ import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAi
 import { formatUnits, getAddress, parseUnits } from "ethers/lib/utils";
 import MARKET_INTERFACE from "../../configuration/abis/Market";
 import { NonceManager } from "@ethersproject/experimental";
+import { updateNonceManagerTip } from "../../utilities";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -532,6 +533,7 @@ export class GenericMarketMakingBot {
         assetToSell: string,
         amountToSell: BigNumber,
         assetToTarget: string,
+        retryCount: number = 0, // Added counter with a default value of 0
     ): Promise<boolean | void> {
         const poolFee: number = (this.strategy.getReferenceLiquidityVenue() as UniswapLiquidityVenue).uniFee;
 
@@ -550,12 +552,21 @@ export class GenericMarketMakingBot {
             console.error("Error while executing dumpFillViaMarketAid:", error);
 
             // TODO: Update the nonce and try again if there's a failure...
-            
-            return false;
+            await updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.connections.jsonRpcProvider)
+
+            // Check if retryCount is less than 3
+            if (retryCount < 3) {
+                console.log("Retrying dumpFillViaMarketAid, attempt:", retryCount + 1);
+                return this.dumpFillViaMarketAid(assetToSell, amountToSell, assetToTarget, retryCount + 1); // Increment retryCount
+            } else {
+                console.log("Failed to dump fill via market aid after 3 attempts. Exiting...");
+                return false;
+            }
         }
 
         return true;
     }
+
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
