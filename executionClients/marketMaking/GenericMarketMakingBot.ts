@@ -552,7 +552,7 @@ export class GenericMarketMakingBot {
             console.error("Error while executing dumpFillViaMarketAid:", error);
 
             // TODO: Update the nonce and try again if there's a failure...
-            await updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.connections.jsonRpcProvider)
+            // await updateNonceManagerTip((this.config.connections.signer as NonceManager), this.config.connections.jsonRpcProvider)
 
             // Check if retryCount is less than 3
             if (retryCount < 3) {
