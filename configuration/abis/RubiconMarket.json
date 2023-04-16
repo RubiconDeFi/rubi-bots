@@ -4,123 +4,6 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "bytes32",
-        "name": "id",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "pair",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "internalType": "contract ERC20",
-        "name": "asset",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "taker",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "feeTo",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "feeAmt",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "timestamp",
-        "type": "uint64"
-      }
-    ],
-    "name": "FeeTake",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "id",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "pair",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "maker",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "contract ERC20",
-        "name": "pay_gem",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "contract ERC20",
-        "name": "buy_gem",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "pay_amt",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "buy_amt",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "timestamp",
-        "type": "uint64"
-      }
-    ],
-    "name": "LogBump",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isEnabled",
-        "type": "bool"
-      }
-    ],
-    "name": "LogBuyEnabled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "address",
         "name": "keeper",
         "type": "address"
@@ -140,160 +23,12 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "address",
-        "name": "keeper",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "LogInsert",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "lol",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "input",
-        "type": "uint256"
-      }
-    ],
-    "name": "LogInt",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "uint256",
         "name": "id",
         "type": "uint256"
       }
     ],
     "name": "LogItemUpdate",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "id",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "pair",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "maker",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "contract ERC20",
-        "name": "pay_gem",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "contract ERC20",
-        "name": "buy_gem",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "pay_amt",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "buy_amt",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "timestamp",
-        "type": "uint64"
-      }
-    ],
-    "name": "LogKill",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "id",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "pair",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "maker",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "contract ERC20",
-        "name": "pay_gem",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "contract ERC20",
-        "name": "buy_gem",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "pay_amt",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "buy_amt",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "timestamp",
-        "type": "uint64"
-      }
-    ],
-    "name": "LogMake",
     "type": "event"
   },
   {
@@ -313,19 +48,6 @@
       }
     ],
     "name": "LogMatch",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isEnabled",
-        "type": "bool"
-      }
-    ],
-    "name": "LogMatchingEnabled",
     "type": "event"
   },
   {
@@ -396,19 +118,6 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "authority",
-        "type": "address"
-      }
-    ],
-    "name": "LogSetAuthority",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
         "name": "owner",
         "type": "address"
       }
@@ -434,6 +143,19 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogUnsortedOffer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "bytes32",
         "name": "id",
         "type": "bytes32"
@@ -463,9 +185,175 @@
         "type": "address"
       },
       {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "pay_amt",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "buy_amt",
+        "type": "uint128"
+      }
+    ],
+    "name": "emitCancel",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "pair",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      }
+    ],
+    "name": "emitDelete",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
         "indexed": true,
         "internalType": "address",
         "name": "taker",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "feeTo",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "pair",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "contract ERC20",
+        "name": "asset",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "feeAmt",
+        "type": "uint256"
+      }
+    ],
+    "name": "emitFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "pair",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "contract ERC20",
+        "name": "pay_gem",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "contract ERC20",
+        "name": "buy_gem",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "pay_amt",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "buy_amt",
+        "type": "uint128"
+      }
+    ],
+    "name": "emitOffer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "pair",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "taker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "contract ERC20",
+        "name": "pay_gem",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "contract ERC20",
+        "name": "buy_gem",
         "type": "address"
       },
       {
@@ -479,72 +367,9 @@
         "internalType": "uint128",
         "name": "give_amt",
         "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "timestamp",
-        "type": "uint64"
       }
     ],
-    "name": "LogTake",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "pay_amt",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "pay_gem",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "buy_amt",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "buy_gem",
-        "type": "address"
-      }
-    ],
-    "name": "LogTrade",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "LogUnsortedOffer",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "OfferDeleted",
+    "name": "emitTake",
     "type": "event"
   },
   {
@@ -614,6 +439,40 @@
     "type": "function"
   },
   {
+    "inputs": [
+      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" }
+    ],
+    "name": "batchCancel",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256[]", "name": "payAmts", "type": "uint256[]" },
+      { "internalType": "address[]", "name": "payGems", "type": "address[]" },
+      { "internalType": "uint256[]", "name": "buyAmts", "type": "uint256[]" },
+      { "internalType": "address[]", "name": "buyGems", "type": "address[]" }
+    ],
+    "name": "batchOffer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" },
+      { "internalType": "uint256[]", "name": "payAmts", "type": "uint256[]" },
+      { "internalType": "address[]", "name": "payGems", "type": "address[]" },
+      { "internalType": "uint256[]", "name": "buyAmts", "type": "uint256[]" },
+      { "internalType": "address[]", "name": "buyGems", "type": "address[]" }
+    ],
+    "name": "batchRequote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "bytes32", "name": "id_", "type": "bytes32" }],
     "name": "bump",
     "outputs": [],
@@ -660,6 +519,17 @@
     "inputs": [],
     "name": "buyEnabled",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "calcAmountAfterFee",
+    "outputs": [
+      { "internalType": "uint256", "name": "_amount", "type": "uint256" }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -723,6 +593,41 @@
     "outputs": [
       { "internalType": "uint256", "name": "fill_amt", "type": "uint256" }
     ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract ERC20",
+        "name": "buy_gem",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ERC20",
+        "name": "pay_gem",
+        "type": "address"
+      },
+      { "internalType": "uint256", "name": "pay_amt", "type": "uint256" }
+    ],
+    "name": "getBuyAmountWithFee",
+    "outputs": [
+      { "internalType": "uint256", "name": "fill_amt", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFeeBPS",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFeeTo",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -806,6 +711,36 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "contract ERC20",
+        "name": "pay_gem",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ERC20",
+        "name": "buy_gem",
+        "type": "address"
+      },
+      { "internalType": "uint256", "name": "buy_amt", "type": "uint256" }
+    ],
+    "name": "getPayAmountWithFee",
+    "outputs": [
+      { "internalType": "uint256", "name": "fill_amt", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }],
+    "name": "getRecipient",
+    "outputs": [
+      { "internalType": "address", "name": "owner", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getTime",
     "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
@@ -821,7 +756,6 @@
   },
   {
     "inputs": [
-      { "internalType": "bool", "name": "_live", "type": "bool" },
       { "internalType": "address", "name": "_feeTo", "type": "address" }
     ],
     "name": "initialize",
@@ -834,16 +768,6 @@
     "name": "initialized",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "id", "type": "uint256" },
-      { "internalType": "uint256", "name": "pos", "type": "uint256" }
-    ],
-    "name": "insert",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -903,6 +827,13 @@
   },
   {
     "inputs": [],
+    "name": "makerFee",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "matchingEnabled",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
@@ -922,7 +853,9 @@
         "name": "buy_gem",
         "type": "address"
       },
-      { "internalType": "uint256", "name": "pos", "type": "uint256" }
+      { "internalType": "uint256", "name": "pos", "type": "uint256" },
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "address", "name": "recipient", "type": "address" }
     ],
     "name": "offer",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
@@ -944,7 +877,31 @@
         "type": "address"
       },
       { "internalType": "uint256", "name": "pos", "type": "uint256" },
-      { "internalType": "bool", "name": "matching", "type": "bool" }
+      { "internalType": "bool", "name": "matching", "type": "bool" },
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "address", "name": "recipient", "type": "address" }
+    ],
+    "name": "offer",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "pay_amt", "type": "uint256" },
+      {
+        "internalType": "contract ERC20",
+        "name": "pay_gem",
+        "type": "address"
+      },
+      { "internalType": "uint256", "name": "buy_amt", "type": "uint256" },
+      {
+        "internalType": "contract ERC20",
+        "name": "buy_gem",
+        "type": "address"
+      },
+      { "internalType": "uint256", "name": "pos", "type": "uint256" },
+      { "internalType": "bool", "name": "rounding", "type": "bool" }
     ],
     "name": "offer",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
@@ -968,6 +925,28 @@
     "type": "function"
   },
   {
+    "inputs": [
+      { "internalType": "uint256", "name": "pay_amt", "type": "uint256" },
+      {
+        "internalType": "contract ERC20",
+        "name": "pay_gem",
+        "type": "address"
+      },
+      { "internalType": "uint256", "name": "buy_amt", "type": "uint256" },
+      {
+        "internalType": "contract ERC20",
+        "name": "buy_gem",
+        "type": "address"
+      },
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "address", "name": "recipient", "type": "address" }
+    ],
+    "name": "offer",
+    "outputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "name": "offers",
     "outputs": [
@@ -983,8 +962,9 @@
         "name": "buy_gem",
         "type": "address"
       },
-      { "internalType": "address", "name": "owner", "type": "address" },
-      { "internalType": "uint64", "name": "timestamp", "type": "uint64" }
+      { "internalType": "address", "name": "recipient", "type": "address" },
+      { "internalType": "uint64", "name": "timestamp", "type": "uint64" },
+      { "internalType": "address", "name": "owner", "type": "address" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -1024,31 +1004,6 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_Aqueduct", "type": "address" }
-    ],
-    "name": "setAqueductAddress",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "bool", "name": "live", "type": "bool" }],
-    "name": "setAqueductDistributionLive",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "bool", "name": "buyEnabled_", "type": "bool" }
-    ],
-    "name": "setBuyEnabled",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
       { "internalType": "uint256", "name": "_newFeeBPS", "type": "uint256" }
     ],
     "name": "setFeeBPS",
@@ -1067,9 +1022,9 @@
   },
   {
     "inputs": [
-      { "internalType": "bool", "name": "matchingEnabled_", "type": "bool" }
+      { "internalType": "uint256", "name": "_newMakerFee", "type": "uint256" }
     ],
-    "name": "setMatchingEnabled",
+    "name": "setMakerFee",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "nonpayable",
     "type": "function"

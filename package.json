@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "guidedStart": "ts-node ./configuration/index.ts",
-    "startServer": "ts-node ./liquidityVenues/rubicon/index.ts"
+    "startServer": "ts-node ./liquidityVenues/rubicon/index.ts",
+    "startGenericMarketMakingBot": "ts-node ./executionClients/marketMaking/index.ts"
   },
   "repository": {
     "type": "git",
@@ -31,6 +32,7 @@
   },
   "homepage": "https://github.com/RubiconDeFi/rubi-bots#readme",
   "dependencies": {
+    "@ethersproject/experimental": "^5.7.0",
     "@types/node": "^18.11.18",
     "@uniswap/token-lists": "^1.0.0-beta.31",
     "dotenv": "^16.0.3",

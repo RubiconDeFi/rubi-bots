@@ -9,21 +9,78 @@ import { GenericMarketMakingStrategy } from "./genericMarketMaking";
 export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
     improvement: number; // Improvement on the targeted liquidity venue's perceived curve
 
-    constructor(referenceLiquidityVenue: GenericLiquidityVenue, improvement: number) {
+    constructor(referenceLiquidityVenue: GenericLiquidityVenue, premium: number) {
         super(referenceLiquidityVenue);
-        this.improvement = improvement;
-        this.identifier = 'targetVenueOutBid';
+        this.improvement = premium;
+        console.log("This is my IMPROVEMENT: ", this.improvement);
+        if (this.improvement > 1 || this.improvement < 0) {
+            throw new Error("Premium must be less than 1 or greater than 0");
+        }
+
+        this.identifier = 'targetvenueoutbid';
+        this.updateTargetBook();
     }
 
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
-    updateTargetBook() {
+    override updateTargetBook() {
+        const MIN_SPREAD = 0.0001;
+
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
+            if (liveBook == undefined) {
+                console.log("Live book is undefined, therefore do nothing and return");
+                return;
+            }
             this.targetBook = liveBook;
-            this.targetBook.bids.forEach((bid) => {
-                bid.price = bid.price * (1 + this.improvement);
+
+            // Calculate the midpoint of the initial liveBook
+            const highestBid = liveBook.bids.length > 0 ? liveBook.bids[0].price : 0;
+            const lowestAsk = liveBook.asks.length > 0 ? liveBook.asks[0].price : Infinity;
+            const midpoint = (highestBid + lowestAsk) / 2;
+
+            if (liveBook.bids) {
+                this.targetBook.bids = liveBook.bids.map((bid) => {
+                    if (bid.price == Infinity || isNaN(bid.price) || bid.price == undefined || bid.price == 0 || bid.size == 0) {
+                        return;
+                    }
+                    const newPrice = bid.price * (1 + this.improvement);
+                    const adjustedPrice = Math.min(newPrice, midpoint) === midpoint ? (midpoint * (1 - (MIN_SPREAD / 2))) : newPrice;
+                    return {
+                        price: adjustedPrice,
+                        size: bid.size
+                    }
+                });
+            }
+            if (liveBook.asks) {
+                this.targetBook.asks = liveBook.asks.map((ask) => {
+                    if (ask.price == Infinity || isNaN(ask.price) || ask.price == undefined || ask.price == 0 || ask.size == 0) {
+                        return;
+                    }
+                    const newPrice = ask.price * (1 - this.improvement);
+                    const adjustedPrice = Math.max(newPrice, midpoint) === midpoint ? (midpoint * (1 + (MIN_SPREAD / 2))) : newPrice;
+                    return {
+                        price: adjustedPrice,
+                        size: ask.size
+                    }
+                });
+            }
+            // Replace all undefined elements from this.targetBook with orders that have a size of zero and price of zero
+            this.targetBook.bids = this.targetBook.bids.map((bid) => {
+                if (bid == undefined) {
+                    return {
+                        price: 0,
+                        size: 0
+                    }
+                }
+                return bid;
             });
-            this.targetBook.asks.forEach((ask) => {
-                ask.price = ask.price * (1 - this.improvement);
+            this.targetBook.asks = this.targetBook.asks.map((ask) => {
+                if (ask == undefined) {
+                    return {
+                        price: 0,
+                        size: 0
+                    }
+                }
+                return ask;
             });
             this.emitUpdate();
         });

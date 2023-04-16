@@ -1,8 +1,16 @@
 [
   {
     "inputs": [
-      { "internalType": "address", "name": "market", "type": "address" },
-      { "internalType": "address", "name": "_admin", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "market",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_admin",
+        "type": "address"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -36,6 +44,61 @@
       }
     ],
     "name": "LogAdminPullFunds",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "assetSold",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "assetReceived",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountSold",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profit",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint24",
+        "name": "uniPoolFee",
+        "type": "uint24"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isBuyRubiconFirst",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogAtomicArbitrage",
     "type": "event"
   },
   {
@@ -105,6 +168,49 @@
       }
     ],
     "name": "LogBookUpdate",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "assetSold",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "assetReceived",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountSold",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountReceived",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "venue",
+        "type": "address"
+      }
+    ],
+    "name": "LogExternalSwap",
     "type": "event"
   },
   {
@@ -221,21 +327,41 @@
   {
     "inputs": [],
     "name": "RubiconMarketAddress",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "admin",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address[]", "name": "erc20s", "type": "address[]" },
-      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+      {
+        "internalType": "address[]",
+        "name": "erc20s",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      }
     ],
     "name": "adminDepositToBook",
     "outputs": [],
@@ -244,8 +370,16 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "target", "type": "address" },
-      { "internalType": "address", "name": "token", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
     ],
     "name": "adminMaxApproveTarget",
     "outputs": [],
@@ -254,7 +388,11 @@
   },
   {
     "inputs": [
-      { "internalType": "address[]", "name": "erc20s", "type": "address[]" }
+      {
+        "internalType": "address[]",
+        "name": "erc20s",
+        "type": "address[]"
+      }
     ],
     "name": "adminPullAllFunds",
     "outputs": [],
@@ -263,21 +401,45 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "assetToSell", "type": "address" },
-      { "internalType": "uint256", "name": "amountToSell", "type": "uint256" },
-      { "internalType": "address", "name": "assetToTarget", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "assetToSell",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amountToSell",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "assetToTarget",
+        "type": "address"
+      }
     ],
     "name": "adminRebalanceFunds",
     "outputs": [
-      { "internalType": "uint256", "name": "fill_amt", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "fill_amt",
+        "type": "uint256"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address[]", "name": "erc20s", "type": "address[]" },
-      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+      {
+        "internalType": "address[]",
+        "name": "erc20s",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      }
     ],
     "name": "adminWithdrawFromBook",
     "outputs": [],
@@ -286,7 +448,11 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "strategist", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "strategist",
+        "type": "address"
+      }
     ],
     "name": "approveStrategist",
     "outputs": [],
@@ -294,14 +460,32 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "name": "approvedStrategists",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "kso", "type": "address" }],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "kso",
+        "type": "address"
+      }
+    ],
     "name": "assignKillSwitchOperator",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -309,11 +493,19 @@
   },
   {
     "inputs": [
-      { "internalType": "bytes[]", "name": "data", "type": "bytes[]" }
+      {
+        "internalType": "bytes[]",
+        "name": "data",
+        "type": "bytes[]"
+      }
     ],
     "name": "batchBox",
     "outputs": [
-      { "internalType": "bytes[]", "name": "results", "type": "bytes[]" }
+      {
+        "internalType": "bytes[]",
+        "name": "results",
+        "type": "bytes[]"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -345,7 +537,11 @@
         "name": "bidDenominators",
         "type": "uint256[]"
       },
-      { "internalType": "address", "name": "recipient", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
     ],
     "name": "batchMarketMakingTrades",
     "outputs": [],
@@ -420,7 +616,11 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
       {
         "internalType": "address[2]",
         "name": "tokenPair",
@@ -454,7 +654,11 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
       {
         "internalType": "address[2]",
         "name": "tokenPair",
@@ -480,9 +684,46 @@
         "name": "bidDenominators",
         "type": "uint256[]"
       },
-      { "internalType": "address", "name": "recipient", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
     ],
     "name": "batchRequoteOffers",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "assetToSell",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amountToSell",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "assetToTarget",
+        "type": "address"
+      },
+      {
+        "internalType": "uint24",
+        "name": "poolFee",
+        "type": "uint24"
+      },
+      {
+        "internalType": "bool",
+        "name": "isBuyRubiconFirst",
+        "type": "bool"
+      }
+    ],
+    "name": "captureAtomicArbOrPass",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -508,8 +749,16 @@
         "name": "strategistToBailOut",
         "type": "address"
       },
-      { "internalType": "address", "name": "asset", "type": "address" },
-      { "internalType": "address", "name": "quote", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "asset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "quote",
+        "type": "address"
+      }
     ],
     "name": "flipKillSwitchOn",
     "outputs": [],
@@ -518,22 +767,106 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "asset", "type": "address" },
-      { "internalType": "address", "name": "quote", "type": "address" },
-      { "internalType": "address", "name": "strategist", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "asset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "quote",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "strategist",
+        "type": "address"
+      }
     ],
     "name": "getOutstandingStrategistTrades",
     "outputs": [
-      { "internalType": "uint256[]", "name": "", "type": "uint256[]" }
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "asset", "type": "address" },
-      { "internalType": "address", "name": "quote", "type": "address" },
-      { "internalType": "address", "name": "strategist", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "asset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "quote",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "strategist",
+        "type": "address"
+      }
+    ],
+    "name": "getStrategistBookWithPriceData",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "relevantStratTradeId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bidPay",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bidBuy",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "askPay",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "askBuy",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct MarketAid.MarketOffer[]",
+        "name": "ordersOnBook",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "asset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "quote",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "strategist",
+        "type": "address"
+      }
     ],
     "name": "getStrategistTotalLiquidity",
     "outputs": [
@@ -547,7 +880,11 @@
         "name": "assetWeiAmount",
         "type": "uint256"
       },
-      { "internalType": "bool", "name": "status", "type": "bool" }
+      {
+        "internalType": "bool",
+        "name": "status",
+        "type": "bool"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -561,44 +898,92 @@
       }
     ],
     "name": "isApprovedStrategist",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "killSwitchOperator",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "killed",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "bytes[]", "name": "data", "type": "bytes[]" }
+      {
+        "internalType": "bytes[]",
+        "name": "data",
+        "type": "bytes[]"
+      }
     ],
     "name": "multicall",
     "outputs": [
-      { "internalType": "bytes[]", "name": "results", "type": "bytes[]" }
+      {
+        "internalType": "bytes[]",
+        "name": "results",
+        "type": "bytes[]"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "", "type": "address" },
-      { "internalType": "address", "name": "", "type": "address" },
-      { "internalType": "address", "name": "", "type": "address" },
-      { "internalType": "uint256", "name": "", "type": "uint256" }
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
     "name": "outOffersByStrategist",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -609,17 +994,35 @@
         "name": "tokenPair",
         "type": "address[2]"
       },
-      { "internalType": "uint256", "name": "askNumerator", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "askNumerator",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "askDenominator",
         "type": "uint256"
       },
-      { "internalType": "uint256", "name": "bidNumerator", "type": "uint256" },
-      { "internalType": "uint256", "name": "bidDenominator", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "bidNumerator",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bidDenominator",
+        "type": "uint256"
+      }
     ],
     "name": "placeMarketMakingTrades",
-    "outputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -630,28 +1033,50 @@
         "name": "tokenPair",
         "type": "address[2]"
       },
-      { "internalType": "uint256", "name": "askNumerator", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "askNumerator",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "askDenominator",
         "type": "uint256"
       },
-      { "internalType": "uint256", "name": "bidNumerator", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "bidNumerator",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "bidDenominator",
         "type": "uint256"
       },
-      { "internalType": "address", "name": "recipient", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
     ],
     "name": "placeMarketMakingTrades",
-    "outputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "strategist", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "strategist",
+        "type": "address"
+      }
     ],
     "name": "removeStrategist",
     "outputs": [],
@@ -660,25 +1085,41 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
       {
         "internalType": "address[2]",
         "name": "tokenPair",
         "type": "address[2]"
       },
-      { "internalType": "uint256", "name": "askNumerator", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "askNumerator",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "askDenominator",
         "type": "uint256"
       },
-      { "internalType": "uint256", "name": "bidNumerator", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "bidNumerator",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "bidDenominator",
         "type": "uint256"
       },
-      { "internalType": "address", "name": "recipient", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
     ],
     "name": "requote",
     "outputs": [],
@@ -687,20 +1128,36 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
       {
         "internalType": "address[2]",
         "name": "tokenPair",
         "type": "address[2]"
       },
-      { "internalType": "uint256", "name": "askNumerator", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "askNumerator",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "askDenominator",
         "type": "uint256"
       },
-      { "internalType": "uint256", "name": "bidNumerator", "type": "uint256" },
-      { "internalType": "uint256", "name": "bidDenominator", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "bidNumerator",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bidDenominator",
+        "type": "uint256"
+      }
     ],
     "name": "requote",
     "outputs": [],
@@ -708,7 +1165,13 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
     "name": "scrubStrategistTrade",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -716,7 +1179,11 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" }
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      }
     ],
     "name": "scrubStrategistTrades",
     "outputs": [],
@@ -725,30 +1192,88 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "assetToSell", "type": "address" },
-      { "internalType": "uint256", "name": "amountToSell", "type": "uint256" },
-      { "internalType": "address", "name": "assetToTarget", "type": "address" },
-      { "internalType": "uint24", "name": "poolFee", "type": "uint24" }
+      {
+        "internalType": "address",
+        "name": "assetToSell",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amountToSell",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "assetToTarget",
+        "type": "address"
+      },
+      {
+        "internalType": "uint24",
+        "name": "poolFee",
+        "type": "uint24"
+      }
     ],
     "name": "strategistRebalanceFunds",
     "outputs": [
-      { "internalType": "uint256", "name": "fill_amt", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "amountOut",
+        "type": "uint256"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "name": "strategistTrades",
     "outputs": [
-      { "internalType": "uint256", "name": "askId", "type": "uint256" },
-      { "internalType": "uint256", "name": "askPayAmt", "type": "uint256" },
-      { "internalType": "address", "name": "askAsset", "type": "address" },
-      { "internalType": "uint256", "name": "bidId", "type": "uint256" },
-      { "internalType": "uint256", "name": "bidPayAmt", "type": "uint256" },
-      { "internalType": "address", "name": "bidAsset", "type": "address" },
-      { "internalType": "address", "name": "strategist", "type": "address" },
-      { "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "askId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "askPayAmt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "askAsset",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bidId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bidPayAmt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "bidAsset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "strategist",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
     "stateMutability": "view",
     "type": "function"

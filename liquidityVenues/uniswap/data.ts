@@ -1,6 +1,7 @@
 import { GenericOrder, SimpleBook } from "../../configuration/config";
 import { TokenInfo } from "@uniswap/token-lists";
 import { ethers, BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 
 const SQRT_PRICE_LIMIT_x96_LTR = BigNumber.from(0);
 const SQRT_PRICE_LIMIT_x96_RTL = BigNumber.from(0);
@@ -29,8 +30,6 @@ export async function tickToBook(
     );
     console.log("leftSizeLadderWei: " + leftSizeLadderWei);
     console.log("leftSizeLadder: " + leftSizeLadder);*/
-
-
     const LEFT_ADDRESS = leftQuoteBIDERC20.address; // needs to be an Address type
     const RIGHT_ADDRESS = rightAssetASKERC20.address; // needs to be an Address type
     const LEFT_DECIMALS = leftQuoteBIDERC20.decimals; // needs to be a number type
@@ -87,6 +86,7 @@ export async function buildPairedLadderHuman(
 
     let rightSizePDF: Array<BigNumber> = [];
     for (let i = rightSizeCDF.length - 1; i > 0; i--) {
+        if (rightSizeCDF[i] == undefined) throw "Got an undefined response on quoteExactInputSingleStatic calls"
         rightSizePDF.push(rightSizeCDF[i].sub(rightSizeCDF[i - 1]));
     }
     // we gotta adjust the last bit of the PDF
@@ -233,12 +233,12 @@ export function quoteExactInputSingleStatic(
     amountIn: BigNumber,
     sqrtPriceLimitX96: BigNumber
 ): Promise<BigNumber> {
-    let options = { gasLimit: 8500000 }; // cost us 35000 gas I think
+    // let options = { gasLimit: 8500000 }; // cost us 35000 gas I think
     // console.log("\nquoteExactInputSingleStatic");
     // console.log("tokenIn", tokenIn);
     // console.log("tokenOut", tokenOut);
     // console.log("fee", fee.toString());
-    // console.log("amountIn", amountIn);
+    // console.log("amountIn", formatUnits(amountIn));
     // console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
 
     return poolContract.callStatic.quoteExactInputSingle(
@@ -248,7 +248,7 @@ export function quoteExactInputSingleStatic(
         amountIn,
         sqrtPriceLimitX96,
         // options
-    ).catch((e) => console.log("May have failed calling static", e.reason, e))
+    ).catch((e) => console.log("May have failed calling static", e.reason, e, "called with these params", tokenIn, tokenOut, fee.toString(), amountIn.toString(), sqrtPriceLimitX96.toString()));
 }
 
 // keep
