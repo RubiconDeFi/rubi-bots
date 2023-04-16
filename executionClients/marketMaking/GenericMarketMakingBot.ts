@@ -13,6 +13,8 @@ import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
 import { formatUnits, getAddress, parseUnits } from "ethers/lib/utils";
 import MARKET_INTERFACE from "../../configuration/abis/Market";
+import { NonceManager } from "@ethersproject/experimental";
+import { updateNonceManagerTip } from "../../utilities";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -95,17 +97,25 @@ export class GenericMarketMakingBot {
 
 
         // and this.availableLiquidity to get information on the current state of the market via pollLiveBook
-        var assetLadder = _uniQueryLadder.assetLadder;
-        var quoteLadder = _uniQueryLadder.quoteLadder;
+        // var assetLadder = _uniQueryLadder.assetLadder;
+        // var quoteLadder = _uniQueryLadder.quoteLadder;
 
         (this.strategy.referenceLiquidityVenue as UniswapLiquidityVenue).pollLiveBook(
-            quoteLadder,
-            assetLadder,
-            1000
+            async () => {
+                // Refresh availableLiquidity and get the updated assetLadder based on it
+                await this.pullOnChainLiquidity();
+                const _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
+                console.log("THIS SHOULD BE A CLEAN ASSET LADDER", _uniQueryLadder);
+
+                // Print the formatted ladder
+                return _uniQueryLadder;
+            },
+            2000
         );
+
         this.strategy.updateNotifier.on('update', (liveBook) => {
             console.log('\nStrategy Feed updated!');
-            console.log(liveBook);
+            // console.log(liveBook);
             this.compareStrategyAndMarketAidBooks();
         });
 
@@ -131,10 +141,47 @@ export class GenericMarketMakingBot {
         const marketAidBook = this.marketAidPositionTracker.liveBook;
         const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
 
+        const askLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
+        const bidLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+
+        // Log values
+        console.log('True Available liquidity:', { ask: askLiquidityThreshold, bid: bidLiquidityThreshold });
         if (strategyBook === undefined || marketAidBook === undefined) {
             console.log('No books to compare');
             return;
         }
+
+        // Check if the total size of asks or bids in strategy book exceeds the available liquidity
+        const totalAskSize = strategyBook.asks.reduce((acc, ask) => acc + ask.size, 0);
+        // Convert totalBidSize from asset amount to quote amount
+        const totalBidSize = strategyBook.bids.reduce((acc, bid) => acc + (bid.size * bid.price), 0);
+        if (totalAskSize > askLiquidityThreshold || totalBidSize > bidLiquidityThreshold) {
+            console.log('Strategy book size exceeds available liquidity threshold');
+            const askScaleFactor = askLiquidityThreshold / totalAskSize;
+            // Log values
+            console.log(
+                'askLiquidityThreshold:',
+                askLiquidityThreshold,
+                'totalAskSize:',
+                totalAskSize,
+            );
+
+            console.log(
+                'bidLiquidityThreshold:',
+                bidLiquidityThreshold,
+                'totalBidSize:',
+                totalBidSize,
+            );
+
+
+            const bidScaleFactor = bidLiquidityThreshold / totalBidSize;
+            console.log('Scaling strategy book by factors:', { ask: askScaleFactor, bid: bidScaleFactor });
+
+            // Scale the sizes of the offers in the book
+            strategyBook.asks = strategyBook.asks.map(ask => ({ price: ask.price, size: ask.size * askScaleFactor }));
+            strategyBook.bids = strategyBook.bids.map(bid => ({ price: bid.price, size: bid.size * bidScaleFactor }));
+        }
+
 
         // Check if the asks and the bids are not defined in both books
         // Both books have defined values for asks and bids
@@ -150,13 +197,15 @@ export class GenericMarketMakingBot {
             }
             // If the asks and the bids of marketAidBook are non-empty then check if they are equal in length to the strategyBook
             else if (marketAidBook.asks.length === strategyBook.asks.length && marketAidBook.bids.length === strategyBook.bids.length) {
-                console.log("Market Aid book is same length as strategy book, checking for price deltas");
+                console.log("Market Aid book is same length as strategy book, checking for price deltas....");
 
                 // Check the differential between the strategyBook and the marketAidBook offers and call updateMarketAidPosition() if the differential is greater than deltaTrigger
                 for (let i = 0; i < strategyBook.asks.length; i++) {
                     const strategyAsk = strategyBook.asks[i];
                     const marketAidAsk = marketAidBook.asks[i];
-                    const askDelta = Math.abs(strategyAsk.price - marketAidAsk.price) / strategyAsk.price;
+                    const strategyAskPrice = isNaN(strategyAsk.price) ? 0 : strategyAsk.price;
+                    const marketAidAskPrice = isNaN(marketAidAsk.price) ? 0 : marketAidAsk.price;
+                    const askDelta = Math.abs(strategyAskPrice - marketAidAskPrice) / strategyAskPrice;
 
                     if (askDelta > deltaTrigger) {
                         console.log("Ask delta is greater than deltaTrigger, updating market aid position");
@@ -167,7 +216,9 @@ export class GenericMarketMakingBot {
                 for (let i = 0; i < strategyBook.bids.length; i++) {
                     const strategyBid = strategyBook.bids[i];
                     const marketAidBid = marketAidBook.bids[i];
-                    const bidDelta = Math.abs(strategyBid.price - marketAidBid.price) / strategyBid.price;
+                    const strategyBidPrice = isNaN(strategyBid.price) ? 0 : strategyBid.price;
+                    const marketAidBidPrice = isNaN(marketAidBid.price) ? 0 : marketAidBid.price;
+                    const bidDelta = Math.abs(strategyBidPrice - marketAidBidPrice) / strategyBidPrice;
 
                     if (bidDelta > deltaTrigger) {
                         console.log("Bid delta is greater than deltaTrigger, updating market aid position");
@@ -175,6 +226,7 @@ export class GenericMarketMakingBot {
                     }
                 }
             }
+
             // If the asks and the bids of marketAidBook are non-empty but are not equal in length to the strategyBook then we call requoteMarketAidPosition() if the market aid has a non-zero amount of orders on the book and call placeInitialMarketMakingTrades() if the market aid has a zero amount of orders on the book
             else if (marketAidBook.asks.length !== strategyBook.asks.length || marketAidBook.bids.length !== strategyBook.bids.length) {
                 this.requoteMarketAidPosition();
@@ -286,6 +338,7 @@ export class GenericMarketMakingBot {
         }).catch((e) => {
             console.log("This error IN SHIPPING REQUOTE", e);
             this.requotingOutstandingBook = false;
+            this.pullOnChainLiquidity();
             // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
         })
         // }
@@ -432,10 +485,12 @@ export class GenericMarketMakingBot {
         console.log("Tail off module called");
 
         console.log("Listening to takes on my orders from this market aid contract", this.marketAid.address);
+        console.log("This market", this.marketContract.address);
+
 
         const maker = this.marketAid.address;
-        this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), (id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event) => {
-            // console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event);
+        this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, timestamp, event) => {
+            console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, timestamp, event);
 
 
             console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
@@ -478,11 +533,14 @@ export class GenericMarketMakingBot {
         assetToSell: string,
         amountToSell: BigNumber,
         assetToTarget: string,
+        retryCount: number = 0, // Added counter with a default value of 0
     ): Promise<boolean | void> {
         const poolFee: number = (this.strategy.getReferenceLiquidityVenue() as UniswapLiquidityVenue).uniFee;
 
+        console.log("Attempting to dump fill via market aid...", assetToSell, amountToSell.toString(), assetToTarget, poolFee);
+
         try {
-            const amountOut: BigNumber = await this.marketAid.strategistRebalanceFunds(
+            const amountOut: BigNumber = await this.marketAid.connect(this.config.connections.signer as NonceManager).strategistRebalanceFunds(
                 assetToSell,
                 amountToSell,
                 assetToTarget,
@@ -492,11 +550,23 @@ export class GenericMarketMakingBot {
 
         } catch (error) {
             console.error("Error while executing dumpFillViaMarketAid:", error);
-            return false;
+
+            // TODO: Update the nonce and try again if there's a failure...
+            // await updateNonceManagerTip((this.config.connections.signer as NonceManager), this.config.connections.jsonRpcProvider)
+
+            // Check if retryCount is less than 3
+            if (retryCount < 3) {
+                console.log("Retrying dumpFillViaMarketAid, attempt:", retryCount + 1);
+                return this.dumpFillViaMarketAid(assetToSell, amountToSell, assetToTarget, retryCount + 1); // Increment retryCount
+            } else {
+                console.log("Failed to dump fill via market aid after 3 attempts. Exiting...");
+                return false;
+            }
         }
 
         return true;
     }
+
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
