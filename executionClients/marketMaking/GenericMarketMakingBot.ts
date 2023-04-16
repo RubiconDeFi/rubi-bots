@@ -13,6 +13,7 @@ import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
 import { formatUnits, getAddress, parseUnits } from "ethers/lib/utils";
 import MARKET_INTERFACE from "../../configuration/abis/Market";
+import { NonceManager } from "@ethersproject/experimental";
 
 
 export type MarketAidAvailableLiquidity = {
@@ -487,8 +488,8 @@ export class GenericMarketMakingBot {
 
 
         const maker = this.marketAid.address;
-        this.marketContract.on(this.marketContract.filters.emitTake(), (id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event) => {
-            console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, pay_gem, buy_gem, taker, take_amt, give_amt, timestamp, event);
+        this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, timestamp, event) => {
+            console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, timestamp, event);
 
 
             console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
@@ -537,7 +538,7 @@ export class GenericMarketMakingBot {
         console.log("Attempting to dump fill via market aid...", assetToSell, amountToSell.toString(), assetToTarget, poolFee);
 
         try {
-            const amountOut: BigNumber = await this.marketAid.strategistRebalanceFunds(
+            const amountOut: BigNumber = await this.marketAid.connect(this.config.connections.signer as NonceManager).strategistRebalanceFunds(
                 assetToSell,
                 amountToSell,
                 assetToTarget,
@@ -547,6 +548,9 @@ export class GenericMarketMakingBot {
 
         } catch (error) {
             console.error("Error while executing dumpFillViaMarketAid:", error);
+
+            // TODO: Update the nonce and try again if there's a failure...
+            
             return false;
         }
 
