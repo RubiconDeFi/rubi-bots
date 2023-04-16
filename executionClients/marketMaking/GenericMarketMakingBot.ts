@@ -101,11 +101,11 @@ export class GenericMarketMakingBot {
         (this.strategy.referenceLiquidityVenue as UniswapLiquidityVenue).pollLiveBook(
             quoteLadder,
             assetLadder,
-            1000
+            2000
         );
         this.strategy.updateNotifier.on('update', (liveBook) => {
             console.log('\nStrategy Feed updated!');
-            console.log(liveBook);
+            // console.log(liveBook);
             this.compareStrategyAndMarketAidBooks();
         });
 
@@ -150,31 +150,36 @@ export class GenericMarketMakingBot {
             }
             // If the asks and the bids of marketAidBook are non-empty then check if they are equal in length to the strategyBook
             else if (marketAidBook.asks.length === strategyBook.asks.length && marketAidBook.bids.length === strategyBook.bids.length) {
-                console.log("Market Aid book is same length as strategy book, checking for price deltas");
-
+                console.log("Market Aid book is same length as strategy book, checking for price deltas....");
+            
                 // Check the differential between the strategyBook and the marketAidBook offers and call updateMarketAidPosition() if the differential is greater than deltaTrigger
                 for (let i = 0; i < strategyBook.asks.length; i++) {
                     const strategyAsk = strategyBook.asks[i];
                     const marketAidAsk = marketAidBook.asks[i];
-                    const askDelta = Math.abs(strategyAsk.price - marketAidAsk.price) / strategyAsk.price;
-
+                    const strategyAskPrice = isNaN(strategyAsk.price) ? 0 : strategyAsk.price;
+                    const marketAidAskPrice = isNaN(marketAidAsk.price) ? 0 : marketAidAsk.price;
+                    const askDelta = Math.abs(strategyAskPrice - marketAidAskPrice) / strategyAskPrice;
+            
                     if (askDelta > deltaTrigger) {
                         console.log("Ask delta is greater than deltaTrigger, updating market aid position");
                         this.requoteMarketAidPosition();
                     }
                 }
-
+            
                 for (let i = 0; i < strategyBook.bids.length; i++) {
                     const strategyBid = strategyBook.bids[i];
                     const marketAidBid = marketAidBook.bids[i];
-                    const bidDelta = Math.abs(strategyBid.price - marketAidBid.price) / strategyBid.price;
-
+                    const strategyBidPrice = isNaN(strategyBid.price) ? 0 : strategyBid.price;
+                    const marketAidBidPrice = isNaN(marketAidBid.price) ? 0 : marketAidBid.price;
+                    const bidDelta = Math.abs(strategyBidPrice - marketAidBidPrice) / strategyBidPrice;
+            
                     if (bidDelta > deltaTrigger) {
                         console.log("Bid delta is greater than deltaTrigger, updating market aid position");
                         this.requoteMarketAidPosition();
                     }
                 }
             }
+            
             // If the asks and the bids of marketAidBook are non-empty but are not equal in length to the strategyBook then we call requoteMarketAidPosition() if the market aid has a non-zero amount of orders on the book and call placeInitialMarketMakingTrades() if the market aid has a zero amount of orders on the book
             else if (marketAidBook.asks.length !== strategyBook.asks.length || marketAidBook.bids.length !== strategyBook.bids.length) {
                 this.requoteMarketAidPosition();
@@ -481,6 +486,8 @@ export class GenericMarketMakingBot {
     ): Promise<boolean | void> {
         const poolFee: number = (this.strategy.getReferenceLiquidityVenue() as UniswapLiquidityVenue).uniFee;
 
+        console.log("Attempting to dump fill via market aid...", assetToSell, amountToSell.toString(), assetToTarget, poolFee);
+        
         try {
             const amountOut: BigNumber = await this.marketAid.strategistRebalanceFunds(
                 assetToSell,
