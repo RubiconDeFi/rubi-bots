@@ -250,9 +250,16 @@ export class GenericMarketMakingBot {
         // Print the map formatted
         console.log("these ids formatted", strategistTradeIDs.map((id) => id.toString()));
 
-
-        const assetSideBias = 1;
-        const quoteSideBias = 1;
+        // TODO: only on targetVenueOutBid???
+        let assetSideBias = 1;
+        let quoteSideBias = 1;
+    
+        if (this.strategy instanceof TargetVenueOutBidStrategy) {
+            const { assetSideBias: calculatedAssetSideBias, quoteSideBias: calculatedQuoteSideBias } = applyInventoryManagement(this.relativeAssetBalance, this.relativeQuoteBalance);
+            assetSideBias = calculatedAssetSideBias;
+            quoteSideBias = calculatedQuoteSideBias;
+        }        // const assetSideBias = 1;
+        // const quoteSideBias = 1;
         console.log("\n APPLY THESE BIASES, asset, quote", assetSideBias, quoteSideBias);
 
         var askNumerators = [];
@@ -700,4 +707,38 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
         assetLadder: assetLadder,
         quoteLadder: quoteLadder
     };
+}
+
+function applyInventoryManagement(relativeAssetBalance: number, relativeQuoteBalance: number): { assetSideBias: number, quoteSideBias: number } {
+    let assetSideBias = 1;
+    let quoteSideBias = 1;
+
+    if (relativeAssetBalance === undefined || relativeQuoteBalance === undefined) {
+        console.log("\nFAIL undefined relative balances so WILL NOT REQUOTE");
+        return { assetSideBias, quoteSideBias };
+    }
+
+    const delta = 0.18;
+    const MIN_REL_BAL = 0.5 - delta;
+    const MAX_REL_BAL = 0.5 + delta;
+    assetSideBias = (relativeAssetBalance - MIN_REL_BAL) / relativeAssetBalance;
+    quoteSideBias = (relativeQuoteBalance - MIN_REL_BAL) / relativeQuoteBalance;
+
+    if (assetSideBias < 0) {
+        assetSideBias = 0;
+    }
+
+    if (quoteSideBias < 0) {
+        quoteSideBias = 0;
+    }
+
+    if (isNaN(assetSideBias) || isNaN(quoteSideBias)) {
+        console.log("\n !!!!!!! FAIL NAN BIASES undefined relative balances so NO BIAS, biases are 1 or the calculated values are nan", assetSideBias, quoteSideBias);
+        assetSideBias = 1;
+        quoteSideBias = 1;
+    }
+
+    console.log("\n APPLY THESE NEW 0.1 BIASES, asset, quote", assetSideBias, quoteSideBias);
+
+    return { assetSideBias, quoteSideBias };
 }
