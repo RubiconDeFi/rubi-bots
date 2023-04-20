@@ -72,6 +72,12 @@ export class GenericMarketMakingBot {
             MARKET_INTERFACE,
             this.config.connections.websocketProvider ? this.config.connections.websocketProvider : this.config.connections.jsonRpcProvider
         );
+
+        if (process.env.LOG_TOGGLE === 'toggleOff') {
+            console.log("\n BOT IS STARTING IN SEEMINGLY GOOD STATE - TURNING OFF ALL LOGS FOR PRODUCTION BOOST... gl anon");
+            console.log("KEEPING LOGS OFF!!!");
+            console.log = () => { };
+        }
     }
 
 
@@ -105,8 +111,6 @@ export class GenericMarketMakingBot {
                 // Refresh availableLiquidity and get the updated assetLadder based on it
                 await this.pullOnChainLiquidity();
                 const _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
-                console.log("THIS SHOULD BE A CLEAN ASSET LADDER", _uniQueryLadder);
-
                 // Print the formatted ladder
                 return _uniQueryLadder;
             },
@@ -146,10 +150,11 @@ export class GenericMarketMakingBot {
 
         // Log values
         console.log('True Available liquidity:', { ask: askLiquidityThreshold, bid: bidLiquidityThreshold });
-        if (strategyBook === undefined || marketAidBook === undefined) {
+        if (strategyBook === undefined || strategyBook.asks == undefined || marketAidBook === undefined || strategyBook.bids == undefined) {
             console.log('No books to compare');
             return;
         }
+
 
         // Check if the total size of asks or bids in strategy book exceeds the available liquidity
         const totalAskSize = strategyBook.asks.reduce((acc, ask) => acc + ask.size, 0);
@@ -251,9 +256,16 @@ export class GenericMarketMakingBot {
         // Print the map formatted
         console.log("these ids formatted", strategistTradeIDs.map((id) => id.toString()));
 
-
-        const assetSideBias = 1;
-        const quoteSideBias = 1;
+        // TODO: only on targetVenueOutBid???
+        let assetSideBias = 1;
+        let quoteSideBias = 1;
+    
+        if (this.strategy instanceof TargetVenueOutBidStrategy) {
+            const { assetSideBias: calculatedAssetSideBias, quoteSideBias: calculatedQuoteSideBias } = applyInventoryManagement(this.relativeAssetBalance, this.relativeQuoteBalance);
+            assetSideBias = calculatedAssetSideBias;
+            quoteSideBias = calculatedQuoteSideBias;
+        }        // const assetSideBias = 1;
+        // const quoteSideBias = 1;
         console.log("\n APPLY THESE BIASES, asset, quote", assetSideBias, quoteSideBias);
 
         var askNumerators = [];
@@ -472,6 +484,40 @@ export class GenericMarketMakingBot {
                 };
 
                 this.availableLiquidity = newR;
+
+                // Relative balance tracking driven off these query results and localbook
+                const humanReadableQuoteAmount = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+                const humanReadableAssetAmount = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
+
+                if (this.strategy.targetBook !== undefined &&
+                    this.strategy.targetBook.asks !== undefined &&
+                    this.strategy.targetBook.bids !== undefined &&
+                    this.strategy.targetBook.asks.length > 0 &&
+                    this.strategy.targetBook.bids.length > 0) {
+
+                    // const humanReadableQuoteAmount = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+                    // const humanReadableAssetAmount = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
+
+                    // Calculate the reference price (midpoint)
+                    const referencePrice = (this.strategy.targetBook.asks[0].price + this.strategy.targetBook.bids[0].price) / 2;
+
+                    const totalOnChainUSDAmount = humanReadableQuoteAmount + humanReadableAssetAmount * referencePrice;
+                    console.log("\n 💰 THIS TOTAL ONCHAIN USD VALUE", totalOnChainUSDAmount, this.assetPair.asset.symbol, "-", this.assetPair.quote.symbol, " 💰");
+
+                    const relativeBalanceAsset = (humanReadableAssetAmount * referencePrice) / totalOnChainUSDAmount;
+                    const relativeBalanceQuote = humanReadableQuoteAmount / totalOnChainUSDAmount;
+                    console.log("This relative Asset balance", relativeBalanceAsset);
+                    console.log("This relative Quote balance", relativeBalanceQuote);
+
+                    // Assign these values to be used in order sizing
+                    this.relativeAssetBalance = relativeBalanceAsset;
+                    this.relativeQuoteBalance = relativeBalanceQuote;
+                } else {
+                    console.log("\nNO LOCAL BOOK RETURN or ASKS/BIDS UNDEFINED");
+                    this.relativeAssetBalance = undefined;
+                    this.relativeQuoteBalance = undefined;
+                }
+
                 return newR;
             });
         } catch (error) {
@@ -489,8 +535,46 @@ export class GenericMarketMakingBot {
 
 
         const maker = this.marketAid.address;
-        this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, timestamp, event) => {
-            console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, timestamp, event);
+
+        // State management idea to prevent multiple takes from being processed
+        let aggregateState = {
+            assetAmount: BigNumber.from(0),
+            quoteAmount: BigNumber.from(0),
+            updated: false
+        };
+
+        const updateAggregateState = (pay_gem, give_amt, target_asset) => {
+            aggregateState.updated = true;
+            if (pay_gem == getAddress(this.assetPair.quote.address)) {
+                aggregateState.assetAmount = aggregateState.assetAmount.add(give_amt);
+            } else if (pay_gem == getAddress(this.assetPair.asset.address)) {
+                aggregateState.quoteAmount = aggregateState.quoteAmount.add(give_amt);
+            }
+        };
+
+        const processAggregateState = async (blocknumber: number) => {
+            if (!aggregateState.updated) return;
+
+            if (!aggregateState.assetAmount.isZero()) {
+                console.log("Dump total asset amount on CEX:", formatUnits(aggregateState.assetAmount, this.assetPair.asset.decimals));
+                await this.dumpFillViaMarketAid(this.assetPair.asset.address, aggregateState.assetAmount, this.assetPair.quote.address);
+            }
+
+            if (!aggregateState.quoteAmount.isZero()) {
+                console.log("Dump total quote amount on CEX:", formatUnits(aggregateState.quoteAmount, this.assetPair.quote.decimals));
+                await this.dumpFillViaMarketAid(this.assetPair.quote.address, aggregateState.quoteAmount, this.assetPair.asset.address);
+            }
+
+            // Reset aggregate state
+            aggregateState = {
+                assetAmount: BigNumber.from(0),
+                quoteAmount: BigNumber.from(0),
+                updated: false
+            };
+        };
+
+        this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), async (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event) => {
+            console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
 
 
             console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
@@ -506,7 +590,8 @@ export class GenericMarketMakingBot {
                 // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.asset.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
                 console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                this.dumpFillViaMarketAid(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
+                // this.dumpFillViaMarketAid(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
+                updateAggregateState(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
             } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
                 console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
                 const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
@@ -523,8 +608,16 @@ export class GenericMarketMakingBot {
                 // dumpERC20onFTX(true, parseFloat(valueUsedInTail), this.config.quote.symbol);
 
                 // Call the function at the specified line numbers
-                this.dumpFillViaMarketAid(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
+                // this.dumpFillViaMarketAid(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
+                updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
             }
+
+            // Get the block after the event
+            const block = await event.getBlock();
+            const nextBlockNumber = block.number + 1;
+
+            // Call processAggregateState with nextBlockNumber as an argument
+            processAggregateState(nextBlockNumber);
         });
     }
 
@@ -533,7 +626,6 @@ export class GenericMarketMakingBot {
         assetToSell: string,
         amountToSell: BigNumber,
         assetToTarget: string,
-        retryCount: number = 0, // Added counter with a default value of 0
     ): Promise<boolean | void> {
         const poolFee: number = (this.strategy.getReferenceLiquidityVenue() as UniswapLiquidityVenue).uniFee;
 
@@ -549,24 +641,23 @@ export class GenericMarketMakingBot {
             console.log("\n Succesfully dumped fill!!!!", amountOut.toString(), "of", assetToTarget, "for", amountToSell.toString(), "of", assetToSell, "on", this.strategy.referenceLiquidityVenue.identifier, "with a fee of", poolFee, "%");
 
         } catch (error) {
-            console.error("Error while executing dumpFillViaMarketAid:", error);
+            console.error("Error while executing dumpFillViaMarketAid:", error.reason);
 
             // TODO: Update the nonce and try again if there's a failure...
             // await updateNonceManagerTip((this.config.connections.signer as NonceManager), this.config.connections.jsonRpcProvider)
 
             // Check if retryCount is less than 3
-            if (retryCount < 3) {
-                console.log("Retrying dumpFillViaMarketAid, attempt:", retryCount + 1);
-                return this.dumpFillViaMarketAid(assetToSell, amountToSell, assetToTarget, retryCount + 1); // Increment retryCount
-            } else {
-                console.log("Failed to dump fill via market aid after 3 attempts. Exiting...");
-                return false;
-            }
+            // if (retryCount < 3) {
+            //     console.log("Retrying dumpFillViaMarketAid, attempt:", retryCount + 1);
+            //     return this.dumpFillViaMarketAid(assetToSell, amountToSell, assetToTarget, retryCount + 1); // Increment retryCount
+            // } else {
+            //     console.log("Failed to dump fill via market aid after 3 attempts. Exiting...");
+            //     return false;
+            // }
         }
 
         return true;
     }
-
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
@@ -604,8 +695,8 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
     }
 
     // Print out the ladder in human readable format using formatUnits
-    console.log("Asset Ladder", assetLadder.map((a) => formatUnits(a, 18)));
-    console.log("Quote Ladder", quoteLadder.map((a) => formatUnits(a, 18)));
+    // console.log("Asset Ladder", assetLadder.map((a) => formatUnits(a, 18)));
+    // console.log("Quote Ladder", quoteLadder.map((a) => formatUnits(a, 18)));
 
 
     // Calculate the total asset and quote amounts
@@ -622,4 +713,38 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
         assetLadder: assetLadder,
         quoteLadder: quoteLadder
     };
+}
+
+function applyInventoryManagement(relativeAssetBalance: number, relativeQuoteBalance: number): { assetSideBias: number, quoteSideBias: number } {
+    let assetSideBias = 1;
+    let quoteSideBias = 1;
+
+    if (relativeAssetBalance === undefined || relativeQuoteBalance === undefined) {
+        console.log("\nFAIL undefined relative balances so WILL NOT REQUOTE");
+        return { assetSideBias, quoteSideBias };
+    }
+
+    const delta = 0.18;
+    const MIN_REL_BAL = 0.5 - delta;
+    const MAX_REL_BAL = 0.5 + delta;
+    assetSideBias = (relativeAssetBalance - MIN_REL_BAL) / relativeAssetBalance;
+    quoteSideBias = (relativeQuoteBalance - MIN_REL_BAL) / relativeQuoteBalance;
+
+    if (assetSideBias < 0) {
+        assetSideBias = 0;
+    }
+
+    if (quoteSideBias < 0) {
+        quoteSideBias = 0;
+    }
+
+    if (isNaN(assetSideBias) || isNaN(quoteSideBias)) {
+        console.log("\n !!!!!!! FAIL NAN BIASES undefined relative balances so NO BIAS, biases are 1 or the calculated values are nan", assetSideBias, quoteSideBias);
+        assetSideBias = 1;
+        quoteSideBias = 1;
+    }
+
+    console.log("\n APPLY THESE NEW 0.1 BIASES, asset, quote", assetSideBias, quoteSideBias);
+
+    return { assetSideBias, quoteSideBias };
 }
