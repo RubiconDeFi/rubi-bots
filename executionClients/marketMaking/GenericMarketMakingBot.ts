@@ -471,6 +471,40 @@ export class GenericMarketMakingBot {
                 };
 
                 this.availableLiquidity = newR;
+
+                // Relative balance tracking driven off these query results and localbook
+                const humanReadableQuoteAmount = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+                const humanReadableAssetAmount = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
+
+                if (this.strategy.targetBook !== undefined &&
+                    this.strategy.targetBook.asks !== undefined &&
+                    this.strategy.targetBook.bids !== undefined &&
+                    this.strategy.targetBook.asks.length > 0 &&
+                    this.strategy.targetBook.bids.length > 0) {
+
+                    // const humanReadableQuoteAmount = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+                    // const humanReadableAssetAmount = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
+
+                    // Calculate the reference price (midpoint)
+                    const referencePrice = (this.strategy.targetBook.asks[0].price + this.strategy.targetBook.bids[0].price) / 2;
+
+                    const totalOnChainUSDAmount = humanReadableQuoteAmount + humanReadableAssetAmount * referencePrice;
+                    console.log("\n 💰 THIS TOTAL ONCHAIN USD VALUE", totalOnChainUSDAmount, this.assetPair.asset.symbol, "-", this.assetPair.quote.symbol, " 💰");
+
+                    const relativeBalanceAsset = (humanReadableAssetAmount * referencePrice) / totalOnChainUSDAmount;
+                    const relativeBalanceQuote = humanReadableQuoteAmount / totalOnChainUSDAmount;
+                    console.log("This relative Asset balance", relativeBalanceAsset);
+                    console.log("This relative Quote balance", relativeBalanceQuote);
+
+                    // Assign these values to be used in order sizing
+                    this.relativeAssetBalance = relativeBalanceAsset;
+                    this.relativeQuoteBalance = relativeBalanceQuote;
+                } else {
+                    console.log("\nNO LOCAL BOOK RETURN or ASKS/BIDS UNDEFINED");
+                    this.relativeAssetBalance = undefined;
+                    this.relativeQuoteBalance = undefined;
+                }
+
                 return newR;
             });
         } catch (error) {
