@@ -72,6 +72,12 @@ export class GenericMarketMakingBot {
             MARKET_INTERFACE,
             this.config.connections.websocketProvider ? this.config.connections.websocketProvider : this.config.connections.jsonRpcProvider
         );
+
+        if (process.env.LOG_TOGGLE === 'toggleOff') {
+            console.log("\n BOT IS STARTING IN SEEMINGLY GOOD STATE - TURNING OFF ALL LOGS FOR PRODUCTION BOOST... gl anon");
+            console.log("KEEPING LOGS OFF!!!");
+            console.log = () => { };
+        }
     }
 
 
