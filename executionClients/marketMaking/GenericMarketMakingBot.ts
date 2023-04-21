@@ -715,7 +715,7 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
     };
 }
 
-function applyInventoryManagement(relativeAssetBalance: number, relativeQuoteBalance: number): { assetSideBias: number, quoteSideBias: number } {
+export function applyInventoryManagement(relativeAssetBalance: number, relativeQuoteBalance: number): { assetSideBias: number, quoteSideBias: number } {
     let assetSideBias = 1;
     let quoteSideBias = 1;
 
