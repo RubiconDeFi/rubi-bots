@@ -10,7 +10,6 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     eventEmitter: EventEmitter;
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string,) { // Replace 'any' with the appropriate type for the options parameter
         super(config, marketAid, strategy, _botAddy);
-        // Add any additional setup or logic needed for the BatchableGenericMarketMakingBot constructor
     }
 
     // Override placeInitialMarketMakingTrades
@@ -151,6 +150,28 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         this.requotingOutstandingBook = false;
     }
 
+    override async wipeOnChainBook(): Promise<boolean | void> {
+        // Wipe this.marketAidPositionTracker.onChainBookWithData !!!
+        // TODO: Logic Gate to avoid spam
+        // This can be called in normal operations or if ever needed on GLOBAL TIMEOUT for rebalancing
+        console.log("WIPE THE ON-CHAIN BOOK!!!");
+
+        if (this.marketAidPositionTracker.onChainBook.length == 0) {
+            console.log("RETURN BC NO OC BOOK", this.marketAidPositionTracker.onChainBook);
+            return;
+        }
+        if (this.wipingOutstandingBook) return;
+
+        // Encode the function data for scrubStrategistTrades
+        const calldata = this.marketAid.interface.encodeFunctionData("scrubStrategistTrades", [
+            this.marketAidPositionTracker.onChainBook
+        ]);
+
+        // Emit the event with the encoded function data for further processing
+        this.eventEmitter.emit('wipeOnChainBook', calldata);
+
+        console.log("Emitted wipeOnChainBook event...");
+    }
 }
 
 export default BatchableGenericMarketMakingBot;

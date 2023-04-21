@@ -46,6 +46,7 @@ export class GenericMarketMakingBot {
     requotingOutstandingBook: boolean;
 
     marketContract: ethers.Contract;
+    wipingOutstandingBook: any;
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
         this.config = config;
@@ -259,7 +260,7 @@ export class GenericMarketMakingBot {
         // TODO: only on targetVenueOutBid???
         let assetSideBias = 1;
         let quoteSideBias = 1;
-    
+
         if (this.strategy instanceof TargetVenueOutBidStrategy) {
             const { assetSideBias: calculatedAssetSideBias, quoteSideBias: calculatedQuoteSideBias } = applyInventoryManagement(this.relativeAssetBalance, this.relativeQuoteBalance);
             assetSideBias = calculatedAssetSideBias;
@@ -455,6 +456,47 @@ export class GenericMarketMakingBot {
             // updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.reader);
         });
     }
+
+    async wipeOnChainBook(): Promise<boolean | void> {
+        // Wipe this.marketAidPositionTracker.onChainBookWithData !!!
+        // TODO: Logic Gate to avoid spam
+        // This can be called in normal operations or if ever needed on GLOBAL TIMEOUT for rebalancing
+        console.log("WIPE THE ON-CHAIN BOOK!!!");
+
+        if (this.marketAidPositionTracker.onChainBook.length == 0) {
+            console.log("RETURN BC NO OC BOOK", this.marketAidPositionTracker.onChainBook);
+            return;
+        }
+        if (this.wipingOutstandingBook) return;
+
+        this.marketAid.connect(this.config.connections.signer).estimateGas.scrubStrategistTrades(
+            this.marketAidPositionTracker.onChainBook
+        ).then((r) => {
+            if (r) {
+                if (this.wipingOutstandingBook) return;
+
+                this.wipingOutstandingBook = true;
+
+                this.marketAid.connect(this.config.connections.signer).scrubStrategistTrades(this.marketAidPositionTracker.onChainBook).then(async (r) => {
+                    const out = await r.wait();
+                    this.wipingOutstandingBook = false;
+                    if (out.status == true) {
+                        console.log("\n***WIPING THE ERRONEOUS book success");
+                    }
+                }).catch((e) => {
+                    console.log("FAIL ON YEETING WIPE THE BOOK", e);
+                    updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.connections.jsonRpcProvider);
+                    this.wipingOutstandingBook = false;
+                })
+            }
+        }).catch((e) => {
+            console.log("FAIL ON EG WIPE THE BOOK", e);
+            // Should this one be here?
+            // this.wipingOutstandingBook = false;
+            updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.connections.jsonRpcProvider);
+        })
+    }
+
 
     pullOnChainLiquidity(): Promise<MarketAidAvailableLiquidity> {
         console.log("\nQuery Strategist Total Liquidity ",
