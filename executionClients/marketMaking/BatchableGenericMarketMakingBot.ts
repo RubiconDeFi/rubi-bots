@@ -5,6 +5,7 @@ import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimiz
 import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetVenueOutBid";
 import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { EventEmitter } from "stream";
+import { Call } from "./BatchStrategyExecutor";
 
 class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     eventEmitter: EventEmitter;
@@ -65,7 +66,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         ]);
 
         // Emit the event with the encoded function data for further processing
-        this.eventEmitter.emit('placeInitialMarketMakingTrades', calldata);
+        this.eventEmitter.emit('placeInitialMarketMakingTrades', calldata as unknown as Call);
 
         console.log("Emitted placeInitialMarketMakingTrades, now waiting for 2 seconds to avoid spam...");
 
@@ -78,7 +79,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     override async requoteMarketAidPosition(): Promise<void> {
         console.log("\nRequoting market aid position to match the strategy book");
         // TODO: implement web3 call to requote()
-        console.log("target this book with batchRequote", this.strategy.targetBook);
+        console.log(this.strategy.identifier, "target this book with batchRequote", this.strategy.targetBook);
         console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
 
         // Grab all of the strategist trade IDs from MarketAid position tracker
@@ -147,7 +148,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         ]);
 
         // Emit the event with the encoded function data for further processing
-        this.eventEmitter.emit('requoteMarketAidPosition', calldata);
+        this.eventEmitter.emit('requoteMarketAidPosition', calldata as unknown as Call);
 
         console.log("Emitted requoteMarketAidPosition, now waiting for 2 seconds to avoid spam...");
 
@@ -176,7 +177,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         ]);
 
         // Emit the event with the encoded function data for further processing
-        this.eventEmitter.emit('wipeOnChainBook', calldata);
+        this.eventEmitter.emit('wipeOnChainBook', calldata as unknown as Call);
 
         console.log("Emitted wipeOnChainBook event...");
     }

@@ -29,9 +29,7 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
     // Bind event listeners
     this.on('addToBatch', this.handleAddToBatch);
 
-    console.log("BatchStrategyExecutor spinning up...");
-    console.log("this bots", this.bots);
-    
+    console.log("BatchStrategyExecutor spinning up...");    
 
     // Listen to events from all BatchableGenericMarketMakingBot instances
     this.bots.forEach((bot, botIndex) => {
@@ -71,6 +69,8 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
   // Event handler for 'addToBatch'
   private handleAddToBatch(data: any): void {
     // Add the data to the batch and trigger the execution if necessary
+    console.log("Adding to batch...", data);
+    
     this.addToBatch(data);
     if (!this.batchInProgress) {
       this.executeBatch();
@@ -83,7 +83,7 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
 
     if (existingActionIndex >= 0) {
       // Update the existing action with the new calldata
-      this.batch[existingActionIndex].calldata = data.calldata;
+      this.batch[existingActionIndex] = data;
     } else {
       // Add the new action to the batch
       this.batch.push(data);
@@ -94,14 +94,21 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
   private async executeBatch(): Promise<void> {
     this.batchInProgress = true;
 
+    console.log("\nExecuting batch...");
+    console.log("this is my batch!", this.batch);
+    
     const targets: Call[] = this.batch.map(item => ({
       target: this.marketAid.address, // Assuming the target is the marketAid contract address
       function: item.action,
-      args: [item.calldata],
+      args: item.calldata,
     }));
+    const payload = targets.map(item => item.args);
+    
+    console.log("targets", payload);
+    
 
     try {
-      const gasEstimate = await this.marketAid.connect(this.config.connections.signer).estimateGas.batchBox(targets);
+      const gasEstimate = await this.marketAid.connect(this.config.connections.signer).estimateGas.batchBox(payload);
 
       if (this.batchInProgress) {
         console.log("\nNot shipping this one because already attempting...");
@@ -110,7 +117,7 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
 
       if (gasEstimate) {
         this.batchInProgress = true;
-        const tx = await this.marketAid.connect(this.config.connections.signer).batchBox(targets, { gasLimit: gasEstimate });
+        const tx = await this.marketAid.connect(this.config.connections.signer).batchBox(payload, { gasLimit: gasEstimate });
 
         const receipt = await tx.wait();
         this.batchInProgress = false;
