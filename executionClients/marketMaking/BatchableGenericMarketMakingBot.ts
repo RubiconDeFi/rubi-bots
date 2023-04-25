@@ -30,6 +30,8 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         }
 
         this.differentiatorAddress = myAddy;
+        // This should allow everything to work correctly in GenericMarketMakingBot
+        this.EOAbotAddress = myAddy;
 
         // TODO: ITERATE LIQUIDITY TO ACCOUNT FOR high-level allocation AND track the relevant ids to this.differentiatorAddress    
     }
@@ -48,13 +50,13 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
 
         // Loop through the asks and bids of the target book and populate the above arrays using the pattern below
         for (let i = 0; i < this.strategy.targetBook.asks.length; i++) {
-            askNumerators.push(parseUnits(this.strategy.targetBook.asks[i].size.toString(), this.assetPair.asset.decimals));
+            askNumerators.push(parseUnits(this.strategy.targetBook.asks[i].size.toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals));
             askDenominators.push(parseUnits((this.strategy.targetBook.asks[i].price * this.strategy.targetBook.asks[i].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
         }
 
         for (let i = 0; i < this.strategy.targetBook.bids.length; i++) {
             bidNumerators.push(parseUnits((this.strategy.targetBook.bids[i].price * this.strategy.targetBook.bids[i].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
-            bidDenominators.push(parseUnits(this.strategy.targetBook.bids[i].size.toString(), this.assetPair.asset.decimals));
+            bidDenominators.push(parseUnits(this.strategy.targetBook.bids[i].size.toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals));
         }
 
         // Here is what a single offer might look like via placeMarketMakingTrades()
@@ -70,7 +72,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
             return
         };
         // Encode the function data for batchPlaceInitialMarketMakingTrades
-        const calldata = this.marketAid.interface.encodeFunctionData("placeMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[],address)", [
+        const calldata = this.marketAid.interface.encodeFunctionData("batchMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[],address)", [
             [this.assetPair.asset.address, this.assetPair.quote.address],
             askNumerators,
             askDenominators,
@@ -82,10 +84,10 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         // Emit the event with the encoded function data for further processing
         this.eventEmitter.emit('placeInitialMarketMakingTrades', calldata as unknown as Call);
 
-        console.log("Emitted placeInitialMarketMakingTrades, now waiting for 2 seconds to avoid spam...");
+        // console.log("Emitted placeInitialMarketMakingTrades, now waiting for 2 seconds to avoid spam...");
 
-        // Hold execution here and set a timeout to avoid spamming before moving forward
-        await new Promise(r => setTimeout(r, 2000)); // Should be block time
+        // // Hold execution here and set a timeout to avoid spamming before moving forward
+        // await new Promise(r => setTimeout(r, 2000)); // Should be block time
     }
 
     // Add any new methods or properties specific to the BatchableGenericMarketMakingBot class

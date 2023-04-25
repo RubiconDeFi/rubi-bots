@@ -92,14 +92,14 @@ export class GenericMarketMakingBot {
         console.log('Launching bot');
 
         // 1. Get the strategist's available liquidity over time
-        await this.pullOnChainLiquidity();
+        await this.pullOnChainLiquidity(this.EOAbotAddress);
         // UPDATER - Poll the strategist's total liquidity every second and populate the availableLiquidity object
         setTimeout(() => {
-            this.pullOnChainLiquidity();
-        }, 1000) // TODO: move to config
+            this.pullOnChainLiquidity(this.EOAbotAddress);
+        }, 1000); // TODO: move to config
 
         // Call a function that takes available liquidity and generates a ladder based on a configurable parameter step size
-        var _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
+        // var _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
         // console.log("This ladder!", _uniQueryLadder);
 
 
@@ -110,7 +110,7 @@ export class GenericMarketMakingBot {
         (this.strategy.referenceLiquidityVenue as UniswapLiquidityVenue).pollLiveBook(
             async () => {
                 // Refresh availableLiquidity and get the updated assetLadder based on it
-                await this.pullOnChainLiquidity();
+                await this.pullOnChainLiquidity(this.EOAbotAddress);
                 const _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
                 // Print the formatted ladder
                 return _uniQueryLadder;
@@ -351,7 +351,7 @@ export class GenericMarketMakingBot {
         }).catch((e) => {
             console.log("This error IN SHIPPING REQUOTE", e);
             this.requotingOutstandingBook = false;
-            this.pullOnChainLiquidity();
+            this.pullOnChainLiquidity(this.EOAbotAddress);
             // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
         })
         // }
@@ -498,11 +498,11 @@ export class GenericMarketMakingBot {
     }
 
 
-    pullOnChainLiquidity(): Promise<MarketAidAvailableLiquidity> {
+    pullOnChainLiquidity(strategist: string): Promise<MarketAidAvailableLiquidity> {
         console.log("\nQuery Strategist Total Liquidity ",
             this.config.targetTokens[0].address,
             this.config.targetTokens[1].address,
-            this.EOAbotAddress,
+            strategist,
             this.marketAid.address
         );
 
@@ -510,7 +510,7 @@ export class GenericMarketMakingBot {
             return this.marketAid.getStrategistTotalLiquidity(
                 this.config.targetTokens[0].address,
                 this.config.targetTokens[1].address,
-                this.EOAbotAddress
+                strategist
             ).then((r: MarketAidAvailableLiquidity) => {
                 console.log("Got this after getStratTotalLiquidity", r);
 
