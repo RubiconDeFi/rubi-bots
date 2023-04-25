@@ -14,11 +14,11 @@ The API for the `MarketMakingBot` command-line parameters is as follows:
 API with the following hierarchy of arguments:
 
 ```
-yarn run startMarketMakingBot -- <chainId> <marketAidContractAddress> <asset> <quote> <premium>
+yarn run startMarketMakingBot -- <executionClient> <chainId> <marketAidContractAddress> <asset> <quote> <premium>
 ```
 
 ### Parameters
-
+- `<executionClient>`: Notify type of execution client first
 - `<chainId>`: The Chain ID of the network you want to run the bot on (e.g., `1` for Ethereum mainnet, `3` for Ropsten).
 - `<marketAidContractAddress>`: The address of the MarketAid contract.
 - `<strategy>`: The string identifier of the strategy.

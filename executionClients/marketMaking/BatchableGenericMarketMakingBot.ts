@@ -8,8 +8,16 @@ import { EventEmitter } from "stream";
 
 class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     eventEmitter: EventEmitter;
+
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string,) { // Replace 'any' with the appropriate type for the options parameter
+        console.log("BatchableGenericMarketMakingBot spinning up...");
+        console.log("this strategy", strategy.identifier);
+
+
         super(config, marketAid, strategy, _botAddy);
+
+        this.eventEmitter = new EventEmitter();
+
     }
 
     // Override placeInitialMarketMakingTrades

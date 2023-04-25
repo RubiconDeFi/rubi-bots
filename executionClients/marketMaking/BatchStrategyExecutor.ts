@@ -15,6 +15,7 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
   private bots: BatchableGenericMarketMakingBot[];
   config: BotConfiguration;
   marketAid: ethers.Contract;
+  eventEmitter: EventEmitter;
 
   constructor(bots: BatchableGenericMarketMakingBot[], config: BotConfiguration, marketAid: ethers.Contract) {
     super();
@@ -23,25 +24,49 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
     this.bots = bots;
     this.config = config;
     this.marketAid = marketAid;
+    this.eventEmitter = new EventEmitter();
 
     // Bind event listeners
     this.on('addToBatch', this.handleAddToBatch);
 
+    console.log("BatchStrategyExecutor spinning up...");
+    console.log("this bots", this.bots);
+    
+
     // Listen to events from all BatchableGenericMarketMakingBot instances
-    this.bots.forEach((bot) => {
+    this.bots.forEach((bot, botIndex) => {
+      console.log("Listening to events from bot: ", botIndex);
+      
+      bot.launchBot();
       bot.eventEmitter.on('placeInitialMarketMakingTrades', (calldata: string) => {
-        this.emit('addToBatch', { action: 'placeInitialMarketMakingTrades', calldata });
+        this.emit('addToBatch', { botId: botIndex, action: 'placeInitialMarketMakingTrades', calldata });
       });
 
       bot.eventEmitter.on('requoteMarketAidPosition', (calldata: string) => {
-        this.emit('addToBatch', { action: 'requoteMarketAidPosition', calldata });
+        this.emit('addToBatch', { botId: botIndex, action: 'requoteMarketAidPosition', calldata });
       });
 
       bot.eventEmitter.on('wipeOnChainBook', (calldata: string) => {
-        this.emit('addToBatch', { action: 'wipeOnChainBook', calldata });
+        this.emit('addToBatch', { botId: botIndex, action: 'wipeOnChainBook', calldata });
       });
     });
+
+    // Start polling to periodically process the batch queue
+    this.startPolling();
   }
+
+  // Logical loop for executing the batch when it exists
+  private startPolling(): void {
+    // Set an arbitrary polling interval in milliseconds (e.g., 5000 ms or 5 seconds)
+    const pollingInterval = 5000;
+
+    setInterval(() => {
+      if (!this.batchInProgress && this.batch.length > 0) {
+        this.executeBatch();
+      }
+    }, pollingInterval);
+  }
+
 
   // Event handler for 'addToBatch'
   private handleAddToBatch(data: any): void {
@@ -53,9 +78,18 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
   }
 
   private addToBatch(data: any): void {
-    // Implement the logic for adding data to the batch
-    this.batch.push(data);
+    // Search for an existing action in the batch for the same bot
+    const existingActionIndex = this.batch.findIndex(item => item.botId === data.botId && item.action === data.action);
+
+    if (existingActionIndex >= 0) {
+      // Update the existing action with the new calldata
+      this.batch[existingActionIndex].calldata = data.calldata;
+    } else {
+      // Add the new action to the batch
+      this.batch.push(data);
+    }
   }
+
 
   private async executeBatch(): Promise<void> {
     this.batchInProgress = true;
