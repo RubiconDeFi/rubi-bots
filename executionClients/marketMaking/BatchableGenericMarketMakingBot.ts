@@ -9,16 +9,29 @@ import { Call } from "./BatchStrategyExecutor";
 
 class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     eventEmitter: EventEmitter;
+    differentiatorAddress: string;
 
-    constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string,) { // Replace 'any' with the appropriate type for the options parameter
+    constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, uid: number) { // Replace 'any' with the appropriate type for the options parameter
         console.log("BatchableGenericMarketMakingBot spinning up...");
         console.log("this strategy", strategy.identifier);
-
 
         super(config, marketAid, strategy, _botAddy);
 
         this.eventEmitter = new EventEmitter();
 
+        // Set differentiatorAddress based on environment variables
+        const assetSymbol = this.config.targetTokens ? this.config.targetTokens[0].symbol : 'UNKNOWN';
+        const quoteSymbol = this.config.targetTokens ? this.config.targetTokens[1].symbol : 'UNKNOWN';
+        const envVarName = `BatchBotPair_${uid}_${assetSymbol}_${quoteSymbol}_REPADDRESS`;
+        const myAddy = process.env[envVarName];
+
+        if (myAddy === undefined) {
+            throw new Error(`No representational address found for environment variable: ${envVarName}`);
+        }
+
+        this.differentiatorAddress = myAddy;
+
+        // TODO: ITERATE LIQUIDITY TO ACCOUNT FOR high-level allocation AND track the relevant ids to this.differentiatorAddress    
     }
 
     // Override placeInitialMarketMakingTrades
@@ -57,12 +70,13 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
             return
         };
         // Encode the function data for batchPlaceInitialMarketMakingTrades
-        const calldata = this.marketAid.interface.encodeFunctionData("placeMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[])", [
+        const calldata = this.marketAid.interface.encodeFunctionData("placeMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[],address)", [
             [this.assetPair.asset.address, this.assetPair.quote.address],
             askNumerators,
             askDenominators,
             bidNumerators,
             bidDenominators,
+            this.differentiatorAddress
         ]);
 
         // Emit the event with the encoded function data for further processing
@@ -138,13 +152,14 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         this.requotingOutstandingBook = true;
 
         // Encode the function data for batchRequoteOffers
-        const calldata = this.marketAid.interface.encodeFunctionData("batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[])", [
+        const calldata = this.marketAid.interface.encodeFunctionData("batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[],address)", [
             strategistTradeIDs,
             [this.assetPair.asset.address, this.assetPair.quote.address],
             askNumerators,
             askDenominators,
             bidNumerators,
             bidDenominators,
+            this.differentiatorAddress
         ]);
 
         // Emit the event with the encoded function data for further processing

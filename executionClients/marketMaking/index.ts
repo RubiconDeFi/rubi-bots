@@ -170,6 +170,7 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
 
 
 
+        const _index = botConfigsArray.indexOf(botConfig);
         // Extract asset and quote tokens from the trading pair
         const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
         const quoteTokenInfo = tokenList.tokens.find(token => token.address == quote && token.chainId == chainId);
@@ -201,7 +202,7 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
 
 
 
-        const bot = new BatchableGenericMarketMakingBot(config, marketAidContract, strategyInstance, await config.connections.signer.getAddress());
+        const bot = new BatchableGenericMarketMakingBot(config, marketAidContract, strategyInstance, await config.connections.signer.getAddress(), _index);
         bots.push(bot);
     }
 
