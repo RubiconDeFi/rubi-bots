@@ -144,6 +144,7 @@ export class GenericMarketMakingBot {
         // If the strategy's targetBook is different enough from the market-aid's liveBook, then execute orders on the liquidity venue to match
         const strategyBook = this.strategy.targetBook;
         const marketAidBook = this.marketAidPositionTracker.liveBook;
+        // TODO: solve for this better
         const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
 
         const askLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));

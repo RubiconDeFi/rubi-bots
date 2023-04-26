@@ -113,7 +113,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
             strategistTradeIDs.push(this.marketAidPositionTracker.onChainBookWithData[i].stratTradeID);
         }
 
-        console.log("These are the relevant ids", strategistTradeIDs);
+        console.log(this.strategy.identifier, "These are the relevant ids", strategistTradeIDs);
         // Print the map formatted
         console.log("these ids formatted", strategistTradeIDs.map((id) => id.toString()));
 
