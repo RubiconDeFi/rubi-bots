@@ -1,5 +1,5 @@
 import { BigNumber, ethers } from "ethers";
-import { GenericMarketMakingBot, applyInventoryManagement } from "./GenericMarketMakingBot";
+import { GenericMarketMakingBot, MarketAidAvailableLiquidity, applyInventoryManagement } from "./GenericMarketMakingBot";
 import { BotConfiguration } from "../../configuration/config";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetVenueOutBid";
@@ -47,7 +47,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         if (liquidityAllocation.asset < 0 || liquidityAllocation.asset > 1000 || liquidityAllocation.quote < 0 || liquidityAllocation.quote > 1000) {
             throw new Error(`Invalid liquidity allocation: asset and quote values must be in the range 0 <= x <= 1000`);
         }
-        
+
         // TODO: ITERATE LIQUIDITY TO ACCOUNT FOR high-level allocation AND track the relevant ids to this.differentiatorAddress    
         this.liquidityAllocation = liquidityAllocation;
 
@@ -223,6 +223,85 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         console.log("Emitted wipeOnChainBook event...");
     }
 
+
+    override pullOnChainLiquidity(strategist: string): Promise<MarketAidAvailableLiquidity> {
+        console.log("\nQuery Strategist Total Liquidity Batchable ",
+            this.config.targetTokens[0].address,
+            this.config.targetTokens[1].address,
+            strategist,
+            this.marketAid.address
+        );
+
+        try {
+            // Note: This is a little hacky when running many strategies in parallel as it gets the strategists book value + whatever is on the market aid, so there is redundant counting of the Market Aid liquidity that is sitting there...
+            // A loose proxy for how to share between paralell strategies
+            return this.marketAid.getStrategistTotalLiquidity(
+                this.config.targetTokens[0].address,
+                this.config.targetTokens[1].address,
+                strategist
+            ).then((r: MarketAidAvailableLiquidity) => {
+                console.log(this.strategy.identifier, "Got this after getStratTotalLiquidity", r);
+
+                // Log formatted the response
+                console.log("Formatted Liquidity - Asset Amount:", formatUnits(r.assetWeiAmount, 18));
+                console.log("Formatted Liquidity - Quote Amount:", formatUnits(r.quoteWeiAmount, 18));
+
+                // Adjust asset and quote wei amounts with liquidity allocation
+
+                console.log(" This percentage of asset liquidity is allocated to this strategy:", this.liquidityAllocation.asset / 1000);
+                console.log(" This percentage of quote liquidity is allocated to this strategy:", this.liquidityAllocation.quote / 1000);
+
+                const adjustedAssetWeiAmount = BigNumber.from(r.assetWeiAmount).mul(this.liquidityAllocation.asset).div(1000);
+                const adjustedQuoteWeiAmount = BigNumber.from(r.quoteWeiAmount).mul(this.liquidityAllocation.quote).div(1000);
+
+                // Create a new object with the adjusted properties
+                const newR: MarketAidAvailableLiquidity = {
+                    assetWeiAmount: adjustedAssetWeiAmount,
+                    quoteWeiAmount: adjustedQuoteWeiAmount,
+                    status: r.status
+                };
+
+                this.availableLiquidity = newR;
+
+                // Relative balance tracking driven off these query results and localbook
+                const humanReadableQuoteAmount = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+                const humanReadableAssetAmount = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
+
+                if (this.strategy.targetBook !== undefined &&
+                    this.strategy.targetBook.asks !== undefined &&
+                    this.strategy.targetBook.bids !== undefined &&
+                    this.strategy.targetBook.asks.length > 0 &&
+                    this.strategy.targetBook.bids.length > 0) {
+
+                    // const humanReadableQuoteAmount = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+                    // const humanReadableAssetAmount = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
+
+                    // Calculate the reference price (midpoint)
+                    const referencePrice = (this.strategy.targetBook.asks[0].price + this.strategy.targetBook.bids[0].price) / 2;
+
+                    const totalOnChainUSDAmount = humanReadableQuoteAmount + humanReadableAssetAmount * referencePrice;
+                    console.log("\n 💰 THIS TOTAL ONCHAIN USD VALUE", totalOnChainUSDAmount, this.assetPair.asset.symbol, "-", this.assetPair.quote.symbol, " 💰");
+
+                    const relativeBalanceAsset = (humanReadableAssetAmount * referencePrice) / totalOnChainUSDAmount;
+                    const relativeBalanceQuote = humanReadableQuoteAmount / totalOnChainUSDAmount;
+                    console.log("This relative Asset balance", relativeBalanceAsset);
+                    console.log("This relative Quote balance", relativeBalanceQuote);
+
+                    // Assign these values to be used in order sizing
+                    this.relativeAssetBalance = relativeBalanceAsset;
+                    this.relativeQuoteBalance = relativeBalanceQuote;
+                } else {
+                    console.log("\nNO LOCAL BOOK RETURN or ASKS/BIDS UNDEFINED");
+                    this.relativeAssetBalance = undefined;
+                    this.relativeQuoteBalance = undefined;
+                }
+
+                return newR;
+            });
+        } catch (error) {
+            console.log("\nError in pullOnChainLiquidity", error);
+        }
+    }
 }
 
 export default BatchableGenericMarketMakingBot;

@@ -530,6 +530,7 @@ export class GenericMarketMakingBot {
                 console.log("Formatted Liquidity - Quote Amount:", formatUnits(r.quoteWeiAmount, 18));
 
                 // Create a new object with the same properties as r
+                // TODO: arbitrary scalar here
                 const newR: MarketAidAvailableLiquidity = {
                     assetWeiAmount: BigNumber.from(r.assetWeiAmount).mul(10).div(100),
                     quoteWeiAmount: BigNumber.from(r.quoteWeiAmount).mul(10).div(100),
