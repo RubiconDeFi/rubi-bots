@@ -81,8 +81,6 @@ export const tokenList: TokenList = {
             chainId: Network.OPTIMISM_MAINNET,
             extensions: {
                 underlyingAssetGeckoID: 'ethereum',
-                //NEEDED FOR ANY INTERACTION THAT IS WRAPPER FOR NATIVE ASSET
-                isNativeAssetWrapper: true,
             },
         },
         {
@@ -201,7 +199,6 @@ export const tokenList: TokenList = {
             symbol: 'F',
             extensions: {
                 underlyingAssetGeckoID: 'optimism',
-                rewardsLive: false,
             },
             decimals: 18,
             name: 'Forrest Coin',

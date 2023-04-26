@@ -7,6 +7,7 @@ import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { EventEmitter } from "stream";
 import { Call } from "./BatchStrategyExecutor";
 import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
+import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 
 class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     eventEmitter: EventEmitter;
@@ -188,10 +189,10 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         // Emit the event with the encoded function data for further processing
         this.eventEmitter.emit('requoteMarketAidPosition', calldata as unknown as Call);
 
-        console.log("Emitted requoteMarketAidPosition, now waiting for 2 seconds to avoid spam...");
+        // console.log("Emitted requoteMarketAidPosition, now waiting for 2 seconds to avoid spam...");
 
-        // Hold execution here and set a timeout to avoid spamming before moving forward
-        await new Promise(r => setTimeout(r, 2000)); // Should be block time
+        // // Hold execution here and set a timeout to avoid spamming before moving forward
+        // await new Promise(r => setTimeout(r, 2000)); // Should be block time
 
         // naive spam mode
         this.requotingOutstandingBook = false;
@@ -302,6 +303,33 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
             console.log("\nError in pullOnChainLiquidity", error);
         }
     }
+
+    // Overridden function for use in BatchStrategyExecutor
+    override async dumpFillViaMarketAid(
+        assetToSell: string,
+        amountToSell: BigNumber,
+        assetToTarget: string,
+    ): Promise<void> {
+        const poolFee: number = (this.strategy.getReferenceLiquidityVenue() as UniswapLiquidityVenue).uniFee;
+
+        console.log("Preparing calldata to dump fill via market aid...", assetToSell, amountToSell.toString(), assetToTarget, poolFee);
+
+        try {
+            // Prepare the calldata for the strategistRebalanceFunds function
+            const calldata = this.marketAid.interface.encodeFunctionData("strategistRebalanceFunds", [
+                assetToSell,
+                amountToSell,
+                assetToTarget,
+                poolFee,
+            ]);
+
+            // Emit the event with the prepared calldata
+            this.eventEmitter.emit("dumpFillViaMarketAid", calldata as unknown as Call);
+        } catch (error) {
+            console.error("Error while preparing calldata for dumpFillViaMarketAid:", error.reason);
+        }
+    }
+
 }
 
 export default BatchableGenericMarketMakingBot;

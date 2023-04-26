@@ -610,12 +610,12 @@ export class GenericMarketMakingBot {
             if (!aggregateState.updated) return;
 
             if (!aggregateState.assetAmount.isZero()) {
-                console.log("Dump total asset amount on CEX:", formatUnits(aggregateState.assetAmount, this.assetPair.asset.decimals));
+                console.log("Dump total asset amount:", formatUnits(aggregateState.assetAmount, this.assetPair.asset.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.asset.address, aggregateState.assetAmount, this.assetPair.quote.address);
             }
 
             if (!aggregateState.quoteAmount.isZero()) {
-                console.log("Dump total quote amount on CEX:", formatUnits(aggregateState.quoteAmount, this.assetPair.quote.decimals));
+                console.log("Dump total quote amount:", formatUnits(aggregateState.quoteAmount, this.assetPair.quote.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.quote.address, aggregateState.quoteAmount, this.assetPair.asset.address);
             }
 
@@ -699,15 +699,6 @@ export class GenericMarketMakingBot {
 
             // TODO: Update the nonce and try again if there's a failure...
             // await updateNonceManagerTip((this.config.connections.signer as NonceManager), this.config.connections.jsonRpcProvider)
-
-            // Check if retryCount is less than 3
-            // if (retryCount < 3) {
-            //     console.log("Retrying dumpFillViaMarketAid, attempt:", retryCount + 1);
-            //     return this.dumpFillViaMarketAid(assetToSell, amountToSell, assetToTarget, retryCount + 1); // Increment retryCount
-            // } else {
-            //     console.log("Failed to dump fill via market aid after 3 attempts. Exiting...");
-            //     return false;
-            // }
         }
 
         return true;

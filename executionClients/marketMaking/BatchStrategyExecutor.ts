@@ -47,6 +47,11 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
       bot.eventEmitter.on('wipeOnChainBook', (calldata: string) => {
         this.emit('addToBatch', { botId: botIndex, action: 'wipeOnChainBook', calldata });
       });
+
+      // Add a listener for dumpFillViaMarketAid
+      bot.eventEmitter.on('dumpFillViaMarketAid', (calldata: string) => {
+        this.emit('addToBatch', { botId: botIndex, action: 'dumpFillViaMarketAid', calldata });
+      });
     });
 
     // Start polling to periodically process the batch queue
