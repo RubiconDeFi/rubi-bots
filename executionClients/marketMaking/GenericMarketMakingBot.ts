@@ -46,6 +46,7 @@ export class GenericMarketMakingBot {
     requotingOutstandingBook: boolean;
 
     marketContract: ethers.Contract;
+    wipingOutstandingBook: any;
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
         this.config = config;
@@ -91,14 +92,14 @@ export class GenericMarketMakingBot {
         console.log('Launching bot');
 
         // 1. Get the strategist's available liquidity over time
-        await this.pullOnChainLiquidity();
+        await this.pullOnChainLiquidity(this.EOAbotAddress);
         // UPDATER - Poll the strategist's total liquidity every second and populate the availableLiquidity object
         setTimeout(() => {
-            this.pullOnChainLiquidity();
-        }, 1000) // TODO: move to config
+            this.pullOnChainLiquidity(this.EOAbotAddress);
+        }, 1000); // TODO: move to config
 
         // Call a function that takes available liquidity and generates a ladder based on a configurable parameter step size
-        var _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
+        // var _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
         // console.log("This ladder!", _uniQueryLadder);
 
 
@@ -109,7 +110,7 @@ export class GenericMarketMakingBot {
         (this.strategy.referenceLiquidityVenue as UniswapLiquidityVenue).pollLiveBook(
             async () => {
                 // Refresh availableLiquidity and get the updated assetLadder based on it
-                await this.pullOnChainLiquidity();
+                await this.pullOnChainLiquidity(this.EOAbotAddress);
                 const _uniQueryLadder = getLadderFromAvailableLiquidity(this.availableLiquidity, 5);
                 // Print the formatted ladder
                 return _uniQueryLadder;
@@ -143,6 +144,7 @@ export class GenericMarketMakingBot {
         // If the strategy's targetBook is different enough from the market-aid's liveBook, then execute orders on the liquidity venue to match
         const strategyBook = this.strategy.targetBook;
         const marketAidBook = this.marketAidPositionTracker.liveBook;
+        // TODO: solve for this better
         const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
 
         const askLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
@@ -193,7 +195,7 @@ export class GenericMarketMakingBot {
         if (strategyBook.asks !== undefined && strategyBook.bids !== undefined && marketAidBook.asks !== undefined && marketAidBook.bids !== undefined) {
             console.log("Comparing books");
             console.log("Strategy Book", strategyBook);
-            console.log("Market Aid Book", marketAidBook);
+            console.log(this.strategy.identifier, "Market Aid Book", marketAidBook);
 
             // If the asks and bids of marketAidBook are empty then we call placeInitialMarketMakingTrades()
             if (marketAidBook.asks.length === 0 && marketAidBook.bids.length === 0) {
@@ -232,9 +234,22 @@ export class GenericMarketMakingBot {
                 }
             }
 
-            // If the asks and the bids of marketAidBook are non-empty but are not equal in length to the strategyBook then we call requoteMarketAidPosition() if the market aid has a non-zero amount of orders on the book and call placeInitialMarketMakingTrades() if the market aid has a zero amount of orders on the book
+            // If the asks and the bids of marketAidBook are non-empty but are not equal in length to the strategyBook
             else if (marketAidBook.asks.length !== strategyBook.asks.length || marketAidBook.bids.length !== strategyBook.bids.length) {
-                this.requoteMarketAidPosition();
+                // Check if the marketAidBook is greater in length than the target book
+                if (marketAidBook.asks.length > strategyBook.asks.length || marketAidBook.bids.length > strategyBook.bids.length) {
+                    // Wipe the book
+                    console.log("Market Aid book is greater in length than the target book, wiping the on-chain book");
+                    this.wipeOnChainBook();
+                } else {
+                    // TODO: Make sure disjoint strateTradeID.lengths and target requote liquidity curve can work...
+                    // For now do nothing here
+                    // this.requoteMarketAidPosition();
+
+                    // Until we can requote where targets.length != desiredLiquidity curve.length, we will wipe the book
+                    console.log("Market Aid book is less in length than the target book, wiping the on-chain book");
+                    this.wipeOnChainBook();
+                }
             }
         }
     }
@@ -259,7 +274,7 @@ export class GenericMarketMakingBot {
         // TODO: only on targetVenueOutBid???
         let assetSideBias = 1;
         let quoteSideBias = 1;
-    
+
         if (this.strategy instanceof TargetVenueOutBidStrategy) {
             const { assetSideBias: calculatedAssetSideBias, quoteSideBias: calculatedQuoteSideBias } = applyInventoryManagement(this.relativeAssetBalance, this.relativeQuoteBalance);
             assetSideBias = calculatedAssetSideBias;
@@ -350,7 +365,7 @@ export class GenericMarketMakingBot {
         }).catch((e) => {
             console.log("This error IN SHIPPING REQUOTE", e);
             this.requotingOutstandingBook = false;
-            this.pullOnChainLiquidity();
+            this.pullOnChainLiquidity(this.EOAbotAddress);
             // updateNonceManagerTip(this.config.signer as NonceManager, this.config.connections.reader);
         })
         // }
@@ -456,11 +471,55 @@ export class GenericMarketMakingBot {
         });
     }
 
-    pullOnChainLiquidity(): Promise<MarketAidAvailableLiquidity> {
+    async wipeOnChainBook(): Promise<boolean | void> {
+        // Wipe this.marketAidPositionTracker.onChainBookWithData !!!
+        // TODO: Logic Gate to avoid spam
+        // This can be called in normal operations or if ever needed on GLOBAL TIMEOUT for rebalancing
+        console.log("WIPE THE ON-CHAIN BOOK!!!");
+
+        if (this.marketAidPositionTracker.onChainBook.length == 0) {
+            console.log("RETURN BC NO OC BOOK", this.marketAidPositionTracker.onChainBook);
+            return;
+        }
+        if (this.wipingOutstandingBook) return;
+
+        console.log("WIPING THE ERRONEOUS book", this.marketAidPositionTracker.onChainBook);
+
+
+        this.marketAid.connect(this.config.connections.signer).estimateGas.scrubStrategistTrades(
+            this.marketAidPositionTracker.onChainBook
+        ).then((r) => {
+            if (r) {
+                if (this.wipingOutstandingBook) return;
+
+                this.wipingOutstandingBook = true;
+
+                this.marketAid.connect(this.config.connections.signer).scrubStrategistTrades(this.marketAidPositionTracker.onChainBook).then(async (r) => {
+                    const out = await r.wait();
+                    this.wipingOutstandingBook = false;
+                    if (out.status == true) {
+                        console.log("\n***WIPING THE ERRONEOUS book success");
+                    }
+                }).catch((e) => {
+                    console.log("FAIL ON YEETING WIPE THE BOOK", e);
+                    updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.connections.jsonRpcProvider);
+                    this.wipingOutstandingBook = false;
+                })
+            }
+        }).catch((e) => {
+            console.log("FAIL ON EG WIPE THE BOOK", e);
+            // Should this one be here?
+            // this.wipingOutstandingBook = false;
+            updateNonceManagerTip(this.config.connections.signer as NonceManager, this.config.connections.jsonRpcProvider);
+        })
+    }
+
+
+    pullOnChainLiquidity(strategist: string): Promise<MarketAidAvailableLiquidity> {
         console.log("\nQuery Strategist Total Liquidity ",
             this.config.targetTokens[0].address,
             this.config.targetTokens[1].address,
-            this.EOAbotAddress,
+            strategist,
             this.marketAid.address
         );
 
@@ -468,7 +527,7 @@ export class GenericMarketMakingBot {
             return this.marketAid.getStrategistTotalLiquidity(
                 this.config.targetTokens[0].address,
                 this.config.targetTokens[1].address,
-                this.EOAbotAddress
+                strategist
             ).then((r: MarketAidAvailableLiquidity) => {
                 console.log("Got this after getStratTotalLiquidity", r);
 
@@ -477,6 +536,7 @@ export class GenericMarketMakingBot {
                 console.log("Formatted Liquidity - Quote Amount:", formatUnits(r.quoteWeiAmount, 18));
 
                 // Create a new object with the same properties as r
+                // TODO: arbitrary scalar here
                 const newR: MarketAidAvailableLiquidity = {
                     assetWeiAmount: BigNumber.from(r.assetWeiAmount).mul(10).div(100),
                     quoteWeiAmount: BigNumber.from(r.quoteWeiAmount).mul(10).div(100),
@@ -556,12 +616,12 @@ export class GenericMarketMakingBot {
             if (!aggregateState.updated) return;
 
             if (!aggregateState.assetAmount.isZero()) {
-                console.log("Dump total asset amount on CEX:", formatUnits(aggregateState.assetAmount, this.assetPair.asset.decimals));
+                console.log("Dump total asset amount:", formatUnits(aggregateState.assetAmount, this.assetPair.asset.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.asset.address, aggregateState.assetAmount, this.assetPair.quote.address);
             }
 
             if (!aggregateState.quoteAmount.isZero()) {
-                console.log("Dump total quote amount on CEX:", formatUnits(aggregateState.quoteAmount, this.assetPair.quote.decimals));
+                console.log("Dump total quote amount:", formatUnits(aggregateState.quoteAmount, this.assetPair.quote.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.quote.address, aggregateState.quoteAmount, this.assetPair.asset.address);
             }
 
@@ -645,15 +705,6 @@ export class GenericMarketMakingBot {
 
             // TODO: Update the nonce and try again if there's a failure...
             // await updateNonceManagerTip((this.config.connections.signer as NonceManager), this.config.connections.jsonRpcProvider)
-
-            // Check if retryCount is less than 3
-            // if (retryCount < 3) {
-            //     console.log("Retrying dumpFillViaMarketAid, attempt:", retryCount + 1);
-            //     return this.dumpFillViaMarketAid(assetToSell, amountToSell, assetToTarget, retryCount + 1); // Increment retryCount
-            // } else {
-            //     console.log("Failed to dump fill via market aid after 3 attempts. Exiting...");
-            //     return false;
-            // }
         }
 
         return true;
@@ -715,7 +766,7 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
     };
 }
 
-function applyInventoryManagement(relativeAssetBalance: number, relativeQuoteBalance: number): { assetSideBias: number, quoteSideBias: number } {
+export function applyInventoryManagement(relativeAssetBalance: number, relativeQuoteBalance: number): { assetSideBias: number, quoteSideBias: number } {
     let assetSideBias = 1;
     let quoteSideBias = 1;
 
