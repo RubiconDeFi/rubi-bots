@@ -11,8 +11,9 @@ import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAi
 class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     eventEmitter: EventEmitter;
     differentiatorAddress: string;
+    liquidityAllocation: { asset: number, quote: number };
 
-    constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, uid: number) { // Replace 'any' with the appropriate type for the options parameter
+    constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, uid: number, liquidityAllocation: { asset: number, quote: number }) { // Replace 'any' with the appropriate type for the options parameter
         console.log("BatchableGenericMarketMakingBot spinning up...");
         console.log("this strategy", strategy.identifier);
 
@@ -42,7 +43,16 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
 
         console.log("This is the address of the market aid im watching...", this.marketAidPositionTracker.myReferenceOperator);
 
+        // Validate liquidity allocation values
+        if (liquidityAllocation.asset < 0 || liquidityAllocation.asset > 1000 || liquidityAllocation.quote < 0 || liquidityAllocation.quote > 1000) {
+            throw new Error(`Invalid liquidity allocation: asset and quote values must be in the range 0 <= x <= 1000`);
+        }
+        
         // TODO: ITERATE LIQUIDITY TO ACCOUNT FOR high-level allocation AND track the relevant ids to this.differentiatorAddress    
+        this.liquidityAllocation = liquidityAllocation;
+
+        console.log("This liquidity allocation!", this.liquidityAllocation);
+
     }
 
     // Override placeInitialMarketMakingTrades
@@ -200,7 +210,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         if (this.wipingOutstandingBook) return;
 
         console.log("Wiping on-chain book...", this.marketAidPositionTracker.onChainBook.map((trade) => trade.toString()));
-        
+
 
         // Encode the function data for scrubStrategistTrades
         const calldata = this.marketAid.interface.encodeFunctionData("scrubStrategistTrades", [

@@ -116,8 +116,8 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
 
 
       if (gasEstimate) {
-        // this.batchInProgress = true;
         console.log("\nShipping batch with gas estimate:", gasEstimate);
+        this.batchInProgress = true;
 
         const tx = await this.marketAid.connect(this.config.connections.signer).batchBox(payload, { gasLimit: gasEstimate });
         this.batchInProgress = true;

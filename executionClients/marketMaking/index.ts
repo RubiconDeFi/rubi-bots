@@ -135,8 +135,8 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
         console.log("this is the config", config);
         console.log("this is the config split with $", config.split('$'));
         console.log("this is the config split with - ", config.split('-'));
-        
-        
+
+
 
         const [strategy, asset, quote, liquidityAllocation] = config.split('-');
         const strategyArgs = config.split('$')[1];
@@ -145,7 +145,7 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
             strategy,
             asset,
             quote,
-            liquidityAllocation: parseFloat(liquidityAllocation),
+            liquidityAllocation: (liquidityAllocation),
             strategyArgs: strategyArgs
         };
     });
@@ -168,6 +168,8 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
         console.log(`\tQuote: ${quote}`);
         console.log(`\tLiquidity Allocation: ${liquidityAllocation}`);
 
+        const _assetLiquidityAllocation = parseFloat(liquidityAllocation.split('$')[0].split(',')[0]);
+        const _quoteLiquidityAllocation = parseFloat(liquidityAllocation.split('$')[0].split(',')[1]);
 
 
         const _index = botConfigsArray.indexOf(botConfig);
@@ -202,7 +204,10 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
 
 
 
-        const bot = new BatchableGenericMarketMakingBot(config, marketAidContract, strategyInstance, await config.connections.signer.getAddress(), _index);
+        const bot = new BatchableGenericMarketMakingBot(config, marketAidContract, strategyInstance, await config.connections.signer.getAddress(), _index, {
+            asset: _assetLiquidityAllocation,
+            quote: _quoteLiquidityAllocation
+        });
         bots.push(bot);
     }
 
