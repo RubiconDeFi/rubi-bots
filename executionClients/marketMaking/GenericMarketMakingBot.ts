@@ -245,6 +245,10 @@ export class GenericMarketMakingBot {
                     // TODO: Make sure disjoint strateTradeID.lengths and target requote liquidity curve can work...
                     // For now do nothing here
                     // this.requoteMarketAidPosition();
+
+                    // Until we can requote where targets.length != desiredLiquidity curve.length, we will wipe the book
+                    console.log("Market Aid book is less in length than the target book, wiping the on-chain book");
+                    this.wipeOnChainBook();
                 }
             }
         }
@@ -480,7 +484,7 @@ export class GenericMarketMakingBot {
         if (this.wipingOutstandingBook) return;
 
         console.log("WIPING THE ERRONEOUS book", this.marketAidPositionTracker.onChainBook);
-        
+
 
         this.marketAid.connect(this.config.connections.signer).estimateGas.scrubStrategistTrades(
             this.marketAidPositionTracker.onChainBook
