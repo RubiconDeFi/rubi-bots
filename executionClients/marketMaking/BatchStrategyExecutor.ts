@@ -19,9 +19,9 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
 
   constructor(bots: BatchableGenericMarketMakingBot[], config: BotConfiguration, marketAid: ethers.Contract) {
     super();
-    this.batch = [];
-    this.batchInProgress = false;
     this.bots = bots;
+    this.batch = new Array(this.bots.length).fill(null).map((_, botId) => ({ botId, actions: {} }));
+    this.batchInProgress = false;
     this.config = config;
     this.marketAid = marketAid;
     this.eventEmitter = new EventEmitter();
@@ -61,7 +61,8 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
   // Logical loop for executing the batch when it exists
   private startPolling(): void {
     // Set an arbitrary polling interval in milliseconds (e.g., 5000 ms or 5 seconds)
-    const pollingInterval = 5000;
+    // TODO: move to config
+    const pollingInterval = 2000;
 
     setInterval(() => {
       if (!this.batchInProgress && this.batch.length > 0) {
@@ -77,21 +78,18 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
     console.log("Adding to batch...", data);
 
     this.addToBatch(data);
-    if (!this.batchInProgress) {
-      this.executeBatch();
-    }
+    // if (!this.batchInProgress) {
+    //   this.executeBatch();
+    // }
   }
 
   private addToBatch(data: any): void {
-    // Search for an existing action in the batch for the same bot
-    const existingActionIndex = this.batch.findIndex(item => item.botId === data.botId && item.action === data.action);
+    // Find the batch item for the botId
+    const botBatchItem = this.batch.find(item => item.botId === data.botId);
 
-    if (existingActionIndex >= 0) {
-      // Update the existing action with the new calldata
-      this.batch[existingActionIndex] = data;
-    } else {
-      // Add the new action to the batch
-      this.batch.push(data);
+    if (botBatchItem) {
+      // Update the action with the new calldata
+      botBatchItem.actions[data.action] = data.calldata;
     }
   }
 
@@ -101,19 +99,33 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
     console.log("\nExecuting batch...");
     console.log("this is my batch!", this.batch);
 
-    const targets: Call[] = this.batch.map(item => ({
-      target: this.marketAid.address, // Assuming the target is the marketAid contract address
-      function: item.action,
-      args: item.calldata,
-    }));
-    const payload = targets.map(item => item.args);
+    const targets: Call[] = [];
 
+    this.batch.forEach((botBatchItem) => {
+      for (const actionType in botBatchItem.actions) {
+        console.log("\nactionType", actionType, "this bot ID", botBatchItem.botId, "this bot's actions", botBatchItem.actions);
+        
+        const calldata = botBatchItem.actions[actionType];
+        targets.push({
+          target: this.marketAid.address,
+          function: actionType,
+          args: calldata,
+        });
+      }
+    });
+
+    const payload = targets.map(item => item.args);
     console.log("targets", payload);
 
 
     try {
       if (this.batchInProgress) {
         console.log("\nBatch already in progress, not shipping batch.");
+        return;
+      }
+
+      if (payload.length === 0) {
+        console.log("\nNo actions in batch, not shipping batch.");
         return;
       }
       const gasEstimate = await this.marketAid.connect(this.config.connections.signer).estimateGas.batchBox(payload);
@@ -131,7 +143,9 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
         this.batchInProgress = false;
 
         // Clear the batch
-        this.batch = [];
+        // this.batch = [];
+        this.batch = new Array(this.bots.length).fill(null).map((_, botId) => ({ botId, actions: {} }));
+
 
         if (receipt.status) {
           console.log("\n🎉 THE BATCH WAS SUCCESSFUL 🎉");
@@ -149,7 +163,9 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
     } catch (error) {
       console.error("Error executing batch transaction:", error.message);
       this.batchInProgress = false;
-      this.batch = [];
+      // this.batch = [];
+      this.batch = new Array(this.bots.length).fill(null).map((_, botId) => ({ botId, actions: {} }));
+
     }
   }
 
