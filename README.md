@@ -32,7 +32,7 @@ In order to configure and deploy your own instance of this project in a cloud en
 5. Pull upstream improvements as needed: To keep your fork updated with the latest changes and improvements from the upstream repository, follow these steps:
 a. First, add the original repository as a remote repository by running this command in your local repository:
 ```
-git remote add upstream https://github.com/your-upstream-repo/rubi-bots.git
+git remote add upstream https://github.com/RubiconDeFi/rubi-bots.git
 ```
 b. Fetch the latest changes from the upstream repository:
 ```

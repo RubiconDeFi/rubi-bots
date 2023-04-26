@@ -242,7 +242,9 @@ export class GenericMarketMakingBot {
                     console.log("Market Aid book is greater in length than the target book, wiping the on-chain book");
                     this.wipeOnChainBook();
                 } else {
-                    this.requoteMarketAidPosition();
+                    // TODO: Make sure disjoint strateTradeID.lengths and target requote liquidity curve can work...
+                    // For now do nothing here
+                    // this.requoteMarketAidPosition();
                 }
             }
         }
