@@ -194,7 +194,7 @@ export class GenericMarketMakingBot {
         if (strategyBook.asks !== undefined && strategyBook.bids !== undefined && marketAidBook.asks !== undefined && marketAidBook.bids !== undefined) {
             console.log("Comparing books");
             console.log("Strategy Book", strategyBook);
-            console.log("Market Aid Book", marketAidBook);
+            console.log(this.strategy.identifier, "Market Aid Book", marketAidBook);
 
             // If the asks and bids of marketAidBook are empty then we call placeInitialMarketMakingTrades()
             if (marketAidBook.asks.length === 0 && marketAidBook.bids.length === 0) {
@@ -233,9 +233,16 @@ export class GenericMarketMakingBot {
                 }
             }
 
-            // If the asks and the bids of marketAidBook are non-empty but are not equal in length to the strategyBook then we call requoteMarketAidPosition() if the market aid has a non-zero amount of orders on the book and call placeInitialMarketMakingTrades() if the market aid has a zero amount of orders on the book
+            // If the asks and the bids of marketAidBook are non-empty but are not equal in length to the strategyBook
             else if (marketAidBook.asks.length !== strategyBook.asks.length || marketAidBook.bids.length !== strategyBook.bids.length) {
-                this.requoteMarketAidPosition();
+                // Check if the marketAidBook is greater in length than the target book
+                if (marketAidBook.asks.length > strategyBook.asks.length || marketAidBook.bids.length > strategyBook.bids.length) {
+                    // Wipe the book
+                    console.log("Market Aid book is greater in length than the target book, wiping the on-chain book");
+                    this.wipeOnChainBook();
+                } else {
+                    this.requoteMarketAidPosition();
+                }
             }
         }
     }
@@ -468,6 +475,9 @@ export class GenericMarketMakingBot {
             return;
         }
         if (this.wipingOutstandingBook) return;
+
+        console.log("WIPING THE ERRONEOUS book", this.marketAidPositionTracker.onChainBook);
+        
 
         this.marketAid.connect(this.config.connections.signer).estimateGas.scrubStrategistTrades(
             this.marketAidPositionTracker.onChainBook

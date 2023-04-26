@@ -6,6 +6,7 @@ import { TargetVenueOutBidStrategy } from "../../strategies/marketMaking/targetV
 import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { EventEmitter } from "stream";
 import { Call } from "./BatchStrategyExecutor";
+import { MarketAidPositionTracker } from "../../liquidityVenues/rubicon/MarketAidPositionTracker";
 
 class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     eventEmitter: EventEmitter;
@@ -31,7 +32,15 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
 
         this.differentiatorAddress = myAddy;
         // This should allow everything to work correctly in GenericMarketMakingBot
+        console.log("this.differentiatorAddress", this.differentiatorAddress);
+
         this.EOAbotAddress = myAddy;
+
+        // Overwrite
+        const _marketAidPositionTracker = new MarketAidPositionTracker(this.assetPair, this.marketAid, this.differentiatorAddress, this.config);
+        this.marketAidPositionTracker = _marketAidPositionTracker;
+
+        console.log("This is the address of the market aid im watching...", this.marketAidPositionTracker.myReferenceOperator);
 
         // TODO: ITERATE LIQUIDITY TO ACCOUNT FOR high-level allocation AND track the relevant ids to this.differentiatorAddress    
     }
@@ -153,6 +162,8 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
 
         this.requotingOutstandingBook = true;
 
+        console.log("Lengths of the arrays", askNumerators.length, askDenominators.length, bidNumerators.length, bidDenominators.length);
+
         // Encode the function data for batchRequoteOffers
         const calldata = this.marketAid.interface.encodeFunctionData("batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[],address)", [
             strategistTradeIDs,
@@ -188,6 +199,9 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         }
         if (this.wipingOutstandingBook) return;
 
+        console.log("Wiping on-chain book...", this.marketAidPositionTracker.onChainBook.map((trade) => trade.toString()));
+        
+
         // Encode the function data for scrubStrategistTrades
         const calldata = this.marketAid.interface.encodeFunctionData("scrubStrategistTrades", [
             this.marketAidPositionTracker.onChainBook
@@ -198,6 +212,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
 
         console.log("Emitted wipeOnChainBook event...");
     }
+
 }
 
 export default BatchableGenericMarketMakingBot;
