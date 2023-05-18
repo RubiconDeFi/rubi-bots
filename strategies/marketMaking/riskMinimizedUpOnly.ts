@@ -26,19 +26,18 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
 
     // Function that listens to the referenceLiquidityVenue's updateNotifier and updates targetBook based on the latest information from referenceLiquidityVenue
     override updateTargetBook() {
-        console.log("THIS FUNCTION WAS CALLED!!!!");
+        // console.log("THIS FUNCTION WAS CALLED!!!!");
 
-        console.log("Listening to referenceLiquidityVenue's updateNotifier");
+        console.log("Listening to referenceLiquidityVenue's updateNotifier...");
 
         this.referenceLiquidityVenue.updateNotifier.on('update', (liveBook) => {
-            console.log("STARTING BOOK ", liveBook);
+            // console.log("STARTING BOOK ", liveBook);
 
             if (liveBook == undefined) {
                 console.log("Live book is undefined, therefore do nothing and return");
                 return;
             }
             this.targetBook = liveBook;
-            console.log("This is targetBook: ", this.targetBook);
 
             // this.premium = 0;
             if (liveBook.bids) {
@@ -84,6 +83,7 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
                 return ask;
             });
 
+            console.log(this.identifier, " - This is targetBook: ", this.targetBook);
 
             this.emitUpdate();
         });
