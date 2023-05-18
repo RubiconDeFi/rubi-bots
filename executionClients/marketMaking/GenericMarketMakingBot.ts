@@ -529,7 +529,7 @@ export class GenericMarketMakingBot {
                 this.config.targetTokens[1].address,
                 strategist
             ).then((r: MarketAidAvailableLiquidity) => {
-                console.log("Got this after getStratTotalLiquidity", r);
+                // console.log("Got this after getStratTotalLiquidity", r);
 
                 // Log formatted the response
                 console.log("Formatted Liquidity - Asset Amount:", formatUnits(r.assetWeiAmount, 18));
@@ -712,7 +712,7 @@ export class GenericMarketMakingBot {
 }
 
 export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAvailableLiquidity, stepSize: number): { assetLadder: BigNumber[], quoteLadder: BigNumber[] } {
-    console.log("I think this is my available liquidity", availableLiquidity);
+    // console.log("I think this is my available liquidity", availableLiquidity);
 
     // Print as formatted values
     console.log("I think this is my available liquidity", formatUnits(availableLiquidity.assetWeiAmount, 18), formatUnits(availableLiquidity.quoteWeiAmount, 18));

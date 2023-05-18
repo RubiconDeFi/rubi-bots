@@ -42,8 +42,9 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         const _marketAidPositionTracker = new MarketAidPositionTracker(this.assetPair, this.marketAid, this.differentiatorAddress, this.config);
         this.marketAidPositionTracker = _marketAidPositionTracker;
 
-        console.log("This is the address of the market aid im watching...", this.marketAidPositionTracker.myReferenceOperator);
-
+        console.log("This is the address of the ACCOUNT REFERENCE im watching...", this.marketAidPositionTracker.myReferenceOperator);
+        console.log("This is the Market Aid address:", this.marketAid.address);
+        
         // Validate liquidity allocation values
         if (liquidityAllocation.asset < 0 || liquidityAllocation.asset > 1000 || liquidityAllocation.quote < 0 || liquidityAllocation.quote > 1000) {
             throw new Error(`Invalid liquidity allocation: asset and quote values must be in the range 0 <= x <= 1000`);
@@ -241,7 +242,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
                 this.config.targetTokens[1].address,
                 strategist
             ).then((r: MarketAidAvailableLiquidity) => {
-                console.log(this.strategy.identifier, "Got this after getStratTotalLiquidity", r);
+                // console.log(this.strategy.identifier, "Got this after getStratTotalLiquidity", r);
 
                 // Log formatted the response
                 console.log("Formatted Liquidity - Asset Amount:", formatUnits(r.assetWeiAmount, 18));
