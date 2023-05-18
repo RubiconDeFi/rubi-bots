@@ -82,6 +82,7 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
                 }
                 return ask;
             });
+            console.log(this.identifier, " - This is targetBook: ", this.targetBook);
             this.emitUpdate();
         });
     }

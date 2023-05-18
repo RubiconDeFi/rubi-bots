@@ -96,7 +96,7 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
 
   private async executeBatch(): Promise<void> {
 
-    console.log("\nExecuting batch...");
+    console.log("\nAttempting to execute the batch...");
     console.log("this is my batch!", this.batch);
 
     const targets: Call[] = [];

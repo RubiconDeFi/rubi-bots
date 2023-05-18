@@ -60,7 +60,7 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
                 asks: this.liveBook.asks.reverse()
             }
 
-            console.log("this is the liveBook: ", this.liveBook);
+            // console.log("this is the liveBook: ", this.liveBook);
 
         } catch (error) {
             console.log("\n Got an error in updateLiveBook for UniswapLiquidity venue: ", error);
