@@ -175,12 +175,12 @@ export class GenericMarketMakingBot {
         const deltaTrigger = relativeSpread / 2;
 
         // TODO: should we validate the strategy book is zero length case more??
-        if (deltaTrigger == undefined || isNaN(deltaTrigger) || deltaTrigger < 0) { 
+        if (deltaTrigger == undefined || isNaN(deltaTrigger) || deltaTrigger < 0) {
             console.log("Delta trigger is undefined, NaN, or less than 0, returning");
             return;
         }
         console.log("Checking for requotes at this deltaTrigger: ", deltaTrigger, "this implied amount", midpoint * deltaTrigger);
-        
+
 
 
         // TODO: the existance of this should be investigated maybe haha - perhaps a bad side effect of available liquidity at the bot level and not strategy level?
@@ -662,11 +662,7 @@ export class GenericMarketMakingBot {
         this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), async (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event) => {
             console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
 
-
             console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
-            // TODO: determine exactly what to dump
-
-
             if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
                 console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
                 const val = formatUnits(give_amt, this.assetPair.asset.decimals);
@@ -690,11 +686,6 @@ export class GenericMarketMakingBot {
                 const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
                 console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                // Note: BUY THE ASSET AMOUNT ON CEX
-                // dumpERC20onFTX(true, parseFloat(valueUsedInTail), this.config.quote.symbol);
-
-                // Call the function at the specified line numbers
-                // this.dumpFillViaMarketAid(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
                 updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
             }
 
