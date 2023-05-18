@@ -185,7 +185,7 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
             {
                 asset: assetTokenInfo,
                 quote: quoteTokenInfo
-            }, staticJsonRpc
+            }, staticJsonRpc, chainId == 10 ? 500 : undefined // TODO: make this configurable
         );
 
         const strategyInstance = getStrategyFromArg(strategy, referenceLiquidityVenue, parseFloat(botConfig.strategyArgs));

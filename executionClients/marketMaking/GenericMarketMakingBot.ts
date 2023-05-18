@@ -145,7 +145,8 @@ export class GenericMarketMakingBot {
         const strategyBook = this.strategy.targetBook;
         const marketAidBook = this.marketAidPositionTracker.liveBook;
         // TODO: solve for this better
-        const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
+
+        // const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
 
         const askLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
         const bidLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
@@ -157,7 +158,32 @@ export class GenericMarketMakingBot {
             return;
         }
 
+        // Assuming that the orders in the bids and asks arrays are sorted
+        const bestBidPrice = strategyBook.bids[0].price;
+        const bestAskPrice = strategyBook.asks[0].price;
 
+        // Calculate the spread
+        const spread = bestAskPrice - bestBidPrice;
+
+        // Calculate the midpoint
+        const midpoint = (bestBidPrice + bestAskPrice) / 2;
+
+        // Calculate the relative spread
+        const relativeSpread = spread / midpoint;
+
+        // Half the spread as a relative price change
+        const deltaTrigger = relativeSpread / 2;
+
+        // TODO: should we validate the strategy book is zero length case more??
+        if (deltaTrigger == undefined || isNaN(deltaTrigger) || deltaTrigger < 0) { 
+            console.log("Delta trigger is undefined, NaN, or less than 0, returning");
+            return;
+        }
+        console.log("Checking for requotes at this deltaTrigger: ", deltaTrigger, "this implied amount", midpoint * deltaTrigger);
+        
+
+
+        // TODO: the existance of this should be investigated maybe haha - perhaps a bad side effect of available liquidity at the bot level and not strategy level?
         // Check if the total size of asks or bids in strategy book exceeds the available liquidity
         const totalAskSize = strategyBook.asks.reduce((acc, ask) => acc + ask.size, 0);
         // Convert totalBidSize from asset amount to quote amount
