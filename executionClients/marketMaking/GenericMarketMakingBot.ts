@@ -632,9 +632,9 @@ export class GenericMarketMakingBot {
         const updateAggregateState = (pay_gem, give_amt, target_asset) => {
             aggregateState.updated = true;
             if (pay_gem == getAddress(this.assetPair.quote.address)) {
-                aggregateState.assetAmount = aggregateState.assetAmount.add(give_amt);
-            } else if (pay_gem == getAddress(this.assetPair.asset.address)) {
                 aggregateState.quoteAmount = aggregateState.quoteAmount.add(give_amt);
+            } else if (pay_gem == getAddress(this.assetPair.asset.address)) {
+                aggregateState.assetAmount = aggregateState.assetAmount.add(give_amt);
             }
         };
 
