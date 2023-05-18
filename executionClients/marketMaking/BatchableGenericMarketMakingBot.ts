@@ -242,7 +242,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
                 this.config.targetTokens[1].address,
                 strategist
             ).then((r: MarketAidAvailableLiquidity) => {
-                console.log(this.strategy.identifier, "Got this after getStratTotalLiquidity", r);
+                // console.log(this.strategy.identifier, "Got this after getStratTotalLiquidity", r);
 
                 // Log formatted the response
                 console.log("Formatted Liquidity - Asset Amount:", formatUnits(r.assetWeiAmount, 18));
