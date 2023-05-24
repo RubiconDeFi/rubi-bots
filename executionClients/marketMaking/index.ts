@@ -7,16 +7,21 @@ import MARKET_AID_INTERFACE from "../../configuration/abis/MarketAid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
-
+import { getAidFactory, networkMenu, aidFactoryMenu,  } from "../../configuration/marketAid"; //grabbing marketAid functions
+import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
 dotenv.config();
 
 // function to prompt the user to select an existing contract instance or create a new one
-function userMarketAidCheckCallback(rl): Promise<string> {
+function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promise<string> {
     return new Promise(resolve => {
         rl.question('\n Do you have an existing MarketAid contract instance you would like to use? (Enter the address of the contract instance you want to use then enter to add, or enter "no" to create one):', (answer) => {
             if (answer.toLowerCase() === 'no') {
-                // console.log('\n Creating a new MarketAid contract instance...');
-                resolve(null);
+                console.log('\n Lets create a new MarketAid!');
+                const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
+                const newMarketAidAddress = marketAidFactory.createMarketAidInstance();
+                console.log("New Market Aid Address: ", newMarketAidAddress);
+                //resolve(null);
+                resolve(newMarketAidAddress);
             } else {
                 console.log('\n Using existing MarketAid contract instance...');
                 try {
@@ -24,7 +29,7 @@ function userMarketAidCheckCallback(rl): Promise<string> {
                     resolve(address);
                 } catch (error) {
                     console.log("Invalid answer! Enter the address of the contract instance you want to use or enter 'no' to create one");
-                    resolve(userMarketAidCheckCallback(rl));
+                    resolve(userMarketAidCheckCallback(configuration, rl));
                 }
             }
         })
@@ -48,7 +53,7 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     if (providedMarketAidAddress) {
         userMarketAidAddress = providedMarketAidAddress;
     } else {
-        userMarketAidAddress = await userMarketAidCheckCallback(rl);
+        userMarketAidAddress = await userMarketAidCheckCallback(configuration, rl);
     }
     // console.log("\nGeneric market-making bot targetting this userMarketAid", userMarketAidAddress);
 
@@ -60,7 +65,7 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
     } else {
         console.log("The user did not provide an existing contract instance. Creating a new one...");
-        // marketAidContractInstance = await helpUserCreateNewMarketAidInstance(configuration);
+        //marketAidContractInstance = await helpUserCreateNewMarketAidInstance(configuration);
     }
 
     // 2. Depending on the user's selected strategy, create the strategy and pass it to the bot
