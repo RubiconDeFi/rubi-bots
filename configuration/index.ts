@@ -163,7 +163,6 @@ async function main() {
                 // 2. What strategy would you like to employ?
                 return marketMakingStrategyCallback().then((selectedStrat: MarketMakingStrategy) => {
                     console.log("The user selected this market-making strategy", selectedStrat);
-
                     // Conceptually we know that they want to do now, but we need to know what tokens they want to target, what network they want to target, etc. = configuration
                     // 3. What network(s) would you like to execute this strategy on?
                     return networkCallback().then(async (selectedNetwork: Network) => {
