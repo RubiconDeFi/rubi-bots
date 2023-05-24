@@ -76,10 +76,10 @@ async function marketMakingStrategyCallback(): Promise<MarketMakingStrategy> {
 // Function that asks the user what ETH L2 Network they want to use for their selected strategy, takes user command line input to get their answer after displaying options
 async function networkCallback(): Promise<Network> {
     return new Promise(resolve => {
-        rl.question('\n What network would you like to execute this strategy on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n4. Arbitrum Goerli\n:', (answer) => {
+        rl.question('\n What network would you like to execute this strategy on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n\n4. Arbitrum Goerli\n5. Polygon Mainnet\n6. Polygon Mumbai\n:', (answer) => {
             switch (answer.toLowerCase()) {
                 case '1':
-                    console.log('\n Selected Optimism');
+                    console.log('\n Selected Optimism Mainnet');
                     resolve(Network.OPTIMISM_MAINNET);
                     break;
                 case '2':
@@ -87,12 +87,20 @@ async function networkCallback(): Promise<Network> {
                     resolve(Network.OPTIMISM_GOERLI);
                     break;
                 case '3':
-                    console.log('\n Selected Arbitrum');
+                    console.log('\n Selected Arbitrum Mainnet');
                     resolve(Network.ARBITRUM_MAINNET);
                     break;
                 case '4':
                     console.log('\n Selected Arbitrum Goerli');
                     resolve(Network.ARBITRUM_TESTNET);
+                    break;
+                case '5':
+                    console.log('\n Selected Polygon Mainnet');
+                    resolve(Network.POLYGON_MAINNET);
+                    break;
+                case '6':
+                    console.log('\n Selected Polygon Mumbai');
+                    resolve(Network.POLYGON_MUMBAI);
                     break;
                 default:
                     console.log('Invalid answer! Pick a number 1 through 4');
