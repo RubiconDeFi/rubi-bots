@@ -1,0 +1,48 @@
+query TokenBalances($aid: String!) { # , $amount: Int! #TODO: determine why first is not working as a dynamic variable
+    aidTokens(
+        first: 1000, # $amount,
+        where: { aid: $aid }
+    ) {
+        aid {
+            id
+        }
+        token {
+            id
+        }
+        balance
+    } 
+}
+
+query Aids($aidID: Bytes!) {
+    aids(where: {id: $aidID}) {
+        id
+        created 
+        balances {
+            token {
+                id
+            }
+            balance
+        }
+    }
+}
+
+query Transactions($aidID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int = 1000, $skip: Int = 0) {
+    transactions(
+        first: $first, # TODO: figure out how to do this with auto-pagination
+        skip: $skip, 
+        where: {
+            aid: $aidID, 
+            timestamp_gte: $startTime,
+            timestamp_lte: $endTime
+        }
+    ) {
+        txn
+        timestamp
+        aid {
+            id
+        }
+        total_gas_fee
+        total_gas_fee_usd
+    }
+}
+
