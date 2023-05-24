@@ -8,6 +8,7 @@ import { BotConfiguration, OnChainBookWithData, SimpleBook, StrategistTrade, mar
 import { ERC20 } from "../utilities/contracts/ERC20";
 import { MarketAid } from "../utilities/contracts/MarketAid" 
 import { MarketAidFactory } from "../utilities/contracts/MarketAidFactory"
+import { escape } from "querystring";
 
 dotenv.config();
 
@@ -88,7 +89,8 @@ function getTokensByNetwork(network: Network): TokenInfo[] {
  * @throws an error if no market aid factory address is found for the network 
  */
 // TODO: instead of throwing an error, prompt the user to choose a different network
-function getAidFactory(network: Network, signer: ethers.Signer): MarketAidFactory {
+// i have an idea for this but it requires changing up the networkMenu code I think...
+export function getAidFactory(network: Network, signer: ethers.Signer): MarketAidFactory {
 
     const factoryAddress = marketAidFactoriesByNetwork[network];
   
@@ -628,7 +630,7 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
 }
 
 // a market aid factory menu, set the aid instance variable upon selection, or returns to the network menu. takes a market aid factory as a parameter
-async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void> {
+export async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void> {
     console.log("\nMarket Aid Factory Menu");
     console.log("");
     console.log("1. Connect to an existing Market Aid");
@@ -705,7 +707,7 @@ async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void>
 
 
 // a network selection menu, set the network variable and current market aid factory upon selection
-async function networkMenu(): Promise<void> {
+export async function networkMenu(): Promise<void> {
     console.log("\nNetwork Selection Menu");
     console.log("");
     console.log("Mainnets:");
@@ -817,7 +819,6 @@ async function networkMenu(): Promise<void> {
 async function main(): Promise<void> {
 
     try { 
-
         // 1. ask the user what network they want to use to manage their market aid instance
         networkMenu();
 

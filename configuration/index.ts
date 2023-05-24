@@ -120,7 +120,7 @@ async function tokenSelectionCallback(network: Network): Promise<TokenInfo[]> {
         // Prompt the user to select tokens based on their symbol from availableTokensSymbols
         console.log("These are the available tokens on your selected Network: ", availableTokensSymbols);
 
-        // TODO: strateyg-specific UX flow here or warnings?? e.g. pair-based strategies
+        // TODO: strateyg-specific UX flow here or warnings?? e.g. pair-based strategies. Also maybe let user type in space deliminated tokens in 1 line
         // after done is input, return the selectedTokens array
         rl.question('\n What tokens would you like to target in your strategy? (Enter the symbol of the token you want to target then enter to add, or enter "done" to finish):', (answer) => {
             if (answer.toLowerCase() === 'done') {
