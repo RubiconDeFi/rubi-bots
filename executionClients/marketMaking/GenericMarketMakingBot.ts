@@ -660,81 +660,81 @@ export class GenericMarketMakingBot {
         };
 
         // v1 <> v2 Migration case stint
-        if (this.config.network == 10) {
-            this.marketContract.on(this.marketContract.filters.LogTake(null, null, maker), async (id, pair, maker,  pay_gem, buy_gem, taker, take_amt, give_amt,  timestamp, event) => {
-                console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
+        // if (this.config.network == 10) {
+        //     this.marketContract.on(this.marketContract.filters.LogTake(null, null, maker), async (id, pair, maker,  pay_gem, buy_gem, taker, take_amt, give_amt,  timestamp, event) => {
+        //         console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
 
-                console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
-                if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
-                    console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
-                    const val = formatUnits(give_amt, this.assetPair.asset.decimals);
-                    console.log("QUOTE AMOUNT:", formatUnits(take_amt, this.assetPair.quote.decimals));
-                    console.log("ASSET AMOUNT:", val);
+        //         console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
+        //         if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
+        //             console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
+        //             const val = formatUnits(give_amt, this.assetPair.asset.decimals);
+        //             console.log("QUOTE AMOUNT:", formatUnits(take_amt, this.assetPair.quote.decimals));
+        //             console.log("ASSET AMOUNT:", val);
 
-                    console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
+        //             console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                    updateAggregateState(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
-                } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
-                    console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
-                    const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
-                    console.log("QUOTE AMOUNT:", val);
-                    console.log("ASSET AMOUNT:", formatUnits(take_amt, this.assetPair.asset.decimals));
+        //             updateAggregateState(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
+        //         } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
+        //             console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
+        //             const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
+        //             console.log("QUOTE AMOUNT:", val);
+        //             console.log("ASSET AMOUNT:", formatUnits(take_amt, this.assetPair.asset.decimals));
 
 
-                    // different than above... avoids any price math?
-                    const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
-                    console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
+        //             // different than above... avoids any price math?
+        //             const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
+        //             console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                    updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
-                }
+        //             updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
+        //         }
 
-                // Get the block after the event
-                const block = await event.getBlock();
-                const nextBlockNumber = block.number + 1;
+        //         // Get the block after the event
+        //         const block = await event.getBlock();
+        //         const nextBlockNumber = block.number + 1;
 
-                // Call processAggregateState with nextBlockNumber as an argument
-                processAggregateState(nextBlockNumber);
-            });
-        } else {
+        //         // Call processAggregateState with nextBlockNumber as an argument
+        //         processAggregateState(nextBlockNumber);
+        //     });
+        // } else {
 
-            this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), async (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event) => {
-                console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
+        this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), async (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event) => {
+            console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
 
-                console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
-                if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
-                    console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
-                    const val = formatUnits(give_amt, this.assetPair.asset.decimals);
-                    console.log("QUOTE AMOUNT:", formatUnits(take_amt, this.assetPair.quote.decimals));
-                    console.log("ASSET AMOUNT:", val);
+            console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
+            if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
+                console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
+                const val = formatUnits(give_amt, this.assetPair.asset.decimals);
+                console.log("QUOTE AMOUNT:", formatUnits(take_amt, this.assetPair.quote.decimals));
+                console.log("ASSET AMOUNT:", val);
 
-                    // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.asset.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
-                    console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
+                // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.asset.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
+                console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                    // this.dumpFillViaMarketAid(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
-                    updateAggregateState(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
-                } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
-                    console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
-                    const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
-                    console.log("QUOTE AMOUNT:", val);
-                    console.log("ASSET AMOUNT:", formatUnits(take_amt, this.assetPair.asset.decimals));
+                // this.dumpFillViaMarketAid(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
+                updateAggregateState(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
+            } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
+                console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
+                const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
+                console.log("QUOTE AMOUNT:", val);
+                console.log("ASSET AMOUNT:", formatUnits(take_amt, this.assetPair.asset.decimals));
 
-                    // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.quote.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
+                // writeLogToCsv([val, "🔥🔥🔥 DUMP ON COINBASE", parseFloat(val).toPrecision(3), this.config.quote.symbol, "🔥🔥🔥\n"], getTimestamp(), "FILL_SPOTTED", this.config.asset.address, this.config.quote.address, this.config.strategy)
 
-                    // different than above... avoids any price math?
-                    const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
-                    console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
+                // different than above... avoids any price math?
+                const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
+                console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                    updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
-                }
+                updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
+            }
 
-                // Get the block after the event
-                const block = await event.getBlock();
-                const nextBlockNumber = block.number + 1;
+            // Get the block after the event
+            const block = await event.getBlock();
+            const nextBlockNumber = block.number + 1;
 
-                // Call processAggregateState with nextBlockNumber as an argument
-                processAggregateState(nextBlockNumber);
-            });
-        }
+            // Call processAggregateState with nextBlockNumber as an argument
+            processAggregateState(nextBlockNumber);
+        });
+        // }
     }
 
     // *** For use in RiskMinimized Strategy ***
