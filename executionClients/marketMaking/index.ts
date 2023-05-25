@@ -9,6 +9,7 @@ import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
 import { getAidFactory, networkMenu, aidFactoryMenu,  } from "../../configuration/marketAid"; //grabbing marketAid functions
 import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
+import { start } from "repl";
 dotenv.config();
 
 // function to prompt the user to select an existing contract instance or create a new one
@@ -16,12 +17,9 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
     return new Promise(resolve => {
         rl.question('\n Do you have an existing MarketAid contract instance you would like to use? (Enter the address of the contract instance you want to use then enter to add, or enter "no" to create one):', (answer) => {
             if (answer.toLowerCase() === 'no') {
-                console.log('\n Lets create a new MarketAid!');
-                const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
-                const newMarketAidAddress = marketAidFactory.createMarketAidInstance();
-                console.log("New Market Aid Address: ", newMarketAidAddress);
-                //resolve(null);
-                resolve(newMarketAidAddress);
+                //console.log('\n Lets create a new MarketAid!');
+                //const newMarketAid = helpUserCreateNewMarketAidInstance(configuration);
+                resolve("no");
             } else {
                 console.log('\n Using existing MarketAid contract instance...');
                 try {
@@ -35,6 +33,16 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
         })
     });
 }
+
+// helper function that lets a user create a MarketAid contract 
+// this function needs to have functionality to make sure it has the right approvals and balanes 
+async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
+    const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
+    const newMarketAidAddress = marketAidFactory.createMarketAidInstance();
+    console.log("New Market Aid Address: ", newMarketAidAddress);
+    return newMarketAidAddress;
+}
+
 
 // Function 
 export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string) {
@@ -58,14 +66,17 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     // console.log("\nGeneric market-making bot targetting this userMarketAid", userMarketAidAddress);
 
     // TODO: guided start flow to ask them if they want to use an existing contract instance or create a new one
-    if (userMarketAidAddress) {
+    if (userMarketAidAddress != "no") {
         console.log("The user selected to use an existing contract instance", userMarketAidAddress);
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
 
     } else {
-        console.log("The user did not provide an existing contract instance. Creating a new one...");
-        //marketAidContractInstance = await helpUserCreateNewMarketAidInstance(configuration);
+        console.log("Let's create a new MarketAid...")
+        userMarketAidAddress = await helpUserCreateNewMarketAidInstance(configuration);
+        console.log("The generated contract instance is at: ", userMarketAidAddress);
+        marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
+        console.log("\n This is my contract's address: ", marketAidContractInstance.address);
     }
 
     // 2. Depending on the user's selected strategy, create the strategy and pass it to the bot
