@@ -37,12 +37,29 @@ balances.then(result => {
     console.log(err);
 });
 
-const txns = fetchTransactions(aid, 0, 1684888203, 7000, 0, getBuiltGraphSDK());
+const txns = fetchTransactions("", aid, 0, 1684888203, 6000, 0, getBuiltGraphSDK());
 console.log('fetching transactions: ');
 txns.then(result => {
-    console.log(result);
-}
-).catch(err => {
+    // Create an empty Set to hold unique txn values
+    const uniqueTxnSet = new Set();
+
+    // flag to indicate if there are duplicates
+    let hasDuplicates = false;
+
+    result.transactions.forEach(transaction => {
+        if (uniqueTxnSet.has(transaction.txn)) {
+            hasDuplicates = true;
+        } else {
+            uniqueTxnSet.add(transaction.txn);
+        }
+    });
+
+    if (hasDuplicates) {
+        console.log("There are duplicate transaction ids.");
+    } else {
+        console.log("There are no duplicate transaction ids.");
+    }
+
+}).catch(err => {
     console.log(err);
-}
-);
+});

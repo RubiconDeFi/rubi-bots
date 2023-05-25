@@ -3068,6 +3068,7 @@ export type AidsQuery = { aids: Array<(
   )> };
 
 export type TransactionsQueryVariables = Exact<{
+  lastID: Scalars['Bytes'];
   aidID: Scalars['String'];
   startTime: Scalars['BigInt'];
   endTime: Scalars['BigInt'];
@@ -3110,11 +3111,11 @@ export const AidsDocument = gql`
 }
     ` as unknown as DocumentNode<AidsQuery, AidsQueryVariables>;
 export const TransactionsDocument = gql`
-    query Transactions($aidID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int = 1000, $skip: Int = 0) {
+    query Transactions($lastID: Bytes!, $aidID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int = 1000, $skip: Int = 0) {
   transactions(
     first: $first
     skip: $skip
-    where: {aid: $aidID, timestamp_gte: $startTime, timestamp_lte: $endTime}
+    where: {id_gt: $lastID, aid: $aidID, timestamp_gte: $startTime, timestamp_lte: $endTime}
   ) {
     txn
     timestamp

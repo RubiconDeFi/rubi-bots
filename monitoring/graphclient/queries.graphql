@@ -26,11 +26,12 @@ query Aids($aidID: Bytes!) {
     }
 }
 
-query Transactions($aidID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int = 1000, $skip: Int = 0) {
+query Transactions($lastID: Bytes!, $aidID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int = 1000, $skip: Int = 0) {
     transactions(
-        first: $first, # TODO: figure out how to do this with auto-pagination
+        first: $first, 
         skip: $skip, 
         where: {
+            id_gt: $lastID,
             aid: $aidID, 
             timestamp_gte: $startTime,
             timestamp_lte: $endTime

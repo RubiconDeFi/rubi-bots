@@ -31,14 +31,16 @@ export const fetchAid = async (
 };
 
 export const fetchTransactions = async (
+    lastID: string = "",
     aidID: string,
     startTime: number,
     endTime: number,
-    first: number,
-    skip: number,
+    first: number = 6000,
+    skip: number = 0,
     sdk: Sdk,
 ): Promise<TransactionsQuery> => {
     const params = {
+        lastID,
         aidID,
         startTime,
         endTime,
@@ -47,5 +49,18 @@ export const fetchTransactions = async (
     };
 
     const transactionsQuery: TransactionsQuery = await sdk.Transactions(params);
-    return transactionsQuery;
+    
+    if (transactionsQuery.transactions.length < first) {
+        return transactionsQuery;
+    } else {
+        const newLastID = transactionsQuery.transactions[transactionsQuery.transactions.length - 1].txn;
+        const newStartTime = transactionsQuery.transactions[transactionsQuery.transactions.length - 1].timestamp;
+
+        await new Promise(resolve => setTimeout(resolve, 333));
+
+        const nextTransactions = await fetchTransactions(newLastID, aidID, newStartTime, endTime, first, skip, sdk);
+        return {
+            transactions: transactionsQuery.transactions.concat(nextTransactions.transactions)
+        };
+    }
 };
