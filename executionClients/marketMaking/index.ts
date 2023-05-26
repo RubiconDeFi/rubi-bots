@@ -1,14 +1,21 @@
 import * as dotenv from "dotenv";
 
-import { ethers } from "ethers";
+import { ethers, BigNumber } from "ethers";
 import { BotConfiguration, BotType, MarketMakingStrategy, tokenList } from "../../configuration/config";
 import { getAddress } from "ethers/lib/utils";
 import MARKET_AID_INTERFACE from "../../configuration/abis/MarketAid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
-import { getAidFactory, networkMenu, aidFactoryMenu,  } from "../../configuration/marketAid"; //grabbing marketAid functions
+//imports from marketaid
+import { rl, getAidFactory, networkMenu, aidFactoryMenu, maxApproveMarketAidForAllTokens, getTokensByNetwork, switchNetwork } from "../../configuration/marketAid"; //grabbing marketAid functions
 import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
+import { MarketAid } from "../../utilities/contracts/MarketAid";
+//
+//importing to get the right tokens for approval
+import { TokenInfo } from "@uniswap/token-lists";
+import { ERC20 } from "../../utilities/contracts/ERC20";
+//
 import { start } from "repl";
 dotenv.config();
 
@@ -17,8 +24,6 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
     return new Promise(resolve => {
         rl.question('\n Do you have an existing MarketAid contract instance you would like to use? (Enter the address of the contract instance you want to use then enter to add, or enter "no" to create one):', (answer) => {
             if (answer.toLowerCase() === 'no') {
-                //console.log('\n Lets create a new MarketAid!');
-                //const newMarketAid = helpUserCreateNewMarketAidInstance(configuration);
                 resolve("no");
             } else {
                 console.log('\n Using existing MarketAid contract instance...');
@@ -34,12 +39,102 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
     });
 }
 
+
+async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl): Promise<void> {
+    const depositAssets: string[] = [];
+    const depositAmounts: BigNumber[] = [];
+    console.log("break")
+    const addAssetToDeposit = async () => {
+        console.log("\nSelect an asset to deposit:");
+        tokens.forEach((token, index) => {
+            console.log(`${index + 1}: ${token.name} (${token.symbol})`);
+        });
+        console.log(`${tokens.length + 1}: Done`);
+        //try the promise resolve format here similar to the callback above
+        rl.question("Enter the number corresponding to the asset you want to deposit: ", (answer) => {
+            const selectedIndex = parseInt(answer.trim()) - 1;
+            if (selectedIndex >= 0 && selectedIndex < tokens.length) {
+                const selectedToken = tokens[selectedIndex];
+                depositAssets.push(selectedToken.address);
+
+                rl.question(`Enter the amount of ${selectedToken.symbol} to deposit: `, (amountAnswer) => {
+                    const amount = parseFloat(amountAnswer.trim());
+                    // Convert the input amount to the smallest token unit using the token decimals
+                    const smallestUnitAmount = BigNumber.from((amount * 10 ** selectedToken.decimals).toFixed());
+                    depositAmounts.push(smallestUnitAmount);
+                    addAssetToDeposit();
+                });
+            } else if (selectedIndex === tokens.length) {
+                console.log("\nDeposit summary:");
+                depositAssets.forEach((asset, index) => {
+                    const token = tokens.find((t) => t.address === asset);
+                    if (token) {
+                        console.log(`Deposit ${depositAmounts[index]} ${token.symbol}`);
+                    }
+                });
+
+                rl.question("\nAre you sure you want to proceed with the deposit? (yes/no): ", async (confirmation) => {
+                    if (confirmation.trim().toLowerCase() === "yes") {
+                        try {
+                            const balanceChanges = await marketAid.adminDepositToBook(depositAssets, depositAmounts);
+                            console.log("\nDeposit successful. Balance changes:");
+                            for (const tokenAddress in balanceChanges) {
+                                const token = tokens.find((t) => t.address === tokenAddress);
+                                if (token) {
+                                    console.log(`Balance of ${token.name} (${token.symbol}) changed by: ${balanceChanges[tokenAddress]} ${token.symbol}`);
+                                }
+                            }
+                        } catch (error) {
+                            console.error("Failed to deposit:", error);
+                        }
+                    } else {
+                        console.log("Deposit canceled.");
+                    }
+                    //aidMenu(marketAid);
+                });
+            } else {
+                console.log("Invalid selection. Please try again.");
+                addAssetToDeposit();
+            }
+        });
+    };
+    addAssetToDeposit();
+}
+
+
 // helper function that lets a user create a MarketAid contract 
-// this function needs to have functionality to make sure it has the right approvals and balanes 
+// NOTE: there are different ways to implement this function. I chose this way due to the setup of marketAid.ts
+//  Currently I'm picking pieces from marketAid.ts 
 async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
+    //creating token states to pull them for different networks
+    let tokens: TokenInfo[] = [];
+    let erc20Tokens: ERC20[] = [];
+    //update token states based on network to use maxApproveMarketAidForAllTokens
+    //not sure if i can use the switchNetwork function because of the state vars in marketaid. a way to fix is the have the vars as inputs to the function
+    //get list of tokens based on selected network 
+    tokens = getTokensByNetwork(configuration.network)
+    //update erc20Tokens with new ERC20 instances for the new network
+    for (const tokenInfo of tokens) {
+        const token = new ERC20(tokenInfo.address, configuration.connections.signer);
+        erc20Tokens.push(token);
+    }
+    console.log("Network state updated and token information retrieved")
+    //step 1 - init aid factory based on the prev config settings
     const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
-    const newMarketAidAddress = marketAidFactory.createMarketAidInstance();
+    //step 2 - get new address from factory
+    const newMarketAidAddress = await marketAidFactory.createMarketAidInstance();
     console.log("New Market Aid Address: ", newMarketAidAddress);
+    //step 3 - connect to aid
+    console.log("\nConnecting to aid...")
+    const marketAid = new MarketAid(newMarketAidAddress, configuration.connections.signer)
+    console.log("\nConnected!")
+    //step 4 - approve all tokens 
+    console.log("Approving tokens for use...")
+    await maxApproveMarketAidForAllTokens(erc20Tokens, marketAid, configuration.connections.signer);
+    console.log("Tokens approved!")
+    //step 5 - deposit assets
+    //TODO: is there a better approach than doing this?
+    await depositMenu(tokens, marketAid, rl)
     return newMarketAidAddress;
 }
 
