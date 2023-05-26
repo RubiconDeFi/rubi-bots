@@ -23,7 +23,7 @@ let tokens: TokenInfo[] = [];
 let erc20Tokens: ERC20[] = [];
 
 const readline = require('node:readline');
-let rl = readline.createInterface({
+export let rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
@@ -77,7 +77,7 @@ function getNetworkInfo(network: Network): { jsonRpcProvider: ethers.providers.J
  * @param network the network object to get the token list for
  * @returns the token list for the network
  */
-function getTokensByNetwork(network: Network): TokenInfo[] {
+export function getTokensByNetwork(network: Network): TokenInfo[] {
     return tokenList.tokens.filter((token) => token.chainId === network);
 }
 
@@ -107,7 +107,7 @@ export function getAidFactory(network: Network, signer: ethers.Signer): MarketAi
  * @param newNetwork the network object to update the network, tokens, and erc20Tokens variables for
  * @returns void
  */ 
-async function switchNetwork(newNetwork: Network) {
+export async function switchNetwork(newNetwork: Network) {
     network = newNetwork;
     tokens = getTokensByNetwork(network);
   
@@ -170,7 +170,7 @@ async function getTokenBalances(address: string) {
  * @returns An array of transaction receipts.
  */
 // TODO: all of these calls should be batched into a single transaction
-async function maxApproveMarketAidForAllTokens(tokens: ERC20[], marketAid: MarketAid, signer: Signer): Promise<string> {
+export async function maxApproveMarketAidForAllTokens(tokens: ERC20[], marketAid: MarketAid, signer: Signer): Promise<string> {
     // const maxApprovals: ethers.ContractTransaction[] = [];
 
     for (const token of tokens) {
@@ -242,10 +242,10 @@ async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
 }
 
 // a menu to assist with depositing assets into a market aid
-async function depositMenu(marketAid: MarketAid): Promise<void> {
+export async function depositMenu(marketAid: MarketAid, rl): Promise<void> {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
-
+    console.log("break")
     const addAssetToDeposit = async () => {
         console.log("\nSelect an asset to deposit:");
         tokens.forEach((token, index) => {
@@ -531,7 +531,7 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
                 });
 
                 // Implement deposit functionality here
-                await depositMenu(marketAid);
+                await depositMenu(marketAid, rl);
                 // await aidMenu(marketAid);
                 break;
         
