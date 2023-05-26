@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
-import reducer from './reducer';
+import { balanceReducer, priceReducer, gasReducer } from './reducer';
 
 // Store
 const store = configureStore({
     reducer: {
-      balance: reducer,
+      balance: balanceReducer,
+      price: priceReducer,
+      gas: gasReducer,
     },
 });
   

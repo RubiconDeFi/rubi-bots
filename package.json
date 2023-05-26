@@ -38,6 +38,7 @@
     "@reduxjs/toolkit": "^1.9.5",
     "@types/node": "^18.11.18",
     "@uniswap/token-lists": "^1.0.0-beta.31",
+    "axios": "^1.4.0",
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
     "pm2": "^5.3.0",
