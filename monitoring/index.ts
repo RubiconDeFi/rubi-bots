@@ -8,7 +8,16 @@ import { getBuiltGraphSDK } from './graphclient/.graphclient';
 import { fetchTransactions, fetchTokenSnapshot } from './data';
 import { updateAllBalances, updateCurrentPrice, updateGasSpend } from './state/reducer';
 
-const aid = '0x32ada6fbaffdf9e8b85a489fadad6ad74d7b4e5d';
+import dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
+dotenv.config();
+
+let aid = process.env.MONITOR_AID_ADDRESS;
+if (!aid) {
+    console.log('no aid provided. expecting an aid address (MONITOR_AID_ADDRESS) in the .env file at the root of the project');
+    process.exit(1);
+}
+aid = aid.toLowerCase();
 const periods = getTimePeriods();
 
 let balances = fetchTokenSnapshot(aid, periods.SIX_HOURS, periods.TWELVE_HOURS, periods.ONE_DAY, periods.TWO_DAYS, 5000, getBuiltGraphSDK())
