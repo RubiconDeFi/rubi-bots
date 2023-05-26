@@ -92,6 +92,8 @@ export type AidTokenHistory = {
   aid: Aid;
   /**  the market aid token entity that this token balance history belongs to  */
   aid_token: AidToken;
+  /**  the token entity of the asset  */
+  token: Token;
   /**  the amount of the asset that the market aid contract holds, after the change  */
   balance: Scalars['BigInt'];
   /**  the net change in the amount of the asset that the market aid contract has  */
@@ -165,6 +167,27 @@ export type AidTokenHistory_filter = {
   aid_token_not_ends_with?: InputMaybe<Scalars['String']>;
   aid_token_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   aid_token_?: InputMaybe<AidToken_filter>;
+  token?: InputMaybe<Scalars['String']>;
+  token_not?: InputMaybe<Scalars['String']>;
+  token_gt?: InputMaybe<Scalars['String']>;
+  token_lt?: InputMaybe<Scalars['String']>;
+  token_gte?: InputMaybe<Scalars['String']>;
+  token_lte?: InputMaybe<Scalars['String']>;
+  token_in?: InputMaybe<Array<Scalars['String']>>;
+  token_not_in?: InputMaybe<Array<Scalars['String']>>;
+  token_contains?: InputMaybe<Scalars['String']>;
+  token_contains_nocase?: InputMaybe<Scalars['String']>;
+  token_not_contains?: InputMaybe<Scalars['String']>;
+  token_not_contains_nocase?: InputMaybe<Scalars['String']>;
+  token_starts_with?: InputMaybe<Scalars['String']>;
+  token_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  token_not_starts_with?: InputMaybe<Scalars['String']>;
+  token_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  token_ends_with?: InputMaybe<Scalars['String']>;
+  token_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  token_not_ends_with?: InputMaybe<Scalars['String']>;
+  token_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  token_?: InputMaybe<Token_filter>;
   balance?: InputMaybe<Scalars['BigInt']>;
   balance_not?: InputMaybe<Scalars['BigInt']>;
   balance_gt?: InputMaybe<Scalars['BigInt']>;
@@ -229,6 +252,10 @@ export type AidTokenHistory_orderBy =
   | 'aid_token'
   | 'aid_token__id'
   | 'aid_token__balance'
+  | 'token'
+  | 'token__id'
+  | 'token__symbol'
+  | 'token__decimals'
   | 'balance'
   | 'balance_change'
   | 'transaction'

@@ -9,7 +9,8 @@
     "startGenericMarketMakingBot": "ts-node ./executionClients/marketMaking/index.ts",
     "startBatchExecutorBot": "ts-node ./executionClients/marketMaking/index.ts",
     "graphclient:build": "cd monitoring/graphclient && graphclient build && rm .graphclient/package.json",
-    "monitor": "cd monitoring && ts-node index.ts"
+    "monitor": "cd monitoring && ts-node index.ts",
+    "build:monitor": "cd monitoring/graphclient && graphclient build && rm .graphclient/package.json && cd .. && ts-node index.ts"
   },
   "repository": {
     "type": "git",

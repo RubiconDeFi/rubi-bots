@@ -50,6 +50,8 @@ type AidTokenHistory {
   """ the market aid token entity that this token balance history belongs to 
   """
   aid_token: AidToken!
+  """ the token entity of the asset """
+  token: Token!
   """ the amount of the asset that the market aid contract holds, after the change 
   """
   balance: BigInt!
@@ -127,6 +129,27 @@ input AidTokenHistory_filter {
   aid_token_not_ends_with: String
   aid_token_not_ends_with_nocase: String
   aid_token_: AidToken_filter
+  token: String
+  token_not: String
+  token_gt: String
+  token_lt: String
+  token_gte: String
+  token_lte: String
+  token_in: [String!]
+  token_not_in: [String!]
+  token_contains: String
+  token_contains_nocase: String
+  token_not_contains: String
+  token_not_contains_nocase: String
+  token_starts_with: String
+  token_starts_with_nocase: String
+  token_not_starts_with: String
+  token_not_starts_with_nocase: String
+  token_ends_with: String
+  token_ends_with_nocase: String
+  token_not_ends_with: String
+  token_not_ends_with_nocase: String
+  token_: Token_filter
   balance: BigInt
   balance_not: BigInt
   balance_gt: BigInt
@@ -191,6 +214,10 @@ enum AidTokenHistory_orderBy {
   aid_token
   aid_token__id
   aid_token__balance
+  token
+  token__id
+  token__symbol
+  token__decimals
   balance
   balance_change
   transaction
