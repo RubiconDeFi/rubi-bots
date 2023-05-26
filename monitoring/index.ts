@@ -1,65 +1,48 @@
-import { fetchBalances, fetchAid, fetchTransactions } from './data';
+import { fetchBalances, fetchAid, fetchTransactions, fetchTokenHistories, fetchTokenSnapshot } from './data';
 import { getBuiltGraphSDK } from './graphclient/.graphclient';
 import store from './state/store'; 
 import { updateCurrentBalance } from './state/reducer';
 import { getTokenByAddress } from './utils/token';
 import { tokenList } from '../configuration/config';
 import { ethers } from 'ethers';
+import { getTimePeriods } from './utils/types';
 
 const aid = '0x32ada6fbaffdf9e8b85a489fadad6ad74d7b4e5d';
-let balances = fetchBalances(aid, 10, getBuiltGraphSDK());
+// let balances = fetchBalances(aid, 10, getBuiltGraphSDK());
+const periods = getTimePeriods();
 
+let balances = fetchTokenSnapshot(aid, periods.SIX_HOURS, periods.TWELVE_HOURS, periods.ONE_DAY, periods.TWO_DAYS, 5000, getBuiltGraphSDK())
+console.log('fetching token snapshot: ');
 balances.then(result => {
-    console.log('fetching current balances: ');
 
+    // console.log(result);
     result.aidTokens.forEach(token => {
-        console.log(token.balance);
-        console.log(token.token);
 
         let tokenInfo = getTokenByAddress(tokenList, token.token.id);
         let tokenSymbol = tokenInfo?.symbol;
         let tokenBalance = ethers.utils.formatUnits(token.balance, tokenInfo?.decimals);
-        console.log(`Token symbol: ${tokenSymbol}, Token balance: ${tokenBalance}`);
+        let tokenSixHour = ethers.utils.formatUnits(token.six_hour[0].balance, tokenInfo?.decimals);
+        let tokenTwelveHour = ethers.utils.formatUnits(token.twelve_hour[0].balance, tokenInfo?.decimals);
+        let tokenOneDay = ethers.utils.formatUnits(token.one_day[0].balance, tokenInfo?.decimals);
+        let tokenTwoDay = ethers.utils.formatUnits(token.two_day[0].balance, tokenInfo?.decimals);
 
-        // Dispatch action to update the current balance in state
-        store.dispatch(updateCurrentBalance({ address: token.token.id, balance: token.balance }));
+        console.log(`Current Balance: Token symbol: ${tokenSymbol}, Token balance: ${tokenBalance}`);
+        console.log(`Six Hours Ago: Token symbol: ${tokenSymbol}, Token balance: ${tokenSixHour}`);
+        console.log(`Twelve Hours Ago: Token symbol: ${tokenSymbol}, Token balance: ${tokenTwelveHour}`);
+        console.log(`One Day Ago: Token symbol: ${tokenSymbol}, Token balance: ${tokenOneDay}`);
+        console.log(`Two Day Ago: Token symbol: ${tokenSymbol}, Token balance: ${tokenTwoDay}`);
+        console.log('----------------------------------------')
+
+        /**
+        console.log(token.balance);
+        console.log(token.token);
+        console.log(token.balance);
+        console.log(token.six_hour)
+        console.log(token.twelve_hour)
+        console.log(token.one_day)
+        console.log(token.two_day)
+        */
     });
-
-    // Retrieve and log the balances from state
-    const balanceState = store.getState().balance;
-    // console.log(balanceState)
-
-    Object.entries(balanceState).forEach(([address, { currentBalance }]) => {
-        console.log(`Address: ${address}, Current balance: ${currentBalance}`);
-    });
-
-}).catch(err => {
-    console.log(err);
-});
-
-const txns = fetchTransactions("", aid, 0, 1684888203, 6000, 0, getBuiltGraphSDK());
-console.log('fetching transactions: ');
-txns.then(result => {
-    // Create an empty Set to hold unique txn values
-    const uniqueTxnSet = new Set();
-
-    // flag to indicate if there are duplicates
-    let hasDuplicates = false;
-
-    result.transactions.forEach(transaction => {
-        if (uniqueTxnSet.has(transaction.txn)) {
-            hasDuplicates = true;
-        } else {
-            uniqueTxnSet.add(transaction.txn);
-        }
-    });
-
-    if (hasDuplicates) {
-        console.log("There are duplicate transaction ids.");
-    } else {
-        console.log("There are no duplicate transaction ids.");
-    }
-
 }).catch(err => {
     console.log(err);
 });

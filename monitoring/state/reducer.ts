@@ -4,7 +4,10 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 // although it may be better to keep them as strings in store and only convert when we need to do mathz
 interface BalanceState {
     currentBalance?: string;
+    balance6HoursAgo?: string;
+    balance12HoursAgo?: string;
     balance24HoursAgo?: string;
+    balance48HoursAgo?: string;
 }
 
 interface BalanceStates {
@@ -21,16 +24,37 @@ const balanceSlice = createSlice({
         updateCurrentBalance: (state, action: PayloadAction<{ address: string; balance: string; }>) => {
             const { address, balance } = action.payload;
             if (!state[address]) {
-                state[address] = { currentBalance: '', balance24HoursAgo: '' };
+                state[address] = { currentBalance: '', balance6HoursAgo: '', balance12HoursAgo: '', balance24HoursAgo: '', balance48HoursAgo: '' };
             }
             state[address].currentBalance = balance;
+        },
+        updatedBalance6hAgo: (state, action: PayloadAction<{ address: string; balance: string; }>) => {
+            const { address, balance } = action.payload;
+            if (!state[address]) {
+                state[address] = { currentBalance: '', balance6HoursAgo: '', balance12HoursAgo: '', balance24HoursAgo: '', balance48HoursAgo: '' };
+            }
+            state[address].balance6HoursAgo = balance;
+        },
+        updatedBalance12hAgo: (state, action: PayloadAction<{ address: string; balance: string; }>) => {
+            const { address, balance } = action.payload;
+            if (!state[address]) {
+                state[address] = { currentBalance: '', balance6HoursAgo: '', balance12HoursAgo: '', balance24HoursAgo: '', balance48HoursAgo: '' };
+            }
+            state[address].balance12HoursAgo = balance;
         },
         updateBalance24hAgo: (state, action: PayloadAction<{ address: string; balance: string; }>) => {
             const { address, balance } = action.payload;
             if (!state[address]) {
-                state[address] = { currentBalance: '', balance24HoursAgo: '' };
+                state[address] = { currentBalance: '', balance6HoursAgo: '', balance12HoursAgo: '', balance24HoursAgo: '', balance48HoursAgo: '' };
             }
             state[address].balance24HoursAgo = balance;
+        },
+        updatedBalance48hAgo: (state, action: PayloadAction<{ address: string; balance: string; }>) => {
+            const { address, balance } = action.payload;
+            if (!state[address]) {
+                state[address] = { currentBalance: '', balance6HoursAgo: '', balance12HoursAgo: '', balance24HoursAgo: '', balance48HoursAgo: '' };
+            }
+            state[address].balance48HoursAgo = balance;
         },
     },
 });

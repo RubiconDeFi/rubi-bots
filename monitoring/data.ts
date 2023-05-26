@@ -2,8 +2,11 @@ import {
     Sdk,  
     AidsQuery,
     TokenBalancesQuery,
-    TransactionsQuery
+    TransactionsQuery, 
+    TokenHistoryQuery,
+    TokenSnapshotsQuery
 } from './graphclient/.graphclient';
+
 
 export const fetchBalances = async (
     aid: string, 
@@ -63,4 +66,51 @@ export const fetchTransactions = async (
             transactions: transactionsQuery.transactions.concat(nextTransactions.transactions)
         };
     }
+};
+
+// TODO: this function is not working properly - but for now we don't need all of this data
+export const fetchTokenHistories = async (
+    lastID: string = "",
+    aidID: string,
+    tokenID: string,
+    startTime: number,
+    endTime: number,
+    first: number,
+    skip: number = 0,
+    sdk: Sdk,
+): Promise<TokenHistoryQuery> => {
+    const params = {
+        lastID,
+        aidID,
+        tokenID,
+        startTime,
+        endTime,
+        first,
+        skip,
+    };
+
+    const tokenHistoryQuery: TokenHistoryQuery = await sdk.TokenHistory(params);
+    return tokenHistoryQuery;
+};
+
+export const fetchTokenSnapshot = async (
+    aidID: string,
+    sixHour: number,
+    twelveHour: number,
+    oneDay: number,
+    twoDay: number,
+    first: 5000,
+    sdk: Sdk,
+): Promise<TokenSnapshotsQuery> => {
+    const params = {    
+        aidID,
+        sixHour,
+        twelveHour,
+        oneDay,
+        twoDay,
+        first,
+    };
+
+    const tokenSnapshotQuery: TokenSnapshotsQuery = await sdk.TokenSnapshots(params);
+    return tokenSnapshotQuery;
 };

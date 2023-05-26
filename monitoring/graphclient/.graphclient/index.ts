@@ -3006,6 +3006,18 @@ const merger = new(BareMerger as any)({
           return printWithCache(TransactionsDocument);
         },
         location: 'TransactionsDocument.graphql'
+      },{
+        document: TokenHistoryDocument,
+        get rawSDL() {
+          return printWithCache(TokenHistoryDocument);
+        },
+        location: 'TokenHistoryDocument.graphql'
+      },{
+        document: TokenSnapshotsDocument,
+        get rawSDL() {
+          return printWithCache(TokenSnapshotsDocument);
+        },
+        location: 'TokenSnapshotsDocument.graphql'
       }
     ];
     },
@@ -3082,6 +3094,36 @@ export type TransactionsQuery = { transactions: Array<(
     & { aid?: Maybe<Pick<Aid, 'id'>> }
   )> };
 
+export type TokenHistoryQueryVariables = Exact<{
+  lastID: Scalars['Bytes'];
+  aidID: Scalars['String'];
+  tokenID: Scalars['String'];
+  startTime: Scalars['BigInt'];
+  endTime: Scalars['BigInt'];
+  first?: InputMaybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
+}>;
+
+
+export type TokenHistoryQuery = { aidTokenHistories: Array<(
+    Pick<AidTokenHistory, 'timestamp' | 'balance'>
+    & { aid: Pick<Aid, 'id'>, aid_token: { token: Pick<Token, 'id'> }, transaction: Pick<Transaction, 'id'> }
+  )> };
+
+export type TokenSnapshotsQueryVariables = Exact<{
+  aidID: Scalars['String'];
+  sixHour: Scalars['BigInt'];
+  twelveHour: Scalars['BigInt'];
+  oneDay: Scalars['BigInt'];
+  twoDay: Scalars['BigInt'];
+}>;
+
+
+export type TokenSnapshotsQuery = { aidTokens: Array<(
+    Pick<AidToken, 'balance'>
+    & { aid: Pick<Aid, 'id'>, token: Pick<Token, 'id'>, six_hour: Array<Pick<AidTokenHistory, 'timestamp' | 'balance'>>, twelve_hour: Array<Pick<AidTokenHistory, 'timestamp' | 'balance'>>, one_day: Array<Pick<AidTokenHistory, 'timestamp' | 'balance'>>, two_day: Array<Pick<AidTokenHistory, 'timestamp' | 'balance'>> }
+  )> };
+
 
 export const TokenBalancesDocument = gql`
     query TokenBalances($aid: String!) {
@@ -3127,6 +3169,80 @@ export const TransactionsDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TransactionsQuery, TransactionsQueryVariables>;
+export const TokenHistoryDocument = gql`
+    query TokenHistory($lastID: Bytes!, $aidID: String!, $tokenID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int, $skip: Int = 0) {
+  aidTokenHistories(
+    first: 1
+    skip: $skip
+    where: {id_gt: $lastID, aid: $aidID, aid_token: $tokenID, timestamp_gte: $startTime, timestamp_lte: $endTime}
+  ) {
+    timestamp
+    aid {
+      id
+    }
+    aid_token {
+      token {
+        id
+      }
+    }
+    balance
+    transaction {
+      id
+    }
+  }
+}
+    ` as unknown as DocumentNode<TokenHistoryQuery, TokenHistoryQueryVariables>;
+export const TokenSnapshotsDocument = gql`
+    query TokenSnapshots($aidID: String!, $sixHour: BigInt!, $twelveHour: BigInt!, $oneDay: BigInt!, $twoDay: BigInt!) {
+  aidTokens(first: 1000, where: {aid: $aidID}) {
+    aid {
+      id
+    }
+    token {
+      id
+    }
+    balance
+    six_hour: history(
+      first: 1
+      orderBy: timestamp
+      orderDirection: desc
+      where: {timestamp_lte: $sixHour}
+    ) {
+      timestamp
+      balance
+    }
+    twelve_hour: history(
+      first: 1
+      orderBy: timestamp
+      orderDirection: desc
+      where: {timestamp_lte: $twelveHour}
+    ) {
+      timestamp
+      balance
+    }
+    one_day: history(
+      first: 1
+      orderBy: timestamp
+      orderDirection: desc
+      where: {timestamp_lte: $oneDay}
+    ) {
+      timestamp
+      balance
+    }
+    two_day: history(
+      first: 1
+      orderBy: timestamp
+      orderDirection: desc
+      where: {timestamp_lte: $twoDay}
+    ) {
+      timestamp
+      balance
+    }
+  }
+}
+    ` as unknown as DocumentNode<TokenSnapshotsQuery, TokenSnapshotsQueryVariables>;
+
+
 
 
 
@@ -3142,6 +3258,12 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     Transactions(variables: TransactionsQueryVariables, options?: C): Promise<TransactionsQuery> {
       return requester<TransactionsQuery, TransactionsQueryVariables>(TransactionsDocument, variables, options) as Promise<TransactionsQuery>;
+    },
+    TokenHistory(variables: TokenHistoryQueryVariables, options?: C): Promise<TokenHistoryQuery> {
+      return requester<TokenHistoryQuery, TokenHistoryQueryVariables>(TokenHistoryDocument, variables, options) as Promise<TokenHistoryQuery>;
+    },
+    TokenSnapshots(variables: TokenSnapshotsQueryVariables, options?: C): Promise<TokenSnapshotsQuery> {
+      return requester<TokenSnapshotsQuery, TokenSnapshotsQueryVariables>(TokenSnapshotsDocument, variables, options) as Promise<TokenSnapshotsQuery>;
     }
   };
 }
