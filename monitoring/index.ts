@@ -1,12 +1,12 @@
-import { fetchBalances, fetchAid, fetchTransactions, fetchTokenHistories, fetchTokenSnapshot } from './data';
-import { getAssetPrice } from './utils/prices'
-import { getBuiltGraphSDK } from './graphclient/.graphclient';
+import { ethers } from 'ethers';
 import store from './state/store'; 
-import { updateCurrentBalance, updateAllBalances, updateCurrentPrice, updateGasSpend } from './state/reducer';
+import { getAssetPrice } from './utils/prices'
+import { getTimePeriods } from './utils/types';
 import { getTokenByAddress } from './utils/token';
 import { tokenList } from '../configuration/config';
-import { ethers } from 'ethers';
-import { getTimePeriods } from './utils/types';
+import { getBuiltGraphSDK } from './graphclient/.graphclient';
+import { fetchTransactions, fetchTokenSnapshot } from './data';
+import { updateAllBalances, updateCurrentPrice, updateGasSpend } from './state/reducer';
 
 const aid = '0x32ada6fbaffdf9e8b85a489fadad6ad74d7b4e5d';
 const periods = getTimePeriods();
@@ -66,7 +66,6 @@ balances.then(async result => {
 
         // Return a promise for fetching price
         return getAssetPrice(token.token.id).then(price => {
-            console.log(token.token.id , ' price is : ', price);
             store.dispatch(updateCurrentPrice({ address: token.token.id, price }));
         }).catch(err => {
             console.log(err);
@@ -84,20 +83,83 @@ balances.then(async result => {
     let priceState = store.getState().price;
     let gasState = store.getState().gas;
 
-    Object.entries(balanceState).forEach(([address, { currentBalance }]) => {
-        console.log(`Address: ${address}, Current balance: ${currentBalance}, Six Hour Balance: ${balanceState[address].balance6HoursAgo}, Twelve Hour Balance: ${balanceState[address].balance12HoursAgo}, One Day Balance: ${balanceState[address].balance24HoursAgo}, Two Day Balance: ${balanceState[address].balance48HoursAgo}`);
+    // set the constant values that we will want to evaluate 
+    let currentPortfolioValue = 0;
+    let sixHourPortfolioValue = 0;
+    let twelveHourPortfolioValue = 0;
+    let oneDayPortfolioValue = 0;
+    let twoDayPortfolioValue = 0;
+
+    // TODO: update this so that the it is not aid agnostic 
+    Object.entries(balanceState).forEach(([address, balances]) => {
+
+        let tokenInfo = getTokenByAddress(tokenList, address);
+        let tokenSymbol = tokenInfo?.symbol;
+        let tokenPrice = priceState[address].currentPrice;
+
+        let currentTokenValue = Number(balanceState[address].currentBalance) * Number(priceState[address].currentPrice);
+        let sixHourTokenValue = Number(balanceState[address].balance6HoursAgo) * Number(priceState[address].currentPrice);
+        let twelveHourTokenValue = Number(balanceState[address].balance12HoursAgo) * Number(priceState[address].currentPrice);
+        let oneDayTokenValue = Number(balanceState[address].balance24HoursAgo) * Number(priceState[address].currentPrice);
+        let twoDayTokenValue = Number(balanceState[address].balance48HoursAgo) * Number(priceState[address].currentPrice);
+
+        currentPortfolioValue += currentTokenValue;
+        sixHourPortfolioValue += sixHourTokenValue;
+        twelveHourPortfolioValue += twelveHourTokenValue;
+        oneDayPortfolioValue += oneDayTokenValue;
+        twoDayPortfolioValue += twoDayTokenValue;
+
+        const { currentBalance, balance6HoursAgo, balance12HoursAgo, balance24HoursAgo, balance48HoursAgo } = balances;
+
+        const balanceChange = {
+            asset: tokenSymbol,
+            price: tokenPrice,
+            currentBalance: currentBalance,
+            netChange6Hours: Number(currentBalance) - Number(balance6HoursAgo),
+            netChange12Hours: Number(currentBalance) - Number(balance12HoursAgo),
+            netChange24Hours: Number(currentBalance) - Number(balance24HoursAgo),
+            netChange48Hours: Number(currentBalance) - Number(balance48HoursAgo),
+        };
+    
+        console.table(balanceChange);
         console.log('----------------------------------------')
     });
 
-    Object.entries(priceState).forEach(([address, { currentPrice }]) => {
-        console.log(`Address: ${address}, Current price: ${currentPrice}`);
-        console.log('----------------------------------------')
-    });
-
-    Object.entries(gasState).forEach(([address, { spend6Hour, spend12Hour, spend24Hour, spend48Hour }]) => {
-        console.log(`Address: ${address}, 6 Hour Gas: ${spend6Hour}, 12 Hour Gas: ${spend12Hour}, 24 Hour Gas: ${spend24Hour}, 48 Hour Gas: ${spend48Hour}`);
-        console.log('----------------------------------------')
-    });
+    let combinedData = {
+        'Current': {
+        value: currentPortfolioValue,
+        netBalanceChange: 0,
+        gasSpend: 0,
+        periodPnl: 0
+        },
+        '6 Hours': {
+        value: sixHourPortfolioValue,
+        netBalanceChange: currentPortfolioValue - sixHourPortfolioValue,
+        gasSpend: gasState[aid]?.spend6Hour || 0,
+        periodPnl: (currentPortfolioValue - sixHourPortfolioValue) - (Number(gasState[aid]?.spend6Hour) || 0)
+        },
+        '12 Hours': {
+        value: twelveHourPortfolioValue,
+        netBalanceChange: currentPortfolioValue - twelveHourPortfolioValue,
+        gasSpend: gasState[aid]?.spend12Hour || 0,
+        periodPnl: (currentPortfolioValue - twelveHourPortfolioValue) - (Number(gasState[aid]?.spend12Hour) || 0)
+        },
+        '24 Hours': {
+        value: oneDayPortfolioValue,
+        netBalanceChange: currentPortfolioValue - oneDayPortfolioValue,
+        gasSpend: gasState[aid]?.spend24Hour || 0,
+        periodPnl: (currentPortfolioValue - oneDayPortfolioValue) - (Number(gasState[aid]?.spend24Hour) || 0)
+        },
+        '48 Hours': {
+        value: twoDayPortfolioValue,
+        netBalanceChange: currentPortfolioValue - twoDayPortfolioValue,
+        gasSpend: gasState[aid]?.spend48Hour || 0,
+        periodPnl: (currentPortfolioValue - twoDayPortfolioValue) - (Number(gasState[aid]?.spend48Hour) || 0)
+        }
+    };
+    
+    console.table(combinedData);
+    
 }).catch(err => {
     console.log(err);
 });
