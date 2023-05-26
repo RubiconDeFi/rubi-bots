@@ -9,14 +9,10 @@ import { TokenInfo } from "@uniswap/token-lists";
 import { BotConfiguration, BotType, ETH_ZERO_ADDRESS, MarketMakingStrategy, Network, tokenList } from "./config";
 import { startGenericMarketMakingBot } from "../executionClients/marketMaking";
 import { ethers } from "ethers";
-dotenv.config();
 
-// 5. Start
-const readline = require('node:readline');
-let rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+// importing the readline from marketaid 
+import { rl } from "./marketAid"
+dotenv.config();
 
 async function botTypeUserCallback(): Promise<BotType> {
     return new Promise(async (resolve) => {
