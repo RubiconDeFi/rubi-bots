@@ -6,13 +6,17 @@ import  MARKET_AID_INTERFACE  from "../../configuration/abis/MarketAid"; //weird
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
-import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork, getTokenBalances, withdrawAllTokens } from "../../configuration/marketAid";
+import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork, withdrawAllTokens } from "../../configuration/marketAid";
 import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
 import { MarketAid } from "../../utilities/contracts/MarketAid";
 import { TokenInfo } from "@uniswap/token-lists";
 import { ERC20 } from "../../utilities/contracts/ERC20";
 import { start } from "repl";
 dotenv.config();
+
+// set variables 
+let tokens: TokenInfo[] = [];
+let erc20Tokens: ERC20[] = [];
 
 // function to prompt the user to select an existing contract instance or create a new one
 function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promise<string> {
@@ -190,6 +194,21 @@ async function withdrawMenu(tokens: TokenInfo[], configuration: BotConfiguration
     await addAssetToWithdraw();
 }
 
+// function from marketaid implemented here to use the state variables in this file
+async function getTokenBalances(marketAid: MarketAid) {
+    for (const token of erc20Tokens) {
+        const balance = await token.balanceOf(marketAid.address);
+        const tokenInfo = tokens.find((t) => t.address === token.address);
+
+        if (tokenInfo) {
+          console.log(
+            `Balance of ${tokenInfo.name} (${tokenInfo.symbol}): ${balance} ${tokenInfo.symbol}`
+          );
+        }
+    }
+}
+
+
 // function that lets a user manage their generated market aid (similar to npm run aid)
 // for further options, a user should use npm run aid 
 async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, marketAid: MarketAid): Promise<void> {
@@ -250,11 +269,7 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
         case '3':
             console.log("\nView Market Aid Balance\n");
 
-            aidBalances = await getTokenBalances(marketAid.address);
-            aidBalances.forEach((balance) => {
-                console.log(`Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`);
-            });
-
+            await getTokenBalances(marketAid)
             await aidMenu(tokens, configuration, marketAid);
             break;
 
@@ -262,11 +277,7 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
             console.log("\nDeposit to the aid\n");
 
             console.log("Your current balances:");
-            const userBalances = await getTokenBalances(await configuration.connections.signer.getAddress());
-            userBalances.forEach((balance) => {
-                console.log(`Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`);
-            });
-
+            await getTokenBalances(marketAid);
             await depositMenu(tokens, marketAid, rl);
             await aidMenu(tokens, configuration, marketAid);
             break;
@@ -277,12 +288,7 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
                 // display the current aid balance
                 console.log("The current aid balances:");
 
-                aidBalances = await getTokenBalances(marketAid.address);
-                aidBalances.forEach((balance) => {
-                    console.log(
-                        `Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`
-                    );
-                });
+                await getTokenBalances(marketAid);
         
                 // Implement withdrawal functionality here
                 await withdrawMenu(tokens, configuration, marketAid)
@@ -296,12 +302,7 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
                 // display the current aid balance
                 console.log("The current aid balances:");
 
-                aidBalances = await getTokenBalances(marketAid.address);
-                aidBalances.forEach((balance) => {
-                    console.log(
-                        `Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`
-                    );
-                });
+                await getTokenBalances(marketAid);
         
                 // Implement pull all funds functionality here
                 await withdrawAllTokens(marketAid, tokens);
@@ -320,8 +321,6 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
 // function that lets a user create a MarketAid contract 
 async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
     //creating token states to pull them for different networks
-    let tokens: TokenInfo[] = [];
-    let erc20Tokens: ERC20[] = [];
     //get list of tokens based on selected network 
     tokens = getTokensByNetwork(configuration.network)
     //update erc20Tokens with new ERC20 instances for the new network
@@ -345,9 +344,11 @@ async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguratio
     console.log("Tokens approved!")
     //step 5 - deposit assets
     await depositMenu(tokens, marketAid, rl)
-    //step 6 - let a user manage 
+    //step 6 - display balances 
+    await getTokenBalances(marketAid);
+    //step 7 - let a user manage 
     await aidMenu(tokens, configuration, marketAid)
-    return newMarketAidAddress;
+    return { newMarketAidAddress, marketAid };
 }
 
 
@@ -380,15 +381,11 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
     } else {
         console.log("Let's create a new MarketAid...")
-        userMarketAidAddress = await helpUserCreateNewMarketAidInstance(configuration);
+        userMarketAidAddress = (await helpUserCreateNewMarketAidInstance(configuration)).newMarketAidAddress;
         console.log("The generated contract instance is at: ", userMarketAidAddress);
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
     }
-
-    //Allow user to manage their add before bot deployment
-
-
 
     // 2. Depending on the user's selected strategy, create the strategy and pass it to the bot
     // Configure relevant liquidity venues and use those to generate a live feed of a TARGET simple book
