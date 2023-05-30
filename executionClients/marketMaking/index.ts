@@ -40,66 +40,80 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
 }
 
 
-async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl): Promise<void> {
+async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
-    console.log("break")
+    console.log("break");
+
     const addAssetToDeposit = async () => {
         console.log("\nSelect an asset to deposit:");
         tokens.forEach((token, index) => {
             console.log(`${index + 1}: ${token.name} (${token.symbol})`);
         });
         console.log(`${tokens.length + 1}: Done`);
-        //try the promise resolve format here similar to the callback above
-        rl.question("Enter the number corresponding to the asset you want to deposit: ", (answer) => {
-            const selectedIndex = parseInt(answer.trim()) - 1;
-            if (selectedIndex >= 0 && selectedIndex < tokens.length) {
-                const selectedToken = tokens[selectedIndex];
-                depositAssets.push(selectedToken.address);
 
-                rl.question(`Enter the amount of ${selectedToken.symbol} to deposit: `, (amountAnswer) => {
-                    const amount = parseFloat(amountAnswer.trim());
-                    // Convert the input amount to the smallest token unit using the token decimals
-                    const smallestUnitAmount = BigNumber.from((amount * 10 ** selectedToken.decimals).toFixed());
-                    depositAmounts.push(smallestUnitAmount);
-                    addAssetToDeposit();
-                });
-            } else if (selectedIndex === tokens.length) {
-                console.log("\nDeposit summary:");
-                depositAssets.forEach((asset, index) => {
-                    const token = tokens.find((t) => t.address === asset);
-                    if (token) {
-                        console.log(`Deposit ${depositAmounts[index]} ${token.symbol}`);
-                    }
-                });
-
-                rl.question("\nAre you sure you want to proceed with the deposit? (yes/no): ", async (confirmation) => {
-                    if (confirmation.trim().toLowerCase() === "yes") {
-                        try {
-                            const balanceChanges = await marketAid.adminDepositToBook(depositAssets, depositAmounts);
-                            console.log("\nDeposit successful. Balance changes:");
-                            for (const tokenAddress in balanceChanges) {
-                                const token = tokens.find((t) => t.address === tokenAddress);
-                                if (token) {
-                                    console.log(`Balance of ${token.name} (${token.symbol}) changed by: ${balanceChanges[tokenAddress]} ${token.symbol}`);
-                                }
-                            }
-                        } catch (error) {
-                            console.error("Failed to deposit:", error);
-                        }
-                    } else {
-                        console.log("Deposit canceled.");
-                    }
-                    //aidMenu(marketAid);
-                });
-            } else {
-                console.log("Invalid selection. Please try again.");
-                addAssetToDeposit();
-            }
+        const answer: string  = await new Promise(resolve => {
+            rl.question("Enter the number corresponding to the asset you want to deposit: ", (input) => {
+                resolve(input);
+            });
         });
+
+        const selectedIndex = parseInt(answer.trim()) - 1;
+
+        if (selectedIndex >= 0 && selectedIndex < tokens.length) {
+            const selectedToken = tokens[selectedIndex];
+            depositAssets.push(selectedToken.address);
+
+            const amountAnswer: string = await new Promise(resolve => {
+                rl.question(`Enter the amount of ${selectedToken.symbol} to deposit: `, (input) => {
+                    resolve(input);
+                });
+            });
+
+            const amount = parseFloat(amountAnswer.trim());
+            const smallestUnitAmount = BigNumber.from((amount * 10 ** selectedToken.decimals).toFixed());
+            depositAmounts.push(smallestUnitAmount);
+
+            await addAssetToDeposit();
+        } else if (selectedIndex === tokens.length) {
+            console.log("\nDeposit summary:");
+            depositAssets.forEach((asset, index) => {
+                const token = tokens.find((t) => t.address === asset);
+                if (token) {
+                    console.log(`Deposit ${depositAmounts[index]} ${token.symbol}`);
+                }
+            });
+
+            const confirmation = await new Promise(resolve => {
+                rl.question("\nAre you sure you want to proceed with the deposit? (yes/no): ", (input) => {
+                    resolve(input.trim().toLowerCase());
+                });
+            });
+
+            if (confirmation === "yes") {
+                try {
+                    const balanceChanges = await marketAid.adminDepositToBook(depositAssets, depositAmounts);
+                    console.log("\nDeposit successful. Balance changes:");
+                    for (const tokenAddress in balanceChanges) {
+                        const token = tokens.find((t) => t.address === tokenAddress);
+                        if (token) {
+                            console.log(`Balance of ${token.name} (${token.symbol}) changed by: ${balanceChanges[tokenAddress]} ${token.symbol}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to deposit:", error);
+                }
+            } else {
+                console.log("Deposit canceled.");
+            }
+        } else {
+            console.log("Invalid selection. Please try again.");
+            await addAssetToDeposit();
+        }
     };
-    addAssetToDeposit();
+    await addAssetToDeposit();
 }
+
 
 
 // helper function that lets a user create a MarketAid contract 
