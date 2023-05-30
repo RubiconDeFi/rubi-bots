@@ -2,11 +2,12 @@ import * as dotenv from "dotenv";
 import { ethers, BigNumber } from "ethers";
 import { BotConfiguration, BotType, MarketMakingStrategy, tokenList } from "../../configuration/config";
 import { getAddress } from "ethers/lib/utils";
-import { MARKET_AID_INTERFACE } from "../../configuration/abis/MarketAid";
+import  MARKET_AID_INTERFACE  from "../../configuration/abis/MarketAid"; //weird error when this import is in { }
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
 import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork } from "../../configuration/marketAid";
+import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
 import { MarketAid } from "../../utilities/contracts/MarketAid";
 import { TokenInfo } from "@uniswap/token-lists";
 import { ERC20 } from "../../utilities/contracts/ERC20";
@@ -33,7 +34,7 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
     });
 }
 
-// custom deposit menu formatted to work with the rest of the guidedStart
+// function to show a custom deposit menu 
 async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
@@ -71,6 +72,11 @@ async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
             await addAssetToDeposit();
         } else if (selectedIndex === tokens.length) {
             console.log("\nDeposit summary:");
+            if (depositAssets.length === 0) {
+                console.log("You will not be able to run the strategy without funds\n")
+                console.log("No assets selected. Exiting deposit menu.");
+                return; // Exit the function
+            }
             depositAssets.forEach((asset, index) => {
                 const token = tokens.find((t) => t.address === asset);
                 if (token) {
@@ -108,16 +114,11 @@ async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     await addAssetToDeposit();
 }
 
-
-
-// helper function that lets a user create a MarketAid contract 
-// marketAid.ts dependancies
+// function that lets a user create a MarketAid contract 
 async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
     //creating token states to pull them for different networks
     let tokens: TokenInfo[] = [];
     let erc20Tokens: ERC20[] = [];
-    //update token states based on network to use maxApproveMarketAidForAllTokens
-    //not sure if i can use the switchNetwork function because of the state vars in marketaid. a way to fix is the have the vars as inputs to the function
     //get list of tokens based on selected network 
     tokens = getTokensByNetwork(configuration.network)
     //update erc20Tokens with new ERC20 instances for the new network
@@ -140,7 +141,6 @@ async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguratio
     await maxApproveMarketAidForAllTokens(erc20Tokens, marketAid, configuration.connections.signer);
     console.log("Tokens approved!")
     //step 5 - deposit assets
-    //TODO: add a balance viewer and allow the user to access the market aid menu before the rest of the strategy starts
     await depositMenu(tokens, marketAid, rl)
     return newMarketAidAddress;
 }

@@ -266,6 +266,10 @@ async function depositMenu(marketAid: MarketAid, rl): Promise<void> {
                 });
             } else if (selectedIndex === tokens.length) {
                 console.log("\nDeposit summary:");
+                if (depositAssets.length === 0) {
+                    console.log("No assets selected to deposit. Exiting deposit menu.");
+                    aidMenu(marketAid) // Exit back to menu
+                }
                 depositAssets.forEach((asset, index) => {
                     const token = tokens.find((t) => t.address === asset);
                     if (token) {
