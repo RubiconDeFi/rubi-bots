@@ -6,7 +6,7 @@ import  MARKET_AID_INTERFACE  from "../../configuration/abis/MarketAid"; //weird
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
-import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork } from "../../configuration/marketAid";
+import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork, getTokenBalances } from "../../configuration/marketAid";
 import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
 import { MarketAid } from "../../utilities/contracts/MarketAid";
 import { TokenInfo } from "@uniswap/token-lists";
@@ -38,7 +38,6 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
 async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
-    console.log("break");
 
     const addAssetToDeposit = async () => {
         console.log("\nSelect an asset to deposit:");
@@ -114,6 +113,109 @@ async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     await addAssetToDeposit();
 }
 
+// function that lets a user manage their generated market aid (similar to npm run aid)
+// for further options, a user should use npm run aid 
+async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, marketAid: MarketAid): Promise<void> {
+    console.log("\nMarket Aid Menu");
+    console.log("");
+    console.log("1. View Market Aid Info");
+    console.log("2. Check if strategist is approved");
+    console.log("3. View Market Aid Balance");
+    console.log("4. Deposit to the aid");
+    console.log("5. Withdraw from the aid");
+    console.log("6. Pull all funds");
+    console.log("")
+    console.log("7. Exit");
+
+    const answer: string = await new Promise(resolve => {
+        rl.question("\nPick a number (1-7): ", (input) => {
+            resolve(input.trim());
+        });
+    });
+
+    let marketAddress;
+    let admin;
+    let aidBalances;
+    let inputAddress;
+
+    switch (answer.toLowerCase()) {
+        case '1':
+            console.log("\nView Market Aid Info\n");
+
+            marketAddress = await marketAid.getRubiconMarketAddress();
+            admin = await marketAid.getAdmin();
+
+            if (admin === configuration.connections.signer.getAddress()) {
+                console.log("You are the admin of this Market Aid");
+            } else {
+                console.log("You are not the admin of this Market Aid");
+            }
+
+            console.log("Market Address: ", marketAddress);
+
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case '2':
+            console.log("\nCheck if strategist is approved\n");
+
+            const strategistAddress: string = await new Promise(resolve => {
+                rl.question("Enter the strategist address: ", (input) => {
+                    resolve(input.trim());
+                });
+            });
+
+            const isApproved = await marketAid.isApprovedStrategist(strategistAddress);
+            console.log("Is strategist approved: ", isApproved);
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case '3':
+            console.log("\nView Market Aid Balance\n");
+
+            aidBalances = await getTokenBalances(marketAid.address);
+            aidBalances.forEach((balance) => {
+                console.log(`Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`);
+            });
+
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case "4":
+            console.log("\nDeposit to the aid\n");
+
+            console.log("Your current balances:");
+            const userBalances = await getTokenBalances(await configuration.connections.signer.getAddress());
+            userBalances.forEach((balance) => {
+                console.log(`Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`);
+            });
+
+            await depositMenu(tokens, marketAid, rl);
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case "5":
+            console.log("\nWithdraw from the aid\n");
+            // Implement withdrawal functionality here
+            console.log("test");
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case "6":
+            console.log("\nPull all funds\n");
+            // Implement pull all funds functionality here
+            console.log("test");
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case "7":
+            console.log("\nExiting the Market Aid Menu...");
+            break;
+    }
+};
+
+
+
 // function that lets a user create a MarketAid contract 
 async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
     //creating token states to pull them for different networks
@@ -142,6 +244,8 @@ async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguratio
     console.log("Tokens approved!")
     //step 5 - deposit assets
     await depositMenu(tokens, marketAid, rl)
+    //step 6 - let a user manage 
+    await aidMenu(tokens, configuration, marketAid)
     return newMarketAidAddress;
 }
 
@@ -180,6 +284,10 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
     }
+
+    //Allow user to manage their add before bot deployment
+
+
 
     // 2. Depending on the user's selected strategy, create the strategy and pass it to the bot
     // Configure relevant liquidity venues and use those to generate a live feed of a TARGET simple book

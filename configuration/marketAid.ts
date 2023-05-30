@@ -829,7 +829,7 @@ async function main(): Promise<void> {
     }
 }
 
-export {rl, getTokensByNetwork, getAidFactory, switchNetwork, maxApproveMarketAidForAllTokens, depositMenu, aidFactoryMenu, networkMenu}
+export {rl, getTokensByNetwork, getAidFactory, switchNetwork, maxApproveMarketAidForAllTokens, depositMenu, aidFactoryMenu, networkMenu, getTokenBalances}
 
 if (require.main === module) {
     main();
