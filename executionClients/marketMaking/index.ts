@@ -1,21 +1,15 @@
 import * as dotenv from "dotenv";
-
 import { ethers, BigNumber } from "ethers";
 import { BotConfiguration, BotType, MarketMakingStrategy, tokenList } from "../../configuration/config";
 import { getAddress } from "ethers/lib/utils";
-import MARKET_AID_INTERFACE from "../../configuration/abis/MarketAid";
+import { MARKET_AID_INTERFACE } from "../../configuration/abis/MarketAid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
-//imports from marketaid
-import { rl, getAidFactory, networkMenu, aidFactoryMenu, maxApproveMarketAidForAllTokens, getTokensByNetwork, switchNetwork } from "../../configuration/marketAid"; //grabbing marketAid functions
-import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
+import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork } from "../../configuration/marketAid";
 import { MarketAid } from "../../utilities/contracts/MarketAid";
-//
-//importing to get the right tokens for approval
 import { TokenInfo } from "@uniswap/token-lists";
 import { ERC20 } from "../../utilities/contracts/ERC20";
-//
 import { start } from "repl";
 dotenv.config();
 
@@ -39,7 +33,7 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
     });
 }
 
-
+// custom deposit menu formatted to work with the rest of the guidedStart
 async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
@@ -117,8 +111,7 @@ async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
 
 
 // helper function that lets a user create a MarketAid contract 
-// NOTE: there are different ways to implement this function. I chose this way due to the setup of marketAid.ts
-//  Currently I'm picking pieces from marketAid.ts 
+// marketAid.ts dependancies
 async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
     //creating token states to pull them for different networks
     let tokens: TokenInfo[] = [];
@@ -147,7 +140,7 @@ async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguratio
     await maxApproveMarketAidForAllTokens(erc20Tokens, marketAid, configuration.connections.signer);
     console.log("Tokens approved!")
     //step 5 - deposit assets
-    //TODO: is there a better approach than doing this?
+    //TODO: add a balance viewer and allow the user to access the market aid menu before the rest of the strategy starts
     await depositMenu(tokens, marketAid, rl)
     return newMarketAidAddress;
 }

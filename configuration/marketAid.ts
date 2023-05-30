@@ -1,10 +1,8 @@
 import * as dotenv from "dotenv";
-
 import { ethers, Signer, BigNumber } from "ethers";
 import { TokenInfo } from "@uniswap/token-lists";
 import { tokenList } from "../configuration/config";
 import { BotConfiguration, OnChainBookWithData, SimpleBook, StrategistTrade, marketAddressesByNetwork, Network, marketAidFactoriesByNetwork } from "../configuration/config";
-
 import { ERC20 } from "../utilities/contracts/ERC20";
 import { MarketAid } from "../utilities/contracts/MarketAid" 
 import { MarketAidFactory } from "../utilities/contracts/MarketAidFactory"
@@ -23,7 +21,7 @@ let tokens: TokenInfo[] = [];
 let erc20Tokens: ERC20[] = [];
 
 const readline = require('node:readline');
-export let rl = readline.createInterface({
+let rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
@@ -77,7 +75,7 @@ function getNetworkInfo(network: Network): { jsonRpcProvider: ethers.providers.J
  * @param network the network object to get the token list for
  * @returns the token list for the network
  */
-export function getTokensByNetwork(network: Network): TokenInfo[] {
+function getTokensByNetwork(network: Network): TokenInfo[] {
     return tokenList.tokens.filter((token) => token.chainId === network);
 }
 
@@ -90,7 +88,7 @@ export function getTokensByNetwork(network: Network): TokenInfo[] {
  */
 // TODO: instead of throwing an error, prompt the user to choose a different network
 // i have an idea for this but it requires changing up the networkMenu code I think...
-export function getAidFactory(network: Network, signer: ethers.Signer): MarketAidFactory {
+function getAidFactory(network: Network, signer: ethers.Signer): MarketAidFactory {
 
     const factoryAddress = marketAidFactoriesByNetwork[network];
   
@@ -107,7 +105,7 @@ export function getAidFactory(network: Network, signer: ethers.Signer): MarketAi
  * @param newNetwork the network object to update the network, tokens, and erc20Tokens variables for
  * @returns void
  */ 
-export async function switchNetwork(newNetwork: Network) {
+async function switchNetwork(newNetwork: Network) {
     network = newNetwork;
     tokens = getTokensByNetwork(network);
   
@@ -170,7 +168,7 @@ async function getTokenBalances(address: string) {
  * @returns An array of transaction receipts.
  */
 // TODO: all of these calls should be batched into a single transaction
-export async function maxApproveMarketAidForAllTokens(tokens: ERC20[], marketAid: MarketAid, signer: Signer): Promise<string> {
+async function maxApproveMarketAidForAllTokens(tokens: ERC20[], marketAid: MarketAid, signer: Signer): Promise<string> {
     // const maxApprovals: ethers.ContractTransaction[] = [];
 
     for (const token of tokens) {
@@ -242,7 +240,7 @@ async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
 }
 
 // a menu to assist with depositing assets into a market aid
-export async function depositMenu(marketAid: MarketAid, rl): Promise<void> {
+async function depositMenu(marketAid: MarketAid, rl): Promise<void> {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
     console.log("break")
@@ -630,7 +628,7 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
 }
 
 // a market aid factory menu, set the aid instance variable upon selection, or returns to the network menu. takes a market aid factory as a parameter
-export async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void> {
+async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void> {
     console.log("\nMarket Aid Factory Menu");
     console.log("");
     console.log("1. Connect to an existing Market Aid");
@@ -707,7 +705,7 @@ export async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promis
 
 
 // a network selection menu, set the network variable and current market aid factory upon selection
-export async function networkMenu(): Promise<void> {
+async function networkMenu(): Promise<void> {
     console.log("\nNetwork Selection Menu");
     console.log("");
     console.log("Mainnets:");
@@ -826,6 +824,8 @@ async function main(): Promise<void> {
         console.log(error);
     }
 }
+
+export {rl, getTokensByNetwork, getAidFactory, switchNetwork, maxApproveMarketAidForAllTokens, depositMenu, aidFactoryMenu, networkMenu}
 
 if (require.main === module) {
     main();
