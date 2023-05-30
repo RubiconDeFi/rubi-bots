@@ -6,7 +6,7 @@ import  MARKET_AID_INTERFACE  from "../../configuration/abis/MarketAid"; //weird
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
-import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork, getTokenBalances } from "../../configuration/marketAid";
+import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork, getTokenBalances, withdrawAllTokens } from "../../configuration/marketAid";
 import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
 import { MarketAid } from "../../utilities/contracts/MarketAid";
 import { TokenInfo } from "@uniswap/token-lists";
@@ -34,7 +34,7 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
     });
 }
 
-// function to show a custom deposit menu 
+// function for a simple custom deposit menu 
 async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
@@ -111,6 +111,83 @@ async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
         }
     };
     await addAssetToDeposit();
+}
+
+// function for a custom withdraw menu
+async function withdrawMenu(tokens: TokenInfo[], configuration: BotConfiguration, marketAid: MarketAid): Promise<void> {
+    const withdrawAssets: string[] = [];
+    const withdrawAmounts: BigNumber[] = [];
+
+    const addAssetToWithdraw = async () => {
+        console.log("\nSelect an asset to withdraw:");
+        tokens.forEach((token, index) => {
+            console.log(`${index + 1}: ${token.name} (${token.symbol})`);
+        });
+        console.log(`${tokens.length + 1}: Done`);
+
+        const answer: string = await new Promise(resolve => {
+            rl.question("Enter the number corresponding to the asset you want to withdraw: ", (input) => {
+                resolve(input.trim());
+            });
+        });
+
+        const selectedIndex = parseInt(answer) - 1;
+        if (selectedIndex >= 0 && selectedIndex < tokens.length) {
+            const selectedToken = tokens[selectedIndex];
+            withdrawAssets.push(selectedToken.address);
+
+            const amountAnswer: string = await new Promise(resolve => {
+                rl.question(`Enter the amount of ${selectedToken.symbol} to withdraw: `, (input) => {
+                    resolve(input.trim());
+                });
+            });
+
+            const amount = parseFloat(amountAnswer);
+            // Convert the input amount to the smallest token unit using the token decimals
+            const smallestUnitAmount = BigNumber.from((amount * 10 ** selectedToken.decimals).toFixed());
+            withdrawAmounts.push(smallestUnitAmount);
+
+            await addAssetToWithdraw();
+        } else if (selectedIndex === tokens.length) {
+            console.log("\nWithdrawal summary:");
+            withdrawAssets.forEach((asset, index) => {
+                const token = tokens.find((t) => t.address === asset);
+                if (token) {
+                    console.log(`Withdraw ${withdrawAmounts[index]} ${token.symbol}`);
+                }
+            });
+
+            const confirmation = await new Promise(resolve => {
+                rl.question("\nAre you sure you want to proceed with the withdrawal? (yes/no): ", (input) => {
+                    resolve(input.trim().toLowerCase());
+                });
+            });
+
+            if (confirmation === "yes") {
+                try {
+                    const balanceChanges = await marketAid.adminWithdrawFromBook(withdrawAssets, withdrawAmounts);
+                    console.log("\nWithdrawal successful. Balance changes:");
+                    for (const tokenAddress in balanceChanges) {
+                        const token = tokens.find((t) => t.address === tokenAddress);
+                        if (token) {
+                            console.log(`Balance of ${token.name} (${token.symbol}) changed by: ${balanceChanges[tokenAddress]} ${token.symbol}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to withdraw:", error);
+                }
+            } else {
+                console.log("Withdrawal canceled.");
+            }
+
+            await aidMenu(tokens, configuration, marketAid);
+        } else {
+            console.log("Invalid selection. Please try again.");
+            await addAssetToWithdraw();
+        }
+    };
+
+    await addAssetToWithdraw();
 }
 
 // function that lets a user manage their generated market aid (similar to npm run aid)
@@ -195,18 +272,42 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
             break;
 
         case "5":
-            console.log("\nWithdraw from the aid\n");
-            // Implement withdrawal functionality here
-            console.log("test");
-            await aidMenu(tokens, configuration, marketAid);
-            break;
+            console.log("\n Withdraw from the aid \n");
+
+                // display the current aid balance
+                console.log("The current aid balances:");
+
+                aidBalances = await getTokenBalances(marketAid.address);
+                aidBalances.forEach((balance) => {
+                    console.log(
+                        `Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`
+                    );
+                });
+        
+                // Implement withdrawal functionality here
+                await withdrawMenu(tokens, configuration, marketAid)
+        
+                await aidMenu(tokens, configuration, marketAid);
+                break;
 
         case "6":
-            console.log("\nPull all funds\n");
-            // Implement pull all funds functionality here
-            console.log("test");
-            await aidMenu(tokens, configuration, marketAid);
-            break;
+            console.log("\n Pull all funds \n");
+
+                // display the current aid balance
+                console.log("The current aid balances:");
+
+                aidBalances = await getTokenBalances(marketAid.address);
+                aidBalances.forEach((balance) => {
+                    console.log(
+                        `Balance of ${balance.name} (${balance.symbol}): ${balance.balance} ${balance.symbol}`
+                    );
+                });
+        
+                // Implement pull all funds functionality here
+                await withdrawAllTokens(marketAid, tokens);
+        
+                await aidMenu(tokens, configuration, marketAid);
+                break;
 
         case "7":
             console.log("\nExiting the Market Aid Menu...");
