@@ -351,6 +351,21 @@ async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguratio
     return { newMarketAidAddress, marketAid };
 }
 
+// callback function confirming you want to start the bot 
+function userConfirmStart(rl: any, userMarketAidAddress: string): Promise<string> {
+    return new Promise(resolve => {
+        rl.question('\n Do you want to start this strategy (yes/no):', (answer) => {
+            if (answer.toLowerCase() === 'no') {
+                console.log("Canceled");
+                console.log("Your MarketAid can be found at: ", userMarketAidAddress);
+                console.log("Use npm run aid to manage your aid and deposit/withdraw funds");
+                resolve("no");
+            } else {
+                resolve("yes")
+            }
+        })
+    });
+}
 
 // Function 
 export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string) {
@@ -387,6 +402,13 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
     }
 
+    const confirmation = await userConfirmStart(rl, userMarketAidAddress)
+    if (confirmation === "yes") {
+        console.log("Starting strat")
+    } else {
+        process.exit(1)
+    }
+
     // 2. Depending on the user's selected strategy, create the strategy and pass it to the bot
     // Configure relevant liquidity venues and use those to generate a live feed of a TARGET simple book
     var referenceLiquidityVenue = new UniswapLiquidityVenue(
@@ -411,7 +433,6 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
         configuration.network == 10 ? process.env.MY_LIVE_BOT_EOA_ADDRESS_OR_REF : process.env.MY_TEST_BOT_EOA_ADDRESS // TODO: hacky
     );
 
-    // 4. Start the bot and listen to log feed
     await bot.launchBot();
 }
 
