@@ -1,8 +1,11 @@
 import * as dotenv from "dotenv";
+
 import { ethers, Signer, BigNumber } from "ethers";
 import { TokenInfo } from "@uniswap/token-lists";
+
 import { tokenList } from "../configuration/config";
 import { BotConfiguration, OnChainBookWithData, SimpleBook, StrategistTrade, marketAddressesByNetwork, Network, marketAidFactoriesByNetwork } from "../configuration/config";
+
 import { ERC20 } from "../utilities/contracts/ERC20";
 import { MarketAid } from "../utilities/contracts/MarketAid" 
 import { MarketAidFactory } from "../utilities/contracts/MarketAidFactory"
@@ -14,24 +17,34 @@ dotenv.config();
 let network: Network = Network.OPTIMISM_MAINNET;
 
 // set variables for the json rpc provider, signer, and market aid factory
+// TODO: setting these state variables makes it harder to export the functions using them
 let jsonRpcProvider;
 let signer;
 let marketAidFactory;   
 let tokens: TokenInfo[] = [];
 let erc20Tokens: ERC20[] = [];
 
+// this readline is used across the guided start and aid
 const readline = require('node:readline');
 let rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-// helper functions 
-
+/**
+ * Checks if the provided address is a valid Ethereum address.
+ * @param {string} address - The address to be validated.
+ * @returns {boolean} Returns true if the address is valid, false otherwise.
+ */
 function isValidEthereumAddress(address: string): boolean {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
+/**
+ * Asks the user to enter an Ethereum address and validates the input.
+ * @returns {Promise<string>} A promise that resolves with the valid Ethereum address entered by the user.
+ * @throws {Error} Throws an error if the input address is invalid.
+ */
 async function askForAddress(): Promise<string> {
     return new Promise((resolve, reject) => {
         rl.question("Please enter an Ethereum address: ", (input) => {
@@ -48,19 +61,16 @@ async function askForAddress(): Promise<string> {
 
 
 /**
- * takes a network object and returns the json rpc provider and signer for the network
+ * Takes a network object and returns the json rpc provider and signer for the network
  * @param network the network object to get the json rpc provider and signer for
  * @returns the json rpc provider and signer for the network
  */
 function getNetworkInfo(network: Network): { jsonRpcProvider: ethers.providers.JsonRpcProvider, signer: ethers.Signer, websocketProvider?: ethers.providers.WebSocketProvider } {
-
     const jsonRpcUrl = process.env['JSON_RPC_URL_' + network.toString()];
     const websocketUrl = process.env['WEBSOCKET_URL_' + network.toString()];
-
     if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${network}`);
 
     const jsonrpc = new ethers.providers.JsonRpcProvider(jsonRpcUrl); // TODO: perhaps static provider for rpc consumption consciousness
-    
     if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
     
     return {
@@ -71,7 +81,7 @@ function getNetworkInfo(network: Network): { jsonRpcProvider: ethers.providers.J
 }
 
 /**
- * takes a network object and returns the token list for the network
+ * Takes a network object and returns the token list for the network
  * @param network the network object to get the token list for
  * @returns the token list for the network
  */
@@ -80,28 +90,24 @@ function getTokensByNetwork(network: Network): TokenInfo[] {
 }
 
 /**
- * takes a network object and returns the market aid factory for the network
+ * Takes a network object and returns the market aid factory for the network
  * @param network the network object to get the market aid factory for
  * @param signer the signer to use for the market aid factory
  * @returns the market aid factory for the network
  * @throws an error if no market aid factory address is found for the network 
+ * @TODO instead of throwing an error, prompt the user to choose a different network (this requires changing the networkMenu code)
  */
-// TODO: instead of throwing an error, prompt the user to choose a different network
-// i have an idea for this but it requires changing up the networkMenu code I think...
 function getAidFactory(network: Network, signer: ethers.Signer): MarketAidFactory {
-
     const factoryAddress = marketAidFactoriesByNetwork[network];
-  
     if (!factoryAddress) {
       throw new Error(`No Market Aid Factory address found for network ${network}`);
     }
-  
     const marketAidFactory = new MarketAidFactory(factoryAddress, signer);
     return marketAidFactory;
 }
 
 /**
- * takes a network object and updates the network, tokens, and erc20Tokens variables
+ * Takes a network object and updates the network, tokens, and erc20Tokens variables
  * @param newNetwork the network object to update the network, tokens, and erc20Tokens variables for
  * @returns void
  */ 
@@ -125,7 +131,7 @@ async function switchNetwork(newNetwork: Network) {
 }
 
 /**
- * a helper function to print the token balances for a given address
+ * Helper function to print the token balances for a given address
  * @param address the address to print the token balances for
  * @returns void
  */
@@ -142,20 +148,23 @@ async function printTokenBalances(address: string) {
     }
 }
 
+/**
+ * Retrieves the token balances for the provided Ethereum address.
+ * @param {string} address - The Ethereum address for which to retrieve token balances.
+ * @returns {Promise<Array<{ name: string, symbol: string, balance: string }>>} A promise that resolves with an array of token balance objects containing name, symbol, and balance information.
+ */
 async function getTokenBalances(address: string) {
     const balancePromises = erc20Tokens.map(async (token) => {
-      const balance = await token.balanceOf(address);
-      const tokenInfo = tokens.find((t) => t.address === token.address);
-  
-      if (tokenInfo) {
-        return {
-          name: tokenInfo.name,
-          symbol: tokenInfo.symbol,
-          balance: balance,
-        };
-      }
+        const balance = await token.balanceOf(address);
+        const tokenInfo = tokens.find((t) => t.address === token.address);
+        if (tokenInfo) {
+            return {
+                name: tokenInfo.name,
+                symbol: tokenInfo.symbol,
+                balance: balance,
+            };
+        }
     });
-  
     const balances = await Promise.all(balancePromises);
     return balances.filter((balance) => balance !== undefined);
 }
@@ -166,22 +175,17 @@ async function getTokenBalances(address: string) {
  * @param marketAid - The MarketAid instance.
  * @param signer - The signer to send the transaction from.
  * @returns An array of transaction receipts.
+ * @TODO all of these calls should be batched into a single transaction
  */
-// TODO: all of these calls should be batched into a single transaction
 async function maxApproveMarketAidForAllTokens(tokens: ERC20[], marketAid: MarketAid, signer: Signer): Promise<string> {
-    // const maxApprovals: ethers.ContractTransaction[] = [];
-
     for (const token of tokens) {
         try {
             const max = await token.maxApprove(signer, marketAid.address);
-            // maxApprovals.push(receipt);
             console.log(`\nMax approved ${await token.symbol()} for Market Aid at ${marketAid.address}\n`);
         } catch (error) {
             console.error(`Failed to max approve ${await token.symbol()} for Market Aid at ${marketAid.address}:`, error);
         }
     }
-
-    // return transactionReceipts;
     return "success!";
     
 }  
@@ -194,10 +198,8 @@ async function maxApproveMarketAidForAllTokens(tokens: ERC20[], marketAid: Marke
  */
 async function withdrawAllTokens(marketAid: MarketAid, tokens: TokenInfo[]): Promise<void> {
     console.log("\nWithdrawing all tokens...");
-
     // Extract the token addresses from the tokens array
     const tokenAddresses = tokens.map(token => token.address);
-
     try {
         const pulledFunds = await marketAid.adminPullAllFunds(tokenAddresses);
         console.log("\nWithdrawal successful. Pulled funds:");
@@ -214,11 +216,10 @@ async function withdrawAllTokens(marketAid: MarketAid, tokens: TokenInfo[]): Pro
     }
 }
 
-
 /**
- * 
- * @param aidCheck an array of market aid addresses
- * @returns a promise that resolves to the selected market aid address
+ * Allows the user to select an existing MarketAid instance by providing the corresponding number.
+ * @param {string[]} aidCheck - An array of existing MarketAid instances to choose from.
+ * @returns {Promise<string>} A promise that resolves with the selected MarketAid instance.
  */
 async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
     return new Promise((resolve) => {
@@ -226,7 +227,6 @@ async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
         aidCheck.forEach((aid, index) => {
             console.log(`${index + 1}: ${aid}`);
         });
-
         rl.question("Please enter the number corresponding to the MarketAid instance you want to connect to: ", (answer) => {
             const selectedIndex = parseInt(answer.trim()) - 1;
             if (selectedIndex >= 0 && selectedIndex < aidCheck.length) {
@@ -239,7 +239,12 @@ async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
     });
 }
 
-// a menu to assist with depositing assets into a market aid
+/**
+ * Displays a menu for depositing assets into a MarketAid instance.
+ * @param {MarketAid} marketAid - The MarketAid instance to deposit assets into.
+ * @param {readline.Interface} rl - The readline interface for user input.
+ * @returns {Promise<void>} A promise that resolves when the deposit process is completed.
+ */
 async function depositMenu(marketAid: MarketAid, rl): Promise<void> {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
@@ -302,11 +307,14 @@ async function depositMenu(marketAid: MarketAid, rl): Promise<void> {
             }
         });
     };
-
     addAssetToDeposit();
 }
 
-// A menu to assist with withdrawing assets from a market aid
+/**
+ * Displays a menu for withdrawing assets from a MarketAid instance.
+ * @param {MarketAid} marketAid - The MarketAid instance to withdraw assets from.
+ * @returns {Promise<void>} A promise that resolves when the withdrawal process is completed.
+ */
 async function withdrawMenu(marketAid: MarketAid): Promise<void> {
     const withdrawAssets: string[] = [];
     const withdrawAmounts: BigNumber[] = [];
@@ -365,10 +373,18 @@ async function withdrawMenu(marketAid: MarketAid): Promise<void> {
             }
         });
     };
-
     addAssetToWithdraw();
 }
 
+/**
+ * Displays the admin menu for maximum approval of an asset for a venue.
+ * Prompts the user to enter the address of the venue to approve, and then
+ * allows the user to select an asset to approve for the venue.
+ * After approving an asset, the user is presented with post-approval options.
+ * The function loops until the user chooses to return to the aid menu.
+ * @param {MarketAid} marketAid The MarketAid instance
+ * @returns {Promise<void>} A Promise that resolves once the admin menu is completed
+ */
 async function adminMaxApproveMenu(marketAid: MarketAid): Promise<void> {
     let venueAddress: string;
 
@@ -435,27 +451,17 @@ async function adminMaxApproveMenu(marketAid: MarketAid): Promise<void> {
     inputVenueAddress();
 }
 
-
-
-
-// - [] allow the user to connect to the market aid and do
-// - [] deposit to the aid 
-// - [] withdraw from the aid 
-// - [] pull all funds 
-// - [] approve a target venue 
-// - [] approve a strategist 
-// - [] remove a strategist 
-
-// a market aid menu, executes the user action on the market aid
+/**
+ * Displays the Market Aid menu allowing a user to manage their aid
+ * @param {MarketAid} marketAid The MarketAid instance
+ * @returns {Promise<void>} A Promise that resolves once the admin menu is completed
+ */
 async function aidMenu(marketAid: MarketAid): Promise<void> {
     console.log("\nMarket Aid Menu");
     console.log("");
     console.log("1. View Market Aid Info");
     console.log("2. Check if strategist is approved");
     console.log("3. View Market Aid Balance");
-    // console.log("3. View Market Aid Outstanding Offers");
-    // console.log("4. View Market Aid Kill Switch Operator");
-    // console.log("5. View Market Aid Shut Down Status");
     console.log("4. Deposit to the aid");
     console.log("5. Withdraw from the aid");
     console.log("6. Pull all funds");
@@ -467,7 +473,6 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
     console.log("11. Change Market Aids");
     console.log("12. Exit");
 
-
     rl.question("\n Pick a number (1-12): ", async (answer: string) => {
         let marketAddress;
         let admin;
@@ -475,25 +480,22 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
         let inputAddress;
 
         switch (answer.toLowerCase()) {
-
             case '1':
                 console.log("\n View Market Aid Info \n");
-
                 marketAddress = await marketAid.getRubiconMarketAddress();
                 admin = await marketAid.getAdmin();
-
+                
                 // check if the admin address is the same as the connected EOA
                 if (admin === signer.address) {
                     console.log("You are the admin of this Market Aid");
                 } else {
                     console.log("You are not the admin of this Market Aid");
                 }
-
-                console.log("Market Address: ", marketAddress);
                 
+                console.log("Market Address: ", marketAddress);
                 aidMenu(marketAid)
                 break;
-
+                
             case '2':
                 console.log("\n Check if strategist is approved \n");
 
@@ -502,9 +504,9 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
                     const isApproved = await marketAid.isApprovedStrategist(strategistAddress);
                     console.log("Is strategist approved: ", isApproved);
                     aidMenu(marketAid)
-                }
-                );
+                });
                 break;
+
             case '3':
                 console.log("\n View Market Aid Balance \n");
 
@@ -516,12 +518,10 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
                 });
         
                 aidMenu(marketAid);
-        
                 break;
 
             case "4":
                 console.log("\n Deposit to the aid \n");
-                
                 // diplay the current user balance
                 console.log("Your current balances:");
 
@@ -532,14 +532,11 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
                     );
                 });
 
-                // Implement deposit functionality here
                 await depositMenu(marketAid, rl);
-                // await aidMenu(marketAid);
                 break;
-        
+
             case "5":
                 console.log("\n Withdraw from the aid \n");
-
                 // display the current aid balance
                 console.log("The current aid balances:");
 
@@ -550,15 +547,11 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
                     );
                 });
         
-                // Implement withdrawal functionality here
                 await withdrawMenu(marketAid)
-        
-                // aidMenu(marketAid);
                 break;
         
             case "6":
                 console.log("\n Pull all funds \n");
-
                 // display the current aid balance
                 console.log("The current aid balances:");
 
@@ -569,33 +562,28 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
                     );
                 });
         
-                // Implement pull all funds functionality here
                 await withdrawAllTokens(marketAid, tokens);
-        
                 aidMenu(marketAid);
                 break;
 
             case "7":
                 console.log("\nApprove a target venue\n");
-
                 await adminMaxApproveMenu(marketAid)
-
                 await aidMenu(marketAid);
-
                 break
-        
+
             case "8":
                 console.log("\nApprove a strategist\n");
-
+                
                 inputAddress = await askForAddress();
                 console.log("The entered address is:", inputAddress);
-
+                
                 await marketAid.approveStrategist(inputAddress);
                 console.log(`Strategist ${inputAddress} approved`);
-    
+                
                 await aidMenu(marketAid);
                 break;
-    
+
             case "9":
                 console.log("\nRemove a strategist\n");
 
@@ -607,31 +595,32 @@ async function aidMenu(marketAid: MarketAid): Promise<void> {
 
                 aidMenu(marketAid);
                 break;
-        
+
             case "10":
                 console.log("\n Max approve the token list for the Market Aid \n");
-
+                
                 await maxApproveMarketAidForAllTokens(erc20Tokens, marketAid, signer);
-
                 aidMenu(marketAid);
                 break;
+
             case "11": 
-                
                 aidFactoryMenu(marketAidFactory);
                 break;
 
             case "12":
-
                 console.log("\n SEE YOU DEFI COWBOY...");
                 rl.close();
                 process.exit(0);
                 break;
-
-        }
+        };
     });
-}
+};
 
-// a market aid factory menu, set the aid instance variable upon selection, or returns to the network menu. takes a market aid factory as a parameter
+/**
+ * Displays the Market Aid Factory menu. This is 1 level higher than the Market Aid menu
+ * @param {MarketAidFactory} marketAidFactory The MarketAid Factory instance 
+ * @returns {Promise<void>} A Promise that resolves once the admin menu is completed
+ */
 async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void> {
     console.log("\nMarket Aid Factory Menu");
     console.log("");
@@ -661,10 +650,8 @@ async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void>
                 selectedAidAddress = await selectExistingMarketAid(aids);
                 marketAid = new MarketAid(selectedAidAddress, signer);
                 console.log("Connected to Market Aid: ", marketAid.address);
-    
-                // connect to the market aid menu
+
                 aidMenu(marketAid);
-    
                 break;
 
             case '2':
@@ -689,6 +676,7 @@ async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void>
 
             case '4':
                 console.log("\n Returning to Network Menu... \n");
+                
                 networkMenu();
                 break;
 
@@ -708,7 +696,10 @@ async function aidFactoryMenu(marketAidFactory: MarketAidFactory): Promise<void>
 
 
 
-// a network selection menu, set the network variable and current market aid factory upon selection
+/**
+ * Menu to select different L2 mainnets and testnets
+ * @returns {Promise<void>} A Promise that resolves once the network is selected
+ */
 async function networkMenu(): Promise<void> {
     console.log("\nNetwork Selection Menu");
     console.log("");
@@ -726,13 +717,11 @@ async function networkMenu(): Promise<void> {
     console.log("");
     console.log("7. Quit (exit the program)")
 
-    
     rl.question("\n Pick a number (1-7): ", (answer: string) => { 
 
         switch (answer.toLowerCase()) {
             case '1':
                 console.log("\n Selected Optimism Mainnet \n");
-                // network = Network.OPTIMISM_MAINNET;
                 switchNetwork(Network.OPTIMISM_MAINNET);
 
                 ({ jsonRpcProvider, signer } = getNetworkInfo(network));
@@ -742,68 +731,73 @@ async function networkMenu(): Promise<void> {
                 console.log("marketAidFactory: ", marketAidFactory.address);
 
                 aidFactoryMenu(marketAidFactory);
-
                 break;
+
             case '2':
                 console.log("\n Selected Arbitrum One \n");
-                // network = Network.ARBITRUM_MAINNET;
                 switchNetwork(Network.ARBITRUM_MAINNET);
 
                 ({ jsonRpcProvider, signer } = getNetworkInfo(network));
+                console.log("signer: ", signer.address);
 
                 marketAidFactory = getAidFactory(network, signer);
-
+                console.log("marketAidFactory: ", marketAidFactory.address);
+                
                 aidFactoryMenu(marketAidFactory);
-
                 break;
+
             case '3':
                 console.log("\n Selected Polygon Mainnet \n");
-                // network = Network.POLYGON_MAINNET;
                 switchNetwork(Network.POLYGON_MAINNET);
 
                 ({ jsonRpcProvider, signer } = getNetworkInfo(network));
+                console.log("signer: ", signer.address);
 
                 marketAidFactory = getAidFactory(network, signer);
+                console.log("marketAidFactory: ", marketAidFactory.address);
 
                 aidFactoryMenu(marketAidFactory);
-                
                 break;
+
             case '4':
                 console.log("\n Selected Optimism Goerli \n");
-                // network = Network.OPTIMISM_GOERLI;
                 switchNetwork(Network.OPTIMISM_GOERLI);
 
                 ({ jsonRpcProvider, signer } = getNetworkInfo(network));
+                console.log("signer: ", signer.address);
 
                 marketAidFactory = getAidFactory(network, signer);
+                console.log("marketAidFactory: ", marketAidFactory.address);
 
                 aidFactoryMenu(marketAidFactory);
-
                 break;
+
             case '5':
                 console.log("\n Selected Arbitrum Goerli \n");
-                // network = Network.ARBITRUM_TESTNET;
                 switchNetwork(Network.ARBITRUM_TESTNET);
 
                 ({ jsonRpcProvider, signer } = getNetworkInfo(network));
+                console.log("signer: ", signer.address);
 
                 marketAidFactory = getAidFactory(network, signer);
+                console.log("marketAidFactory: ", marketAidFactory.address);
 
                 aidFactoryMenu(marketAidFactory);
-
                 break;
+
             case '6':
                 console.log("\n Selected Polygon Mumbai \n");
-                // network = Network.POLYGON_MUMBAI;
                 switchNetwork(Network.POLYGON_MUMBAI);
 
                 ({ jsonRpcProvider, signer } = getNetworkInfo(network));
+                console.log("signer: ", signer.address);
 
                 marketAidFactory = getAidFactory(network, signer);
+                console.log("marketAidFactory: ", marketAidFactory.address);
 
                 aidFactoryMenu(marketAidFactory);
-
                 break;
+
             case '7':
                 console.log("\n SEE YOU DEFI COWBOY... \n");
                 rl.close();
@@ -817,18 +811,16 @@ async function networkMenu(): Promise<void> {
     });
 }
 
-// main function to run the script
 async function main(): Promise<void> {
-
     try { 
-        // 1. ask the user what network they want to use to manage their market aid instance
+        // ask the user what network they want to use to manage their market aid instance
         networkMenu();
-
     } catch (error) {
         console.log(error);
     }
 }
 
+// functions used in guidedStart
 export {rl, getTokensByNetwork, getAidFactory, switchNetwork, maxApproveMarketAidForAllTokens, depositMenu, aidFactoryMenu, networkMenu, getTokenBalances, withdrawAllTokens}
 
 if (require.main === module) {
