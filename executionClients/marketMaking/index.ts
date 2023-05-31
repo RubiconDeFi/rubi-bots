@@ -442,6 +442,10 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
     if (userMarketAidAddress != "no") {
         console.log("The user selected to use an existing contract instance", userMarketAidAddress);
+        const marketAidForExisting = new MarketAid(userMarketAidAddress, configuration.connections.signer);
+        console.log("Opening menu for aid management...");
+        await aidMenu(tokens, configuration, marketAidForExisting) 
+        
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
 
