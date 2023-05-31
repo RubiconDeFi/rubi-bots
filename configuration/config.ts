@@ -88,8 +88,6 @@ export const tokenList: TokenList = {
             chainId: Network.OPTIMISM_MAINNET,
             extensions: {
                 underlyingAssetGeckoID: 'ethereum',
-                //NEEDED FOR ANY INTERACTION THAT IS WRAPPER FOR NATIVE ASSET
-                isNativeAssetWrapper: true,
             },
         },
         {
@@ -208,7 +206,6 @@ export const tokenList: TokenList = {
             symbol: 'F',
             extensions: {
                 underlyingAssetGeckoID: 'optimism',
-                rewardsLive: false,
             },
             decimals: 18,
             name: 'Forrest Coin',
@@ -283,9 +280,8 @@ export const ETH_ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export type BotConfiguration = {
     botType: BotType;
-    // strategy: number;
     network: Network;
-    targetTokens: TokenInfo[];
+    targetTokens?: TokenInfo[];
     connections: { jsonRpcProvider: ethers.providers.JsonRpcProvider, signer: ethers.Signer, websocketProvider?: ethers.providers.WebSocketProvider }
 };
 
