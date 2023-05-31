@@ -174,11 +174,23 @@ export class GenericMarketMakingBot {
         // Calculate the midpoint
         const midpoint = (bestBidPrice + bestAskPrice) / 2;
 
+        const idString = this.strategy.identifier + "_REQUOTE_TRIGGER";
+        console.log("idString", idString);
+
+        // Pull in the requoteTrigger value from environment variables
+        var requoteTrigger = parseFloat(process.env[idString]);
+
+        if (requoteTrigger == undefined || isNaN(requoteTrigger) || requoteTrigger < 0) {
+            requoteTrigger = 0.5;
+        }
+        // console.log("Requote trigger is set to ", requoteTrigger);
+        // Invert the requoteTrigger so that a smaller value results in less requoting
+        requoteTrigger = 1 - requoteTrigger;
         // Calculate the relative spread
         const relativeSpread = spread / midpoint;
 
-        // Half the spread as a relative price change
-        const deltaTrigger = relativeSpread / 2;
+        // Modulate the spread as a relative price change by the user-set requoteTrigger
+        const deltaTrigger = relativeSpread * requoteTrigger;
 
         // TODO: should we validate the strategy book is zero length case more??
         if (deltaTrigger == undefined || isNaN(deltaTrigger) || deltaTrigger < 0) {
@@ -646,24 +658,24 @@ export class GenericMarketMakingBot {
 
         const processAggregateState = async (blocknumber: number) => {
             if (!aggregateState.updated) return;
-        
+
             const assetDumpThreshold = this.availableLiquidity.assetWeiAmount.mul(this.dumpPercentage).div(100);
             const quoteDumpThreshold = this.availableLiquidity.quoteWeiAmount.mul(this.dumpPercentage).div(100);
-        
+
             if (aggregateState.assetAmount.gte(assetDumpThreshold)) {
                 console.log("Dump total asset amount:", formatUnits(aggregateState.assetAmount, this.assetPair.asset.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.asset.address, aggregateState.assetAmount, this.assetPair.quote.address);
             } else {
                 console.log("Not enough asset amount to dump, threshold:", formatUnits(assetDumpThreshold, this.assetPair.asset.decimals));
             }
-        
+
             if (aggregateState.quoteAmount.gte(quoteDumpThreshold)) {
                 console.log("Dump total quote amount:", formatUnits(aggregateState.quoteAmount, this.assetPair.quote.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.quote.address, aggregateState.quoteAmount, this.assetPair.asset.address);
             } else {
                 console.log("Not enough quote amount to dump, threshold:", formatUnits(quoteDumpThreshold, this.assetPair.quote.decimals));
             }
-        
+
             // Reset aggregate state
             aggregateState = {
                 assetAmount: BigNumber.from(0),
@@ -671,8 +683,8 @@ export class GenericMarketMakingBot {
                 updated: false
             };
         };
-        
-        
+
+
 
         // v1 <> v2 Migration case stint
         // if (this.config.network == 10) {
