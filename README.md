@@ -1,5 +1,5 @@
 # rubi-bots
-Open-source bots for traders and activists in the Rubicon ecosystem
+Open-source bots for traders and activists in the [Rubicon](https://docs.rubicon.finance/docs/protocol) ecosystem
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/RubiconDeFi/rubi-bots/blob/main/LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/RubiconDeFi/rubi-bots.svg)](https://github.com/RubiconDeFi/rubi-bots/stargazers)
@@ -10,10 +10,10 @@ Open-source bots for traders and activists in the Rubicon ecosystem
 
 Welcome to `rubi-bots`! This repository hosts open-source market-making, liquidator, and arbitrage bots for traders and activists in the Rubicon ecosystem. With a focus on improving performance and growing the Rubicon ecosystem together, `rubi-bots` serves as a one-stop shop for traders and activists, providing potential profit opportunities, learning resources, and avenues for technical improvement.
 
-include some information about
-1. market aids
-2. the different strategies
-3. the different bots 
+# TODO
+1. links to learn about market aids and what they are
+2. blurb and further reading on the different strategies
+3. blurb and further reading on the different bots 
 
 This repository has two main commands for users 
 1. `guidedStart` - the quickest way to get started with Rubicon and deploy a bot
@@ -65,38 +65,25 @@ To get started with `rubi-bots`, follow these steps:
     ```shell
         npm run aid
 2. Choose between the following mainnet/testnets to generate your aid
-- ✅ Optimism Mainnet/Goerli
+- ❌/✅ Optimism Mainnet/Goerli [WIP]
 - ❌ Arbitrum Mainnet/Goerli [WIP]
-- ✅ Polygon Mainnet/Mumbia
+- ✅ Polygon Mainnet/Mumbai
+3. The aid menu will open allowing you to:
+- Connect to an existing aid
+- View existing aids
+- Create a new aid
 
+## Target Bots and Strategies to Build/Release
+- [WIP] Riskless MM strategy - AMM Up Only
+- [WIP] Competitive MM strategy - AMM Out Bid
+- Two Venue Arbitrage - Rubi vs Selected Venue
+- v2 Liquidator Bot - Money Market Activist
 
-Copy code
-yarn run guidedStart
-Target Bots and Strategies to Build/Release
+## Contributing
+Contributions to rubi-bots are welcome and encouraged! 
 
-[WIP] Riskless MM strategy - AMM Up Only
-[WIP] Competitive MM strategy - AMM Out Bid
- Two Venue Arbitrage - Rubi vs Selected Venue
- v2 Liquidator Bot - Money Market Activist
-
-## Aid
-
-Contributing
-
-Contributions to rubi-bots are welcome and encouraged! If you would like to contribute, please follow the guidelines outlined in CONTRIBUTING.md.
-
-License
-
+## License
 This project is licensed under the MIT License.
-
-Acknowledgements
-
-We would like to acknowledge the following resources and individuals for their contributions and support:
-
-Resource 1
-Resource 2
-Contributor 1
-Contributor 2
 
 ## Risk Disclaimers
 
