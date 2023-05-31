@@ -1,24 +1,39 @@
 import * as dotenv from "dotenv";
+
 import { ethers, BigNumber } from "ethers";
-import { BotConfiguration, BotType, MarketMakingStrategy, tokenList } from "../../configuration/config";
 import { getAddress } from "ethers/lib/utils";
+
+import { BotConfiguration, BotType, MarketMakingStrategy, tokenList } from "../../configuration/config";
 import  MARKET_AID_INTERFACE  from "../../configuration/abis/MarketAid"; //weird error when this import is in { }
+import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork, withdrawAllTokens } from "../../configuration/marketAid";
+
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
+
 import { UniswapLiquidityVenue } from "../../liquidityVenues/uniswap";
 import { GenericMarketMakingBot } from "./GenericMarketMakingBot";
-import { rl, getAidFactory, maxApproveMarketAidForAllTokens, getTokensByNetwork, withdrawAllTokens } from "../../configuration/marketAid";
+
 import { MarketAidFactory } from "../../utilities/contracts/MarketAidFactory";
-import { MarketAid } from "../../utilities/contracts/MarketAid";
-import { TokenInfo } from "@uniswap/token-lists";
 import { ERC20 } from "../../utilities/contracts/ERC20";
+import { MarketAid } from "../../utilities/contracts/MarketAid";
+
+import { TokenInfo } from "@uniswap/token-lists";
 import { start } from "repl";
+
 dotenv.config();
 
-// set variables 
+// set variables for use in function 
+// TODO: more functions from marketaid could be used if these state variables were inputs in those functions. That's a separate overhaul for a different PR
 let tokens: TokenInfo[] = [];
 let erc20Tokens: ERC20[] = [];
 
-// function to prompt the user to select an existing contract instance or create a new one
+/**
+ * Checks if the user has an existing MarketAid contract instance to use
+ * @param configuration - The bot configuration.
+ * @param rl - The readline interface.
+ * @returns A Promise that resolves to a string indicating the user's choice:
+ * - If the user wants to create a new contract instance, the Promise resolves to "no".
+ * - If the user wants to use an existing contract instance, the Promise resolves to the address of that instance.
+ */
 function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promise<string> {
     return new Promise(resolve => {
         rl.question('\n Do you have an existing MarketAid contract instance you would like to use? (Enter the address of the contract instance you want to use then enter to add, or enter "no" to create one):', (answer) => {
@@ -38,7 +53,12 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
     });
 }
 
-// function for a simple custom deposit menu 
+/**
+ * Displays a deposit menu for the user to select assets and deposit amounts.
+ * @param tokens - An array of TokenInfo objects representing available tokens.
+ * @param marketAid - The MarketAid contract instance.
+ * @param rl - The readline interface.
+ */
 async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     const depositAssets: string[] = [];
     const depositAmounts: BigNumber[] = [];
@@ -117,7 +137,12 @@ async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
     await addAssetToDeposit();
 }
 
-// function for a custom withdraw menu
+/**
+ * Displays a withdraw menu for the user to select assets and withdraw their amounts.
+ * @param tokens - An array of TokenInfo objects representing available tokens.
+ * @param configuration - The Bot configuration
+ * @param marketAid - The MarketAid contract instance.
+ */
 async function withdrawMenu(tokens: TokenInfo[], configuration: BotConfiguration, marketAid: MarketAid): Promise<void> {
     const withdrawAssets: string[] = [];
     const withdrawAmounts: BigNumber[] = [];
@@ -194,7 +219,11 @@ async function withdrawMenu(tokens: TokenInfo[], configuration: BotConfiguration
     await addAssetToWithdraw();
 }
 
-// function from marketaid implemented here to use the state variables in this file
+/**
+ * Retrieves the token balances of the MarketAid contract.
+ * @param marketAid - The MarketAid contract instance.
+ * @dev this is the function from marketaid.ts that uses this files variables
+ */
 async function getTokenBalances(marketAid: MarketAid) {
     for (const token of erc20Tokens) {
         const balance = await token.balanceOf(marketAid.address);
@@ -209,8 +238,15 @@ async function getTokenBalances(marketAid: MarketAid) {
 }
 
 
-// function that lets a user manage their generated market aid (similar to npm run aid)
-// for further options, a user should use npm run aid 
+/**
+ * Allows a user to manage their generated Market Aid.
+ * Provides various options for interacting with the Market Aid contract.
+ * @param tokens - An array of TokenInfo objects representing available tokens.
+ * @param configuration - The bot configuration.
+ * @param marketAid - The MarketAid contract instance.
+ * @returns A Promise that resolves to void.
+ * @dev For additional commands, run `npm run aid` 
+ */
 async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, marketAid: MarketAid): Promise<void> {
     console.log("\nMarket Aid Menu");
     console.log("");
@@ -318,40 +354,56 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
 
 
 
-// function that lets a user create a MarketAid contract 
+/**
+ * Function allowing a user to create and interact with their MarketAid through the guided start
+ * @param configuration - The bot configuration.
+ * @dev many of the functions and code in here come from marketaid.ts
+ */ 
 async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
-    //creating token states to pull them for different networks
-    //get list of tokens based on selected network 
+    // get list of tokens based on selected network 
     tokens = getTokensByNetwork(configuration.network)
-    //update erc20Tokens with new ERC20 instances for the new network
+    // update erc20Tokens with new ERC20 instances for the new network
     for (const tokenInfo of tokens) {
         const token = new ERC20(tokenInfo.address, configuration.connections.signer);
         erc20Tokens.push(token);
     }
     console.log("Network state updated and token information retrieved")
-    //step 1 - init aid factory based on the prev config settings
+
+    // step 1 - init aid factory based on the prev config settings
     const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
-    //step 2 - get new address from factory
+    
+    // step 2 - get new address from factory
     const newMarketAidAddress = await marketAidFactory.createMarketAidInstance();
     console.log("New Market Aid Address: ", newMarketAidAddress);
-    //step 3 - connect to aid
+    
+    // step 3 - connect to aid
     console.log("\nConnecting to aid...")
     const marketAid = new MarketAid(newMarketAidAddress, configuration.connections.signer)
     console.log("\nConnected!")
-    //step 4 - approve all tokens 
+    
+    // step 4 - approve all tokens 
     console.log("Approving tokens for use...")
     await maxApproveMarketAidForAllTokens(erc20Tokens, marketAid, configuration.connections.signer);
     console.log("Tokens approved!")
-    //step 5 - deposit assets
+    
+    // step 5 - deposit assets
     await depositMenu(tokens, marketAid, rl)
-    //step 6 - display balances 
+    
+    // step 6 - display balances 
     await getTokenBalances(marketAid);
-    //step 7 - let a user manage 
+    
+    // step 7 - let a user manage 
     await aidMenu(tokens, configuration, marketAid)
+    
     return { newMarketAidAddress, marketAid };
 }
 
-// callback function confirming you want to start the bot 
+/**
+ * Callback function confirming you want to start the bot 
+ * @param rl - Readline instance
+ * @param userMarketAidAddress - Market Aid address
+ * @dev Final step before the bot is started
+ */ 
 function userConfirmStart(rl: any, userMarketAidAddress: string): Promise<string> {
     return new Promise(resolve => {
         rl.question('\n Do you want to start this strategy (yes/no):', (answer) => {
@@ -367,28 +419,27 @@ function userConfirmStart(rl: any, userMarketAidAddress: string): Promise<string
     });
 }
 
-// Function 
+/**
+ * Starts a generic market-making bot based on the provided configuration.
+ * @param configuration - The bot configuration.
+ * @param rl - Optional readline interface for user input.
+ * @param providedMarketAidAddress - Optional pre-selected MarketAid contract address.
+ * @returns A Promise that resolves to void.
+ * @TODO If user provides a MarketAid - make sure it has approvals and balances of tokens they want to target
+ */
 export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string) {
-    // TODO: WIRE THIS UP TO THE NETWORK THEY WANNA USE
+    // Pass through from config (either a websocket or JSON RPC is allowed)
     var myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider;
-    // pass through from config
-    // Note that either a websocket or json rpc provider is allowed
     myProvider = (configuration.connections.jsonRpcProvider);
-    // 1. Validate the configuration and make sure they have a wired up MarketAid for their selected network that has requisite approvals and balances of the tokens they want to target
-    // And on-chain things as needed like relevant provider...
-    var marketAidContractInstance: ethers.Contract;
 
-    // call function to prompt the user to select an existing contract instance or create a new one
-    // if they select an existing one, we need to make sure it's on the right network and has the right approvals and balances
+    var marketAidContractInstance: ethers.Contract;
     var userMarketAidAddress: string;
     if (providedMarketAidAddress) {
         userMarketAidAddress = providedMarketAidAddress;
     } else {
         userMarketAidAddress = await userMarketAidCheckCallback(configuration, rl);
     }
-    // console.log("\nGeneric market-making bot targetting this userMarketAid", userMarketAidAddress);
 
-    // TODO: guided start flow to ask them if they want to use an existing contract instance or create a new one
     if (userMarketAidAddress != "no") {
         console.log("The user selected to use an existing contract instance", userMarketAidAddress);
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
@@ -397,7 +448,7 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     } else {
         console.log("Let's create a new MarketAid...")
         userMarketAidAddress = (await helpUserCreateNewMarketAidInstance(configuration)).newMarketAidAddress;
-        console.log("The generated contract instance is at: ", userMarketAidAddress);
+        //console.log("The generated contract instance is at: ", userMarketAidAddress);
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
     }
@@ -438,18 +489,19 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
 // Create a main function which is called and parses through proceess.argv to allow for custom configuration
 function main(): Promise<void> {
-
     console.log("This is process.argv", process.argv);
     // Parse through process.argv to get custom configuration details from the user and start the correct bot process
-    // TODO:
     const chainId = parseFloat(process.argv[2]);
     if (!chainId) throw new Error('No chain ID found in process.argv');
+    
     const marketAidContractAddress = process.argv[3];
     const jsonRpcUrl = process.env['JSON_RPC_URL_' + chainId.toString()];
     const websocketUrl = process.env['WEBSOCKET_URL_' + chainId.toString()];
     if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${chainId}`);
+    
     const staticJsonRpc = new ethers.providers.StaticJsonRpcProvider(jsonRpcUrl, chainId); // TODO: perhaps static provider for rpc consumption consciousness
     if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
+    
     const asset = process.argv[4];
     const quote = process.argv[5];
     const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
@@ -458,7 +510,6 @@ function main(): Promise<void> {
     if (!assetTokenInfo) throw new Error(`No token found for address ${asset} on network ${chainId}`);
     if (!quoteTokenInfo) throw new Error(`No token found for address ${quote} on network ${chainId}`);
     // TODO: clean this up to also have Strategy configured in the cli process.argv
-
     var config = {
         network: chainId,
         targetTokens: [assetTokenInfo, quoteTokenInfo],
@@ -479,10 +530,8 @@ function main(): Promise<void> {
         }, config.connections.jsonRpcProvider //, 500
     );
     var strat = new RiskMinimizedStrategy(referenceLiquidityVenue, 0.01);
-
     return startGenericMarketMakingBot(config, undefined,
         marketAidContractAddress);
-
 }
 
 if (require.main === module) {
