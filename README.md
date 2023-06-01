@@ -80,7 +80,7 @@ Contributions to rubi-bots are welcome and encouraged!
 ## License
 This project is licensed under the MIT License.
 
-# Further Reading
+## Further Reading
 - Learn more about [MarketAids](https://docs.rubicon.finance/protocol/rubicon-market/market-aid)
 - Different [trading strategies] supported
 - Different [bots] supported
