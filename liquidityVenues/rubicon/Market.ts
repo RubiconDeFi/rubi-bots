@@ -163,7 +163,14 @@ async function main() {
       };
 
     const rubiconMarket = new RubiconLiquidityVenue(pair, websocketProvider, botConfig);
-    const trades = rubiconMarket.getBookForPair(pair.asset, pair.quote);
+
+    // Subscribe to book updates and log the updated book when it changes.
+    let counter = 0;
+    rubiconMarket.subscribeToBookUpdates(pair.asset, pair.quote, (book) => {
+        counter++;
+        console.log('Book update #' + counter + ':', book);
+        console.log('Updated book:', book);
+    });
 };
 
 if (require.main === module) {
