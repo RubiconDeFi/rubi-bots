@@ -8,7 +8,7 @@ Open-source bots for traders and activists in the [Rubicon](https://docs.rubicon
 
 ## Description
 
-Welcome to `rubi-bots`! This repository hosts open-source market-making, liquidator, and arbitrage bots for traders and activists in the Rubicon ecosystem. With a focus on improving performance and growing the Rubicon ecosystem together, `rubi-bots` serves as a one-stop shop for traders and activists, providing potential profit opportunities, learning resources, and avenues for technical improvement.
+Welcome to `rubi-bots`! This repository hosts open-source market-making, liquidator, and arbitrage bots in the Rubicon ecosystem. With a focus on improving performance and growing the Rubicon ecosystem together, `rubi-bots` serves as a one-stop shop for potential profit opportunities, learning resources, and avenues for technical improvement.
 
 This repository has two main commands for users 
 1. `guidedStart` - the quickest way to get started with Rubicon and deploy a bot
