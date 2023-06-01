@@ -47,6 +47,7 @@ export class GenericMarketMakingBot {
 
     marketContract: ethers.Contract;
     wipingOutstandingBook: any;
+    dumpPercentage: number;
 
     constructor(config: BotConfiguration, marketAid: ethers.Contract, strategy: RiskMinimizedStrategy | TargetVenueOutBidStrategy, _botAddy: string, liquidityVenue?: GenericLiquidityVenue) {
         this.config = config;
@@ -79,6 +80,11 @@ export class GenericMarketMakingBot {
             console.log("KEEPING LOGS OFF!!!");
             console.log = () => { };
         }
+
+        if (!process.env.TAIL_OFF_RELLIMIT) {
+            console.log("TAIL_OFF_RELLIMIT not set, defaulting to 5%");
+        }
+        this.dumpPercentage = process.env.TAIL_OFF_RELLIMIT ? parseInt(process.env.TAIL_OFF_RELLIMIT) : 5;
     }
 
 
@@ -145,7 +151,8 @@ export class GenericMarketMakingBot {
         const strategyBook = this.strategy.targetBook;
         const marketAidBook = this.marketAidPositionTracker.liveBook;
         // TODO: solve for this better
-        const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
+
+        // const deltaTrigger = 0.003; // Relative difference in price between the strategy's targetBook and the market-aid's liveBook that triggers an order execution
 
         const askLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals));
         const bidLiquidityThreshold = parseFloat(formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
@@ -157,7 +164,44 @@ export class GenericMarketMakingBot {
             return;
         }
 
+        // Assuming that the orders in the bids and asks arrays are sorted
+        const bestBidPrice = strategyBook.bids[0].price;
+        const bestAskPrice = strategyBook.asks[0].price;
 
+        // Calculate the spread
+        const spread = bestAskPrice - bestBidPrice;
+
+        // Calculate the midpoint
+        const midpoint = (bestBidPrice + bestAskPrice) / 2;
+
+        const idString = this.strategy.identifier + "_REQUOTE_TRIGGER";
+        console.log("idString", idString);
+
+        // Pull in the requoteTrigger value from environment variables
+        var requoteTrigger = parseFloat(process.env[idString]);
+
+        if (requoteTrigger == undefined || isNaN(requoteTrigger) || requoteTrigger < 0) {
+            requoteTrigger = 0.5;
+        }
+        // console.log("Requote trigger is set to ", requoteTrigger);
+        // Invert the requoteTrigger so that a smaller value results in less requoting
+        requoteTrigger = 1 - requoteTrigger;
+        // Calculate the relative spread
+        const relativeSpread = spread / midpoint;
+
+        // Modulate the spread as a relative price change by the user-set requoteTrigger
+        const deltaTrigger = relativeSpread * requoteTrigger;
+
+        // TODO: should we validate the strategy book is zero length case more??
+        if (deltaTrigger == undefined || isNaN(deltaTrigger) || deltaTrigger < 0) {
+            console.log("Delta trigger is undefined, NaN, or less than 0, returning");
+            return;
+        }
+        console.log("Checking for requotes at this deltaTrigger: ", deltaTrigger, "this implied amount", midpoint * deltaTrigger);
+
+
+
+        // TODO: the existance of this should be investigated maybe haha - perhaps a bad side effect of available liquidity at the bot level and not strategy level?
         // Check if the total size of asks or bids in strategy book exceeds the available liquidity
         const totalAskSize = strategyBook.asks.reduce((acc, ask) => acc + ask.size, 0);
         // Convert totalBidSize from asset amount to quote amount
@@ -606,23 +650,30 @@ export class GenericMarketMakingBot {
         const updateAggregateState = (pay_gem, give_amt, target_asset) => {
             aggregateState.updated = true;
             if (pay_gem == getAddress(this.assetPair.quote.address)) {
-                aggregateState.assetAmount = aggregateState.assetAmount.add(give_amt);
-            } else if (pay_gem == getAddress(this.assetPair.asset.address)) {
                 aggregateState.quoteAmount = aggregateState.quoteAmount.add(give_amt);
+            } else if (pay_gem == getAddress(this.assetPair.asset.address)) {
+                aggregateState.assetAmount = aggregateState.assetAmount.add(give_amt);
             }
         };
 
         const processAggregateState = async (blocknumber: number) => {
             if (!aggregateState.updated) return;
 
-            if (!aggregateState.assetAmount.isZero()) {
+            const assetDumpThreshold = this.availableLiquidity.assetWeiAmount.mul(this.dumpPercentage).div(100);
+            const quoteDumpThreshold = this.availableLiquidity.quoteWeiAmount.mul(this.dumpPercentage).div(100);
+
+            if (aggregateState.assetAmount.gte(assetDumpThreshold)) {
                 console.log("Dump total asset amount:", formatUnits(aggregateState.assetAmount, this.assetPair.asset.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.asset.address, aggregateState.assetAmount, this.assetPair.quote.address);
+            } else {
+                console.log("Not enough asset amount to dump, threshold:", formatUnits(assetDumpThreshold, this.assetPair.asset.decimals));
             }
 
-            if (!aggregateState.quoteAmount.isZero()) {
+            if (aggregateState.quoteAmount.gte(quoteDumpThreshold)) {
                 console.log("Dump total quote amount:", formatUnits(aggregateState.quoteAmount, this.assetPair.quote.decimals));
                 await this.dumpFillViaMarketAid(this.assetPair.quote.address, aggregateState.quoteAmount, this.assetPair.asset.address);
+            } else {
+                console.log("Not enough quote amount to dump, threshold:", formatUnits(quoteDumpThreshold, this.assetPair.quote.decimals));
             }
 
             // Reset aggregate state
@@ -633,14 +684,50 @@ export class GenericMarketMakingBot {
             };
         };
 
+
+
+        // v1 <> v2 Migration case stint
+        // if (this.config.network == 10) {
+        //     this.marketContract.on(this.marketContract.filters.LogTake(null, null, maker), async (id, pair, maker,  pay_gem, buy_gem, taker, take_amt, give_amt,  timestamp, event) => {
+        //         console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
+
+        //         console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
+        //         if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
+        //             console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
+        //             const val = formatUnits(give_amt, this.assetPair.asset.decimals);
+        //             console.log("QUOTE AMOUNT:", formatUnits(take_amt, this.assetPair.quote.decimals));
+        //             console.log("ASSET AMOUNT:", val);
+
+        //             console.log("🔥🔥🔥 DUMP ON target", parseFloat(val).toPrecision(3), this.assetPair.asset.symbol, "🔥🔥🔥\n");
+
+        //             updateAggregateState(this.assetPair.asset.address, give_amt, this.assetPair.quote.address);
+        //         } else if (pay_gem == getAddress(this.assetPair.asset.address) /* && !this.timeoutOnTheField*/) {
+        //             console.log("I AS MAKER JUST BOUGHT SOME QUOTE, dump quote on CEX");
+        //             const val = formatUnits(give_amt, this.assetPair.quote.decimals); // TODO: potential precision loss ? idk probs unlikely
+        //             console.log("QUOTE AMOUNT:", val);
+        //             console.log("ASSET AMOUNT:", formatUnits(take_amt, this.assetPair.asset.decimals));
+
+
+        //             // different than above... avoids any price math?
+        //             const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
+        //             console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
+
+        //             updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
+        //         }
+
+        //         // Get the block after the event
+        //         const block = await event.getBlock();
+        //         const nextBlockNumber = block.number + 1;
+
+        //         // Call processAggregateState with nextBlockNumber as an argument
+        //         processAggregateState(nextBlockNumber);
+        //     });
+        // } else {
+
         this.marketContract.on(this.marketContract.filters.emitTake(null, null, maker), async (id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event) => {
             console.log("\n 🎉 GOT THIS INFO FROM THE LOGTAKE FILTER", id, pair, maker, taker, pay_gem, buy_gem, take_amt, give_amt, event);
 
-
             console.log("\n 🎉 GOT A RELEVANT LOGTAKE!");
-            // TODO: determine exactly what to dump
-
-
             if (pay_gem == getAddress(this.assetPair.quote.address) /* && !this.timeoutOnTheField*/) {
                 console.log("I AS MAKER JUST BOUGHT SOME ASSET, dump asset on CEX");
                 const val = formatUnits(give_amt, this.assetPair.asset.decimals);
@@ -664,11 +751,6 @@ export class GenericMarketMakingBot {
                 const valueUsedInTail = (formatUnits(take_amt, this.assetPair.asset.decimals));
                 console.log("🔥🔥🔥 DUMP ON target this QUOTE amount", val, "or dump this if NEED asset amount:", valueUsedInTail, this.assetPair.asset.symbol, "🔥🔥🔥\n");
 
-                // Note: BUY THE ASSET AMOUNT ON CEX
-                // dumpERC20onFTX(true, parseFloat(valueUsedInTail), this.config.quote.symbol);
-
-                // Call the function at the specified line numbers
-                // this.dumpFillViaMarketAid(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
                 updateAggregateState(this.assetPair.quote.address, give_amt, this.assetPair.asset.address);
             }
 
@@ -679,6 +761,7 @@ export class GenericMarketMakingBot {
             // Call processAggregateState with nextBlockNumber as an argument
             processAggregateState(nextBlockNumber);
         });
+        // }
     }
 
     // *** For use in RiskMinimized Strategy ***

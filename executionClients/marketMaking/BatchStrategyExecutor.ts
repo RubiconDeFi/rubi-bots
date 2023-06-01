@@ -100,17 +100,20 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
     console.log("this is my batch!", this.batch);
 
     const targets: Call[] = [];
+    // Track the bot and action type for each target
+    const targetInfo: { botId: number; action: string }[] = [];
 
     this.batch.forEach((botBatchItem) => {
       for (const actionType in botBatchItem.actions) {
         console.log("\nactionType", actionType, "this bot ID", botBatchItem.botId, "this bot's actions", botBatchItem.actions);
-        
+
         const calldata = botBatchItem.actions[actionType];
         targets.push({
           target: this.marketAid.address,
           function: actionType,
           args: calldata,
         });
+        targetInfo.push({ botId: botBatchItem.botId, action: actionType });
       }
     });
 
@@ -144,8 +147,11 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
 
         // Clear the batch
         // this.batch = [];
-        this.batch = new Array(this.bots.length).fill(null).map((_, botId) => ({ botId, actions: {} }));
-
+        // this.batch = new Array(this.bots.length).fill(null).map((_, botId) => ({ botId, actions: {} }));
+        // ** Updated logic: ONLY CLEAR THOSE ACTIONS THAT WERE SHIPPED IN THE BATCH
+        targetInfo.forEach(({ botId, action }) => {
+          delete this.batch[botId].actions[action];
+        });
 
         if (receipt.status) {
           console.log("\n🎉 THE BATCH WAS SUCCESSFUL 🎉");
