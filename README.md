@@ -82,8 +82,8 @@ This project is licensed under the MIT License.
 
 ## Further Reading
 - Learn more about [MarketAids](https://docs.rubicon.finance/protocol/rubicon-market/market-aid)
-- Different [trading strategies] supported
-- Different [bots] supported
+- Learn more about the [Rubicon protocol](https://docs.rubicon.finance)
+- View the rest of our [codebase](https://github.com/RubiconDeFi/rubi-protocol-v2)
 
 ## Risk Disclaimers
 
