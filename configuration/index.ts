@@ -20,7 +20,7 @@ let rl = readline.createInterface({
 
 async function botTypeUserCallback(): Promise<BotType> {
     return new Promise(resolve => {
-        rl.question('\n What type of bot would you like to run?\n1. Market-Making Bot\n2. Trading Bot\n3. Liquidator Bot\n:', (answer) => {
+        rl.question('\n What type of bot would you like to run?\n1. Market-Making Bot\n2. Trading Bot\n3. Liquidator Bot\n4. Quit \n:', (answer) => {
             switch (answer.toLowerCase()) {
                 case '1':
                     console.log('\nSuper! Time to market-make!');
@@ -34,6 +34,9 @@ async function botTypeUserCallback(): Promise<BotType> {
                     console.log('Sorry! :( No liquidator bots yet');
                     resolve(BotType.Liquidator);
                     break;
+                case '4':
+                    console.log('SEE YOU DEFI COWBOY...');
+                    process.exit(0);
                 default:
                     console.log('Invalid answer! Pick a number 1 through 3');
                     resolve(BotType.ErrorOrNone);

@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "guidedStart": "ts-node ./configuration/index.ts",
     "startGenericMarketMakingBot": "ts-node ./executionClients/marketMaking/index.ts",
-    "startBatchExecutorBot": "ts-node ./executionClients/marketMaking/index.ts"
+    "startBatchExecutorBot": "ts-node ./executionClients/marketMaking/index.ts",
+    "startServer": "ts-node ./liquidityVenues/rubicon/Market.ts"
   },
   "repository": {
     "type": "git",

@@ -28,6 +28,13 @@ export const marketAidFactoriesByNetwork: Record<number, string> = {
     // [Network.OPTIMISM_MAINNET]: getAddress(''),
 };
 
+// 0x7Af14ADc8Aea70f063c7eA3B2C1AD0D7A59C4bFf
+// 0x6aaEd1985a0e011ca82BB5Df8ebd92063134fd7c
+export const routerAddressesByNetwork: Record<number, string> = {
+    [Network.OPTIMISM_GOERLI]: getAddress('0x6aaEd1985a0e011ca82BB5Df8ebd92063134fd7c'),
+    [Network.OPTIMISM_MAINNET]: getAddress('0x7Af14ADc8Aea70f063c7eA3B2C1AD0D7A59C4bFf'),
+};
+
 // Input tokens 
 export const tokenList: TokenList = {
     name: 'Rubicon Token List',
@@ -315,3 +322,28 @@ export type OnChainBookWithData = OnChainBookOrderWithData[] | any[];
 // Returns infor for a single strat trade id, could be one order
 // SIZES IMPLICITLY IN THE CLASSIC ASSET amount??
 export type OnChainBookOrderWithData = { askPrice: number, askSize: number, bidPrice: number, bidSize: number, stratTradeID: BigNumber }
+
+export function networkSelector(chainID: number) {
+    switch (chainID) {
+        case 1:
+            return Network.MAINNET;
+        case 5:
+            return Network.GOERLI;
+        case 69:
+            return Network.OPTIMISM_KOVAN;
+        case 420:
+            return Network.OPTIMISM_GOERLI;
+        case 10:
+            return Network.OPTIMISM_MAINNET;
+        case 137:
+            return Network.POLYGON_MAINNET;
+        case 80001:
+            return Network.POLYGON_MUMBAI;
+        case 42161:
+            return Network.ARBITRUM_MAINNET;
+        case 421613:
+            return Network.ARBITRUM_TESTNET;
+        default:
+            return Network.ERROR;
+    }
+}
