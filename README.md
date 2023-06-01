@@ -10,11 +10,6 @@ Open-source bots for traders and activists in the [Rubicon](https://docs.rubicon
 
 Welcome to `rubi-bots`! This repository hosts open-source market-making, liquidator, and arbitrage bots for traders and activists in the Rubicon ecosystem. With a focus on improving performance and growing the Rubicon ecosystem together, `rubi-bots` serves as a one-stop shop for traders and activists, providing potential profit opportunities, learning resources, and avenues for technical improvement.
 
-# TODO
-1. links to learn about market aids and what they are
-2. blurb and further reading on the different strategies
-3. blurb and further reading on the different bots 
-
 This repository has two main commands for users 
 1. `guidedStart` - the quickest way to get started with Rubicon and deploy a bot
 2. `aid` - this command allows you to manage your aid (deposits, withdrawls, etc) 
@@ -47,7 +42,7 @@ To get started with `rubi-bots`, follow these steps:
 4. Choose between the following mainnet/testnet 
 - ✅ Optimism Mainnet/Goerli
 - ❌ Arbitrum Mainnet/Goerli [WIP]
-- ✅ Polygon Mainnet/Mumbai
+- ❌/✅ Polygon Mainnet/Mumbai
 5. Based on your selection, you have certain available tokens for your strategy
 - Enter the tokens you want and enter `done` when finished
 6. If you have an existing `MarketAid` address, enter it here. Otherwise, enter `no` to start the creation process
@@ -67,7 +62,7 @@ To get started with `rubi-bots`, follow these steps:
 2. Choose between the following mainnet/testnets to generate your aid
 - ❌/✅ Optimism Mainnet/Goerli [WIP]
 - ❌ Arbitrum Mainnet/Goerli [WIP]
-- ✅ Polygon Mainnet/Mumbai
+- ❌/✅ Polygon Mainnet/Mumbai
 3. The aid menu will open allowing you to:
 - Connect to an existing aid
 - View existing aids
@@ -84,6 +79,11 @@ Contributions to rubi-bots are welcome and encouraged!
 
 ## License
 This project is licensed under the MIT License.
+
+# Further Reading
+- Learn more about [MarketAids](https://docs.rubicon.finance/protocol/rubicon-market/market-aid)
+- Different [trading strategies] supported
+- Different [bots] supported
 
 ## Risk Disclaimers
 
