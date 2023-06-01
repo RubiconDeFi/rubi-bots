@@ -32,7 +32,7 @@ export class RubiconLiquidityVenue extends GenericLiquidityVenue {
         this.identifier = 'rubicon';
         this.provider = reader;
         try {
-            this.marketContract = new ethers.Contract(marketAddressesByNetwork[botConfig.network.valueOf()], RUBICON_MARKET_INTERFACE, reader);
+            this.marketContract = new ethers.Contract(marketAddressesByNetwork[botConfig.network], RUBICON_MARKET_INTERFACE, reader);
             this.routerContract = new ethers.Contract(routerAddressesByNetwork[botConfig.network], RUBICON_ROUTER_INTERFACE, reader);
         } catch (error) {
             console.log(error);
@@ -46,17 +46,6 @@ export class RubiconLiquidityVenue extends GenericLiquidityVenue {
     ): Promise<SimpleBook> {
         try {
 
-            // get the bid depth 
-            const bidDepth = await this.marketContract.functions.getOfferCount(quote.address, asset.address);
-    
-            // get the ask depth
-            const askDepth = await this.marketContract.functions.getOfferCount(asset.address, quote.address);
-    
-            // get the max depth to use for the book 
-            const askDepthValue = askDepth[0].toNumber();
-            const bidDepthValue = bidDepth[0].toNumber();
-            const depths = bidDepthValue > askDepthValue ? [bidDepthValue, askDepthValue, bidDepthValue] : [askDepthValue, askDepthValue, bidDepthValue];
-            
             // get the book for the pair
             const book = await this.routerContract.functions.getBookFromPair(asset.address, quote.address); // , depths[0]
             
@@ -64,7 +53,7 @@ export class RubiconLiquidityVenue extends GenericLiquidityVenue {
             let asks: GenericOrder[] = [];
             let bids: GenericOrder[] = [];
             
-            for (let i = 0; i < depths[1]; i++) {
+            for (let i = 0; i < book[0].length; i++) {
                 const pay_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[0][i][0]), asset.decimals));
                 const buy_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[0][i][1]), quote.decimals));
                 const price = buy_amt / pay_amt;
@@ -73,14 +62,14 @@ export class RubiconLiquidityVenue extends GenericLiquidityVenue {
                     size: pay_amt,
                 });
             }
-    
-            for (let i = 0; i < depths[2]; i++) {
+            
+            for (let i = 0; i < book[1].length; i++) {
                 const pay_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[1][i][0]), quote.decimals));
                 const buy_amt = Number(ethers.utils.formatUnits(BigNumber.from(book[1][i][1]), asset.decimals));
                 const price = pay_amt / buy_amt;
                 bids.push({
                     price: price,
-                    size: buy_amt,
+                    size: pay_amt,
                 });
             }
     
@@ -149,8 +138,8 @@ async function main() {
     console.log('the market address is: ' + marketAddress)
     console.log('the router address is: ' + routerAddress)
 
-    const assetToken = tokenList.tokens.find((token) => token.symbol === quoteSymbol && token.chainId === Number(chainID));
-    const quoteToken = tokenList.tokens.find((token) => token.symbol === assetSymbol && token.chainId === Number(chainID));
+    const assetToken = tokenList.tokens.find((token) => token.symbol === assetSymbol && token.chainId === Number(chainID));
+    const quoteToken = tokenList.tokens.find((token) => token.symbol === quoteSymbol && token.chainId === Number(chainID));
 
     const privateKey = process.env['EOA_PRIVATE_KEY'];
     const signer = new ethers.Wallet(privateKey, jsonProvider);
@@ -174,7 +163,7 @@ async function main() {
       };
 
     const rubiconMarket = new RubiconLiquidityVenue(pair, websocketProvider, botConfig);
-    console.log(rubiconMarket.getBookForPair(pair.asset, pair.quote));
+    const trades = rubiconMarket.getBookForPair(pair.asset, pair.quote);
 };
 
 if (require.main === module) {
