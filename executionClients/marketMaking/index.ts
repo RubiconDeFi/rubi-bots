@@ -270,14 +270,6 @@ async function startGenericMarketMakingBotFromArgs(): Promise<void> {
 async function main(): Promise<void> {
     console.log("This is process.argv", process.argv);
 
-    console.log("This is process.argv[2]", process.argv[2])
-    console.log("This is process.argv[3]", process.argv[3])
-    console.log("This is process.argv[4]", process.argv[4])
-    console.log("This is process.argv[5]", process.argv[5])
-    console.log("This is process.argv[6]", process.argv[6])
-    console.log("This is process.argv[7]", process.argv[7])
-    console.log("This is process.argv[8]", process.argv[8])
-
     const command = process.argv[2];
     switch (command) {
         case 'startGenericMarketMakingBot':
