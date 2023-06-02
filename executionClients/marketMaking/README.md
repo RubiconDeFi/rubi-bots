@@ -4,18 +4,10 @@
 
 To start the Market Making Bot, use the following command:
 ```
-yarn run startGenericMarketMakingBot -- <ChainID> <MarketAidContractAddress> <Strategy> <Asset> <Quote>
+yarn run startGenericMarketMakingBot startGenericMarketMakingBot <ChainID> <MarketAidContractAddress> <Strategy> <Asset> <Quote> <Premium>
 ```
 
 Note that you can use `yarn run startGenericMarketMakingBot -- PARAMS` to start the bot with custom configurations. Replace `PARAMS` with the specific parameters you need for the bot you want to run. This approach avoids the need for guidedStart and allows bot processes to be quickly spun up in the cloud for operators.
-
-
-The API for the `MarketMakingBot` command-line parameters is as follows:
-API with the following hierarchy of arguments:
-
-```
-yarn run startMarketMakingBot -- <executionClient> <chainId> <marketAidContractAddress> <asset> <quote> <premium>
-```
 
 ### Parameters
 - `<executionClient>`: Notify type of execution client first
@@ -33,9 +25,8 @@ yarn run startMarketMakingBot -- <executionClient> <chainId> <marketAidContractA
 
 ### Example
 ```
-yarn run startMarketMakingBot -- 1 0xMarketAidAddress 0xAssetAddress 0xQuoteAddress
+yarn run startGenericMarketMakingBot startGenericMarketMakingBot <ChainID (ex. 80001)> 0xMarketAidAddress riskminimized/targetvenueoutbid 0xAssetAddress 0xQuoteAddress <Premium (ex. 0.01)>
 ```
-
 
 ## Starting a Batch Executing Bot
 The batch executing bot is designed to execute multiple market making strategies concurrently, optimizing gas usage by batching transactions. This guide will explain how to start a batch executing bot, how strategies are passed through, and how liquidity allocation works.
