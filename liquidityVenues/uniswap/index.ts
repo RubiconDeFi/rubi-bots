@@ -35,7 +35,7 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
         );
         uniFee ? this.uniFee = uniFee : this.uniFee = 3000;
         // console.log("this is the uniFee: ", this.uniFee);
-        
+
     }
 
     // function that calls tickToBook and updates the liveBook property with the result while using a defined liquidity ladder as the setp size
@@ -54,10 +54,13 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
                 BigNumber.from(this.uniFee),
                 stretchScalar ? stretchScalar : 1
             );
+
             this.liveBook = {
                 bids: this.liveBook.bids.reverse(),
                 asks: this.liveBook.asks.reverse()
             }
+
+            // console.log("this is the liveBook: ", this.liveBook);
 
         } catch (error) {
             console.log("\n Got an error in updateLiveBook for UniswapLiquidity venue: ", error);
@@ -68,15 +71,26 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
 
     // Polling function that calls updateLiveBook with a defined liquidity ladder as the step size
     async pollLiveBook(
-        leftSizeLadderWei: Array<BigNumber>,
-        rightSizeLadderWei: Array<BigNumber>,
+        getSizeLadderWei: () => Promise<{
+            assetLadder: BigNumber[];
+            quoteLadder: BigNumber[];
+        }>,
+        // getRightSizeLadderWei: () => Promise<Array<BigNumber>>,
         interval: number
     ) {
-        await this.updateLiveBook(leftSizeLadderWei, rightSizeLadderWei);
-        setInterval(() => {
-            this.updateLiveBook(leftSizeLadderWei, rightSizeLadderWei);
+        const data = await getSizeLadderWei();
+        await this.updateLiveBook(data.quoteLadder, data.assetLadder);
+        // @dev NOTE: ONE SHORT COMING OF THIS SYSTEM RIGHT NOW
+        // From generic market making bot we pull in available liquidity which is then used to calculate the OPPOSITE side of the book
+        // TODO: This causes some unexpected behavior and a hacky rescale in the higher level bot... much to improve here
+        setInterval(async () => {
+            const data = await getSizeLadderWei();
+            // console.log("UPDATE UNI LIVEBOOK", data.assetLadder.map((x) => formatUnits(x, 18)), data.quoteLadder.map((x) => formatUnits(x, 18)));
+            
+            this.updateLiveBook(data.quoteLadder, data.assetLadder);
         }, interval);
     }
+
 
     // TODO: add a websocket listener that calls updateLiveBook every time a relevant swap event occurs and every block? Goal is to speed up the polling interval for more data accuracy
 }

@@ -15,6 +15,7 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
     onChainStrategistTrades: BigNumber[];
     config: BotConfiguration;
     onChainBookWithData: OnChainBookWithData;
+    onChainBook: BigNumber[];
     marketContractInstance: Contract;
 
     constructor(assetPair: AssetPair, _ma: ethers.Contract, strategistReferenceAddress: string, configuration: BotConfiguration) {
@@ -85,7 +86,7 @@ export class MarketAidPositionTracker extends GenericLiquidityVenue {
                     stratTradeID: a.relevantStratTradeId
                 }
             });
-            // this.onChainBook = r.map((a: any) => a.relevantStratTradeId);
+            this.onChainBook = r.map((a: any) => a.relevantStratTradeId);
 
 
             // Parse through the onChainBookWithData and populate the liveBook
