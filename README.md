@@ -14,6 +14,10 @@ This repository has two main commands for users
 1. `guidedStart` - the quickest way to get started with Rubicon and deploy a bot
 2. `aid` - this command allows you to manage your aid (deposits, withdrawls, etc) 
 
+For advanced users who want to get started with a bot, we currently have 2 market making bots available
+1. [Generic MarketMaking Bot](https://github.com/RubiconDeFi/rubi-bots/blob/master/executionClients/marketMaking/README.md#running-the-generic-market-making-bot)
+2. [Batch Strategy MarketMaking Bot](https://github.com/RubiconDeFi/rubi-bots/blob/master/executionClients/marketMaking/README.md#starting-a-batch-executing-bot)
+
 ## Get started
 
 To get started with `rubi-bots`, follow these steps:
@@ -46,6 +50,7 @@ To get started with `rubi-bots`, follow these steps:
 5. Based on your selection, you have certain available tokens for your strategy
 - Enter the tokens you want and enter `done` when finished
 6. If you have an existing `MarketAid` address, enter it here. Otherwise, enter `no` to start the creation process
+- For a robust MarketAid toolset, see `npm run aid` below
 7. Both options will open up an aid menu where you can manage your aid 
 - View Market Aid Info
 - Check if you are approved 
