@@ -512,7 +512,6 @@ function getStrategyFromArg(strategyArg, referenceLiquidityVenue, premium: numbe
 async function startBatchExecutorBotFromArgs(): Promise<void> {
     console.log("\nStarting a batch executor bot...");
 
-
     // Parse arguments and initialize configurations
     const chainId = parseFloat(process.argv[3]);
     if (!chainId) throw new Error('No chain ID found in process.argv');
@@ -520,11 +519,12 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
     const botConfigsString = process.argv[5]; // New argument for bot configurations
     if (!botConfigsString) throw new Error('No bot configuration string found in process.argv');
 
-
     const jsonRpcUrl = process.env['JSON_RPC_URL_' + chainId.toString()];
     const websocketUrl = process.env['WEBSOCKET_URL_' + chainId.toString()];
     if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${chainId}`);
+    
     const staticJsonRpc = new ethers.providers.StaticJsonRpcProvider(jsonRpcUrl, chainId); // TODO: perhaps static provider for rpc consumption consciousness
+    if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
     // Parse the bot configuration string
     // Parse the bot configuration string
     // Parse the bot configuration string
@@ -532,8 +532,6 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
         console.log("this is the config", config);
         console.log("this is the config split with $", config.split('$'));
         console.log("this is the config split with - ", config.split('-'));
-
-
 
         const [strategy, asset, quote, liquidityAllocation] = config.split('-');
         const strategyArgs = config.split('$')[1];
@@ -546,10 +544,6 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
             strategyArgs: strategyArgs
         };
     });
-
-
-    console.log("this bot configs array", botConfigsArray);
-
 
     // Create bots
     const bots: BatchableGenericMarketMakingBot[] = [];
@@ -567,7 +561,6 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
 
         const _assetLiquidityAllocation = parseFloat(liquidityAllocation.split('$')[0].split(',')[0]);
         const _quoteLiquidityAllocation = parseFloat(liquidityAllocation.split('$')[0].split(',')[1]);
-
 
         const _index = botConfigsArray.indexOf(botConfig);
         // Extract asset and quote tokens from the trading pair
@@ -587,7 +580,6 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
 
         const strategyInstance = getStrategyFromArg(strategy, referenceLiquidityVenue, parseFloat(botConfig.strategyArgs));
 
-
         var config = {
             network: chainId,
             targetTokens: [assetTokenInfo, quoteTokenInfo],
@@ -596,10 +588,9 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
                 websocketProvider: websocketUrl ? new ethers.providers.WebSocketProvider(websocketUrl, chainId) : undefined,
                 signer: new ethers.Wallet(process.env.EOA_PRIVATE_KEY, staticJsonRpc)
             },
-            botType: BotType.MarketMaking
+            botType: BotType.MarketMaking,
+            strategy: strategyInstance //TODO: is this right?
         };
-
-
 
         const bot = new BatchableGenericMarketMakingBot(config, marketAidContract, strategyInstance, await config.connections.signer.getAddress(), _index, {
             asset: _assetLiquidityAllocation,
@@ -618,52 +609,98 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
 }
 
 
-
 async function startGenericMarketMakingBotFromArgs(): Promise<void> {
-    console.log("This is process.argv", process.argv);
-    // Parse through process.argv to get custom configuration details from the user and start the correct bot process
-    // TODO:
+    console.log("\n Starting Generic Market Making Bot")
+    
+    // Parse arguments and initialize configurations
     const chainId = parseFloat(process.argv[3]);
     if (!chainId) throw new Error('No chain ID found in process.argv');
     const marketAidContractAddress = process.argv[4];
+    const botConfigsString = process.argv[5]; // New argument for bot configurations
+    if (!botConfigsString) throw new Error('No bot configuration string found in process.argv');
+    
     const jsonRpcUrl = process.env['JSON_RPC_URL_' + chainId.toString()];
     const websocketUrl = process.env['WEBSOCKET_URL_' + chainId.toString()];
     if (!jsonRpcUrl) throw new Error(`No JSON RPC URL found for network ${chainId}`);
     
     const staticJsonRpc = new ethers.providers.StaticJsonRpcProvider(jsonRpcUrl, chainId); // TODO: perhaps static provider for rpc consumption consciousness
     if (!process.env.EOA_PRIVATE_KEY) throw new Error('No EOA private key found in .env file');
-    const strategyArg = process.argv[5];
+    // Parse the bot configuration string
+    // Parse the bot configuration string
+    // Parse the bot configuration string
+    const botConfigsArray = botConfigsString.split('_').map(config => {
+        console.log("this is the config", config);
+        console.log("this is the config split with $", config.split('$'));
+        console.log("this is the config split with - ", config.split('-'));
 
-    const asset = process.argv[6];
-    const quote = process.argv[7];
-    const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
-    const quoteTokenInfo = tokenList.tokens.find(token => token.address == quote && token.chainId == chainId);
+        const [strategy, asset, quote, liquidityAllocation] = config.split('-');
+        const strategyArgs = config.split('$')[1];
 
-    if (!assetTokenInfo) throw new Error(`No token found for address ${asset} on network ${chainId}`);
-    if (!quoteTokenInfo) throw new Error(`No token found for address ${quote} on network ${chainId}`);
+        return {
+            strategy,
+            asset,
+            quote,
+            liquidityAllocation: (liquidityAllocation),
+            strategyArgs: strategyArgs
+        };
+    });
+
+    // Create bots 
+    const bots: GenericMarketMakingBot[] = [];
+    const marketAidContract = new ethers.Contract(marketAidContractAddress, MARKET_AID_INTERFACE, staticJsonRpc);
+
+    for (const botConfig of botConfigsArray) {
+        const { strategy, asset, quote, liquidityAllocation } = botConfig;
+
+        // Log out bot configuration
+        console.log(`\nStarting bot with configuration:`);
+        console.log(`\tStrategy: ${strategy}`);
+        console.log(`\tAsset: ${asset}`);
+        console.log(`\tQuote: ${quote}`);
+        console.log(`\tLiquidity Allocation: ${liquidityAllocation}`);
+
+        const _assetLiquidityAllocation = parseFloat(liquidityAllocation.split('$')[0].split(',')[0]);
+        const _quoteLiquidityAllocation = parseFloat(liquidityAllocation.split('$')[0].split(',')[1]);
+
+        const _index = botConfigsArray.indexOf(botConfig);
+        // Extract asset and quote tokens from the trading pair
+        const assetTokenInfo = tokenList.tokens.find(token => token.address == asset && token.chainId == chainId);
+        const quoteTokenInfo = tokenList.tokens.find(token => token.address == quote && token.chainId == chainId);
+
+        if (!assetTokenInfo) throw new Error(`No token found for address ${asset} on network ${chainId}`);
+        if (!quoteTokenInfo) throw new Error(`No token found for address ${quote} on network ${chainId}`);
+
+        // Create strategy instance
+        const referenceLiquidityVenue = new UniswapLiquidityVenue(
+            {
+                asset: assetTokenInfo,
+                quote: quoteTokenInfo
+            }, staticJsonRpc, chainId == 10 ? 500 : undefined // TODO: make this configurable
+        );
+
+        const strategyInstance = getStrategyFromArg(strategy, referenceLiquidityVenue, parseFloat(botConfig.strategyArgs));
+
+        var config = {
+            network: chainId,
+            targetTokens: [assetTokenInfo, quoteTokenInfo],
+            connections: {
+                jsonRpcProvider: staticJsonRpc,
+                websocketProvider: websocketUrl ? new ethers.providers.WebSocketProvider(websocketUrl, chainId) : undefined,
+                signer: new ethers.Wallet(process.env.EOA_PRIVATE_KEY, staticJsonRpc)
+            },
+            botType: BotType.MarketMaking,
+            strategy: strategyInstance //TODO: is this right?
+        };
 
     // Read the premium value from the command line arguments
     const premium = parseFloat(process.argv[7]);
     if (!premium) throw new Error('No premium value found in process.argv');
 
-    var config = {
-        network: chainId,
-        targetTokens: [assetTokenInfo, quoteTokenInfo],
-        connections: {
-            jsonRpcProvider: staticJsonRpc,
-            websocketProvider: websocketUrl ? new ethers.providers.WebSocketProvider(websocketUrl, chainId) : undefined,
-            signer: new ethers.Wallet(process.env.EOA_PRIVATE_KEY, staticJsonRpc)
-        },
-        botType: BotType.MarketMaking
-    };
-
     console.log("Spin up UNI reference venue with these tokens", config.targetTokens[0], config.targetTokens[1]);
 
-    return startGenericMarketMakingBot(config, undefined,
-        marketAidContractAddress, strategyArg, premium);
-}
-
-
+    // return startGenericMarketMakingBot(config, undefined,
+    //     marketAidContractAddress, strategyArg, premium);
+}}
 
 async function main(): Promise<void> {
     console.log("This is process.argv", process.argv);
@@ -682,4 +719,4 @@ async function main(): Promise<void> {
 }
 
 
-main();
+//main()
