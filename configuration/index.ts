@@ -126,6 +126,10 @@ async function tokenSelectionCallback(network: Network): Promise<TokenInfo[]> {
         console.log("These are the available tokens on your selected Network: ", availableTokensSymbols);
         rl.question('\n What tokens would you like to target in your strategy? (Enter the symbol of the token you want to target then enter to add, or enter "done" to finish):', (answer) => {
             if (answer.toLowerCase() === 'done') {
+                if (selectedTokens.length < 2){
+                    console.log("\nPlease select atleast 2 tokens for the strategy\n")
+                    resolve(tokenSelectionCallback(network))
+                }
                 console.log('\n Selected tokens: ', selectedTokens);
                 resolve(selectedTokens);
             } else if (availableTokensSymbols.includes(answer) || availableTokensSymbols.map(symbol => symbol.toLowerCase()).includes(answer)) {
