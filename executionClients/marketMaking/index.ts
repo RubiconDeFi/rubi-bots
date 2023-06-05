@@ -418,6 +418,20 @@ function userConfirmStart(rl: any, userMarketAidAddress: string): Promise<string
     });
 }
 
+function userPremium(rl: any): Promise<number> {
+    return new Promise(resolve => {
+        rl.question("Please provide a premium for your strategy (between 0 and 1):" , (answer) => {
+            if (answer > 0 && answer < 1) {
+                resolve(answer)
+            }
+            else {
+                console.log("Invalid input. Please try again")
+                userPremium(rl);
+            }
+        })}
+    )
+}
+
 /**
  * Starts a generic market-making bot based on the provided configuration.
  * This function is for the guidedStart. Directly calling the generic function will use generic market making with arguments
@@ -457,6 +471,8 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
     }
 
+    const getPremium = await userPremium(rl)
+    
     const confirmation = await userConfirmStart(rl, userMarketAidAddress)
     if (confirmation === "yes") {
         console.log("Starting strat")
@@ -474,10 +490,10 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     );
 
     if (configuration.strategy == 1) {
-        var strat = getStrategyFromArg("riskminimized", referenceLiquidityVenue, premium ? premium : 0.005); // TODO: cleanup
+        var strat = getStrategyFromArg("riskminimized", referenceLiquidityVenue, getPremium); // TODO: cleanup
     }
     else if (configuration.strategy == 2) {
-        var strat = getStrategyFromArg("targetoutbid", referenceLiquidityVenue, premium ? premium : 0.005); // TODO: cleanup
+        var strat = getStrategyFromArg("targetoutbid", referenceLiquidityVenue, getPremium); // TODO: cleanup
     }
 
     // 3. Create a new bot instance
