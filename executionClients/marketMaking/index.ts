@@ -258,7 +258,7 @@ async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, mar
     console.log("5. Withdraw from the aid");
     console.log("6. Pull all funds");
     console.log("")
-    console.log("7. Exit");
+    console.log("7. Exit menu and run bot");
 
     const answer: string = await new Promise(resolve => {
         rl.question("\nPick a number (1-7): ", (input) => {
