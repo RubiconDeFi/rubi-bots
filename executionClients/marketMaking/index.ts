@@ -51,13 +51,6 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
                 console.log("Invalid input. Please choose either 'yes' or 'no'")
                 userMarketAidCheckCallback(configuration, rl)
             }
-                // try {
-                //     const address = getAddress(answer);
-                //     resolve(address);
-                // } catch (error) {
-                //     console.log("Invalid answer! Enter the address of the contract instance you want to use or enter 'no' to create one");
-                //     resolve(userMarketAidCheckCallback(configuration, rl));
-                // }
         })
     })
 };
@@ -152,8 +145,7 @@ async function connectToExistingMarketAid(configuration: BotConfiguration, rl): 
         const token = new ERC20(tokenInfo.address, configuration.connections.signer);
         erc20Tokens.push(token);
     }
-    console.log("Network state updated and token information retrieved")
-    
+
     return marketAid;
 }
 
@@ -518,9 +510,16 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
     if (userMarketAidAddress == "yes") {
         const marketAidForExisting = await connectToExistingMarketAid(configuration, rl)
-        //const marketAidForExisting = new MarketAid(userMarketAidAddress, configuration.connections.signer);
-        
-        //add a health check metric here
+        // health check for marketaid
+        // 1. have they approved market aid for assets they selected in their strategy
+        // 2. what are the balances for the market aid
+        console.log("--------------------------------------------")
+        console.log("⛑ Market Aid Health Checkup ⛑")
+        console.log("\nMarket Aid Balance")
+        await getTokenBalances(marketAidForExisting)
+        console.log("\nToken approvals")
+
+        console.log("--------------------------------------------")
         
         
         console.log("Opening menu for aid management...");
