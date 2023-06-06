@@ -513,18 +513,34 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
         // health check for marketaid
         // 1. have they approved market aid for assets they selected in their strategy
         // 2. what are the balances for the market aid
-        console.log("--------------------------------------------")
-        console.log("⛑ Market Aid Health Checkup ⛑")
-        console.log("\nMarket Aid Balance")
-        await getTokenBalances(marketAidForExisting)
-        console.log("\nToken approvals")
+        console.log("--------------------------------------------");
+        console.log("⛑ Market Aid Health Checkup ⛑");
+        console.log("\nMarket Aid Balance");
+        await getTokenBalances(marketAidForExisting);
+        console.log("\nToken approvals\n");
 
-        console.log("--------------------------------------------")
-        
-        
+        // Create an array of promises for the allowances
+        const allowancePromises = erc20Tokens.map(async (token) => {
+            return token.allowance(process.env.DEV_EOA, marketAidForExisting.address, true);
+        });
+  
+        // Wait for all the promises to resolve
+        const allowances = await Promise.all(allowancePromises);
+  
+        // Print the allowances
+        allowances.forEach((allowance, index) => {
+            if (allowance === "0.0") {
+                console.log(tokens[index].name, " is NOT approved. Please run Max Approve in the market aid menu below")
+            }
+            else {
+                console.log("Use of", tokens[index].name, "is confirmed")
+            }
+        });
+        console.log("--------------------------------------------");
+
         console.log("Opening menu for aid management...");
-        await aidMenu(tokens, configuration, marketAidForExisting) 
-        
+        await aidMenu(tokens, configuration, marketAidForExisting);
+
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
 
