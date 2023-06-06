@@ -39,22 +39,238 @@ let erc20Tokens: ERC20[] = [];
  */
 function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promise<string> {
     return new Promise(resolve => {
-        rl.question('\n Do you have an existing MarketAid contract instance you would like to use? (Enter the address of the contract instance you want to use then enter to add, or enter "no" to create one):', (answer) => {
+        rl.question('\n Do you have an existing MarketAid contract instance you would like to use? (Enter "yes" to connect to an existing aid, or enter "no" to create one):', async (answer) => {
             if (answer.toLowerCase() === 'no') {
                 resolve("no");
-            } else {
-                console.log('\n Using existing MarketAid contract instance...');
-                try {
-                    const address = getAddress(answer);
-                    resolve(address);
-                } catch (error) {
-                    console.log("Invalid answer! Enter the address of the contract instance you want to use or enter 'no' to create one");
-                    resolve(userMarketAidCheckCallback(configuration, rl));
-                }
+            } 
+            else if (answer.toLowerCase() === 'yes') {
+                console.log("Opening connection menu")
+                resolve("yes")
             }
+            else {
+                console.log("Invalid input. Please choose either 'yes' or 'no'")
+                userMarketAidCheckCallback(configuration, rl)
+            }
+                // try {
+                //     const address = getAddress(answer);
+                //     resolve(address);
+                // } catch (error) {
+                //     console.log("Invalid answer! Enter the address of the contract instance you want to use or enter 'no' to create one");
+                //     resolve(userMarketAidCheckCallback(configuration, rl));
+                // }
         })
+    })
+};
+
+/**
+ * Function allowing a user to create and interact with their MarketAid through the guided start
+ * @param configuration - The bot configuration.
+ * @dev many of the functions and code in here come from marketaid.ts
+ */ 
+async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
+    // get list of tokens based on selected network 
+    tokens = getTokensByNetwork(configuration.network)
+    // update erc20Tokens with new ERC20 instances for the new network
+    for (const tokenInfo of tokens) {
+        const token = new ERC20(tokenInfo.address, configuration.connections.signer);
+        erc20Tokens.push(token);
+    }
+    console.log("Network state updated and token information retrieved")
+
+    // step 1 - init aid factory based on the prev config settings
+    const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
+    
+    // step 2 - get new address from factory
+    const newMarketAidAddress = await marketAidFactory.createMarketAidInstance();
+    console.log("New Market Aid Address: ", newMarketAidAddress);
+    
+    // step 3 - connect to aid
+    console.log("\nConnecting to aid...")
+    const marketAid = new MarketAid(newMarketAidAddress, configuration.connections.signer)
+    console.log("\nConnected!")
+    
+    // step 4 - approve all tokens 
+    console.log("Approving tokens for use...")
+    await maxApproveMarketAidForAllTokens(erc20Tokens, marketAid, configuration.connections.signer);
+    console.log("Tokens approved!")
+    
+    // step 5 - deposit assets
+    await depositMenu(tokens, marketAid, rl)
+    
+    // step 6 - display balances 
+    await getTokenBalances(marketAid);
+    
+    // step 7 - let a user manage 
+    await aidMenu(tokens, configuration, marketAid)
+    
+    return { newMarketAidAddress, marketAid };
+}
+
+async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
+    return new Promise((resolve) => {
+        console.log("Here are you existing MarketAid instances: ")
+        aidCheck.forEach((aid, index) => {
+            console.log(`${index + 1}: ${aid}`);
+        });
+        rl.question("Please enter the number corresponding to the MarketAid instance you want to connect to: ", (answer) => {
+            const selectedIndex = parseInt(answer.trim()) - 1;
+            if (selectedIndex >= 0 && selectedIndex < aidCheck.length) {
+                resolve(aidCheck[selectedIndex]);
+            } else {
+                console.log("Invalid selection. Please try again.");
+                resolve(selectExistingMarketAid(aidCheck));
+            }
+        });
     });
 }
+
+async function connectToExistingMarketAid(configuration: BotConfiguration, rl): Promise<MarketAid> {
+    let aids;
+    let signer: string
+    let selectedAidAddress: string;
+    let marketAid: MarketAid;
+
+    // get the eth address 
+    signer = await configuration.connections.signer.getAddress()
+    
+    // get a list of the signer aids 
+    const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
+    aids = await marketAidFactory.getUserMarketAids(signer)
+
+    if (aids.length === 0){
+        console.log("You have no Market Aids. Please create a new one")
+        userMarketAidCheckCallback(configuration, rl)
+    }
+
+    selectedAidAddress = await selectExistingMarketAid(aids);
+    marketAid = new MarketAid(selectedAidAddress, configuration.connections.signer)
+    console.log("Connected to MarketAid: ", marketAid.address)
+    
+    tokens = getTokensByNetwork(configuration.network)
+    // update erc20Tokens with new ERC20 instances for the new network
+    for (const tokenInfo of tokens) {
+        const token = new ERC20(tokenInfo.address, configuration.connections.signer);
+        erc20Tokens.push(token);
+    }
+    console.log("Network state updated and token information retrieved")
+    
+    return marketAid;
+}
+
+
+/**
+ * Allows a user to manage their generated Market Aid.
+ * Provides various options for interacting with the Market Aid contract.
+ * @param tokens - An array of TokenInfo objects representing available tokens.
+ * @param configuration - The bot configuration.
+ * @param marketAid - The MarketAid contract instance.
+ * @returns A Promise that resolves to void.
+ * @dev For additional commands, run `npm run aid` 
+ */
+async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, marketAid: MarketAid): Promise<void> {
+    console.log("\nMarket Aid Menu");
+    console.log("");
+    console.log("1. View Market Aid Info");
+    console.log("2. Check if strategist is approved");
+    console.log("3. View Market Aid Balance");
+    console.log("4. Deposit to the aid");
+    console.log("5. Withdraw from the aid");
+    console.log("6. Pull all funds");
+    console.log("")
+    console.log("7. Exit menu and run bot");
+
+    const answer: string = await new Promise(resolve => {
+        rl.question("\nPick a number (1-7): ", (input) => {
+            resolve(input.trim());
+        });
+    });
+
+    let marketAddress;
+    let admin;
+    let aidBalances;
+    let inputAddress;
+
+    switch (answer.toLowerCase()) {
+        case '1':
+            console.log("\nView Market Aid Info\n");
+
+            marketAddress = await marketAid.getRubiconMarketAddress();
+            admin = await marketAid.getAdmin();
+
+            if (admin === configuration.connections.signer.getAddress()) {
+                console.log("You are the admin of this Market Aid");
+            } else {
+                console.log("You are not the admin of this Market Aid");
+            }
+
+            console.log("Market Address: ", marketAddress);
+
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case '2':
+            console.log("\nCheck if strategist is approved\n");
+
+            const strategistAddress: string = await new Promise(resolve => {
+                rl.question("Enter the strategist address: ", (input) => {
+                    resolve(input.trim());
+                });
+            });
+
+            const isApproved = await marketAid.isApprovedStrategist(strategistAddress);
+            console.log("Is strategist approved: ", isApproved);
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case '3':
+            console.log("\nView Market Aid Balance\n");
+
+            await getTokenBalances(marketAid)
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case "4":
+            console.log("\nDeposit to the aid\n");
+
+            console.log("Your current balances:");
+            await getTokenBalances(marketAid);
+            await depositMenu(tokens, marketAid, rl);
+            await aidMenu(tokens, configuration, marketAid);
+            break;
+
+        case "5":
+            console.log("\n Withdraw from the aid \n");
+
+                // display the current aid balance
+                console.log("The current aid balances:");
+
+                await getTokenBalances(marketAid);
+        
+                // Implement withdrawal functionality here
+                await withdrawMenu(tokens, configuration, marketAid)
+        
+                await aidMenu(tokens, configuration, marketAid);
+                break;
+
+        case "6":
+            console.log("\n Pull all funds \n");
+
+                // display the current aid balance
+                console.log("The current aid balances:");
+
+                await getTokenBalances(marketAid);
+        
+                // Implement pull all funds functionality here
+                await withdrawAllTokens(marketAid, tokens);
+        
+                await aidMenu(tokens, configuration, marketAid);
+                break;
+
+        case "7":
+            console.log("\nExiting the Market Aid Menu...");
+            break;
+    }
+};
 
 /**
  * Displays a deposit menu for the user to select assets and deposit amounts.
@@ -240,161 +456,21 @@ async function getTokenBalances(marketAid: MarketAid) {
 }
 
 /**
- * Allows a user to manage their generated Market Aid.
- * Provides various options for interacting with the Market Aid contract.
- * @param tokens - An array of TokenInfo objects representing available tokens.
- * @param configuration - The bot configuration.
- * @param marketAid - The MarketAid contract instance.
- * @returns A Promise that resolves to void.
- * @dev For additional commands, run `npm run aid` 
- */
-async function aidMenu(tokens: TokenInfo[], configuration: BotConfiguration, marketAid: MarketAid): Promise<void> {
-    console.log("\nMarket Aid Menu");
-    console.log("");
-    console.log("1. View Market Aid Info");
-    console.log("2. Check if strategist is approved");
-    console.log("3. View Market Aid Balance");
-    console.log("4. Deposit to the aid");
-    console.log("5. Withdraw from the aid");
-    console.log("6. Pull all funds");
-    console.log("")
-    console.log("7. Exit menu and run bot");
-
-    const answer: string = await new Promise(resolve => {
-        rl.question("\nPick a number (1-7): ", (input) => {
-            resolve(input.trim());
-        });
-    });
-
-    let marketAddress;
-    let admin;
-    let aidBalances;
-    let inputAddress;
-
-    switch (answer.toLowerCase()) {
-        case '1':
-            console.log("\nView Market Aid Info\n");
-
-            marketAddress = await marketAid.getRubiconMarketAddress();
-            admin = await marketAid.getAdmin();
-
-            if (admin === configuration.connections.signer.getAddress()) {
-                console.log("You are the admin of this Market Aid");
-            } else {
-                console.log("You are not the admin of this Market Aid");
-            }
-
-            console.log("Market Address: ", marketAddress);
-
-            await aidMenu(tokens, configuration, marketAid);
-            break;
-
-        case '2':
-            console.log("\nCheck if strategist is approved\n");
-
-            const strategistAddress: string = await new Promise(resolve => {
-                rl.question("Enter the strategist address: ", (input) => {
-                    resolve(input.trim());
-                });
-            });
-
-            const isApproved = await marketAid.isApprovedStrategist(strategistAddress);
-            console.log("Is strategist approved: ", isApproved);
-            await aidMenu(tokens, configuration, marketAid);
-            break;
-
-        case '3':
-            console.log("\nView Market Aid Balance\n");
-
-            await getTokenBalances(marketAid)
-            await aidMenu(tokens, configuration, marketAid);
-            break;
-
-        case "4":
-            console.log("\nDeposit to the aid\n");
-
-            console.log("Your current balances:");
-            await getTokenBalances(marketAid);
-            await depositMenu(tokens, marketAid, rl);
-            await aidMenu(tokens, configuration, marketAid);
-            break;
-
-        case "5":
-            console.log("\n Withdraw from the aid \n");
-
-                // display the current aid balance
-                console.log("The current aid balances:");
-
-                await getTokenBalances(marketAid);
-        
-                // Implement withdrawal functionality here
-                await withdrawMenu(tokens, configuration, marketAid)
-        
-                await aidMenu(tokens, configuration, marketAid);
-                break;
-
-        case "6":
-            console.log("\n Pull all funds \n");
-
-                // display the current aid balance
-                console.log("The current aid balances:");
-
-                await getTokenBalances(marketAid);
-        
-                // Implement pull all funds functionality here
-                await withdrawAllTokens(marketAid, tokens);
-        
-                await aidMenu(tokens, configuration, marketAid);
-                break;
-
-        case "7":
-            console.log("\nExiting the Market Aid Menu...");
-            break;
-    }
-};
-
-/**
- * Function allowing a user to create and interact with their MarketAid through the guided start
- * @param configuration - The bot configuration.
- * @dev many of the functions and code in here come from marketaid.ts
+ * Callback function to input premium for strategy 
+ * @param rl - Readline instance
  */ 
-async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
-    // get list of tokens based on selected network 
-    tokens = getTokensByNetwork(configuration.network)
-    // update erc20Tokens with new ERC20 instances for the new network
-    for (const tokenInfo of tokens) {
-        const token = new ERC20(tokenInfo.address, configuration.connections.signer);
-        erc20Tokens.push(token);
-    }
-    console.log("Network state updated and token information retrieved")
-
-    // step 1 - init aid factory based on the prev config settings
-    const marketAidFactory = getAidFactory(configuration.network, configuration.connections.signer);
-    
-    // step 2 - get new address from factory
-    const newMarketAidAddress = await marketAidFactory.createMarketAidInstance();
-    console.log("New Market Aid Address: ", newMarketAidAddress);
-    
-    // step 3 - connect to aid
-    console.log("\nConnecting to aid...")
-    const marketAid = new MarketAid(newMarketAidAddress, configuration.connections.signer)
-    console.log("\nConnected!")
-    
-    // step 4 - approve all tokens 
-    console.log("Approving tokens for use...")
-    await maxApproveMarketAidForAllTokens(erc20Tokens, marketAid, configuration.connections.signer);
-    console.log("Tokens approved!")
-    
-    // step 5 - deposit assets
-    await depositMenu(tokens, marketAid, rl)
-    
-    // step 6 - display balances 
-    await getTokenBalances(marketAid);
-    
-    // step 7 - let a user manage 
-    await aidMenu(tokens, configuration, marketAid)
-    
-    return { newMarketAidAddress, marketAid };
+function userPremium(rl: any): Promise<number> {
+    return new Promise(resolve => {
+        rl.question("Please provide a premium for your strategy (between 0 and 1):" , (answer) => {
+            if (answer > 0 && answer < 1) {
+                resolve(answer)
+            }
+            else {
+                console.log("Invalid input. Please try again")
+                userPremium(rl);
+            }
+        })}
+    )
 }
 
 /**
@@ -416,20 +492,6 @@ function userConfirmStart(rl: any, userMarketAidAddress: string): Promise<string
             }
         })
     });
-}
-
-function userPremium(rl: any): Promise<number> {
-    return new Promise(resolve => {
-        rl.question("Please provide a premium for your strategy (between 0 and 1):" , (answer) => {
-            if (answer > 0 && answer < 1) {
-                resolve(answer)
-            }
-            else {
-                console.log("Invalid input. Please try again")
-                userPremium(rl);
-            }
-        })}
-    )
 }
 
 /**
@@ -454,9 +516,13 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
         userMarketAidAddress = await userMarketAidCheckCallback(configuration, rl);
     }
 
-    if (userMarketAidAddress != "no") {
-        console.log("The user selected to use an existing contract instance", userMarketAidAddress);
-        const marketAidForExisting = new MarketAid(userMarketAidAddress, configuration.connections.signer);
+    if (userMarketAidAddress == "yes") {
+        const marketAidForExisting = await connectToExistingMarketAid(configuration, rl)
+        //const marketAidForExisting = new MarketAid(userMarketAidAddress, configuration.connections.signer);
+        
+        //add a health check metric here
+        
+        
         console.log("Opening menu for aid management...");
         await aidMenu(tokens, configuration, marketAidForExisting) 
         
@@ -466,7 +532,6 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
     } else {
         console.log("Let's create a new MarketAid...")
         userMarketAidAddress = (await helpUserCreateNewMarketAidInstance(configuration)).newMarketAidAddress;
-        //console.log("The generated contract instance is at: ", userMarketAidAddress);
         marketAidContractInstance = new ethers.Contract(userMarketAidAddress, MARKET_AID_INTERFACE, myProvider);
         console.log("\n This is my contract's address: ", marketAidContractInstance.address);
     }

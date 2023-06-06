@@ -821,7 +821,7 @@ async function main(): Promise<void> {
 }
 
 // functions used in guidedStart
-export {rl, getTokensByNetwork, getAidFactory, switchNetwork, maxApproveMarketAidForAllTokens, depositMenu, aidFactoryMenu, networkMenu, getTokenBalances, withdrawAllTokens}
+export {rl, getTokensByNetwork, getAidFactory, switchNetwork, maxApproveMarketAidForAllTokens, depositMenu, aidFactoryMenu, networkMenu, getTokenBalances, withdrawAllTokens, selectExistingMarketAid}
 
 if (require.main === module) {
     main();
