@@ -519,15 +519,12 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
         await getTokenBalances(marketAidForExisting);
         console.log("\nToken approvals\n");
 
-        // Create an array of promises for the allowances
         const allowancePromises = erc20Tokens.map(async (token) => {
             return token.allowance(process.env.DEV_EOA, marketAidForExisting.address, true);
         });
   
-        // Wait for all the promises to resolve
         const allowances = await Promise.all(allowancePromises);
   
-        // Print the allowances
         allowances.forEach((allowance, index) => {
             if (allowance === "0.0") {
                 console.log(tokens[index].name, " is NOT approved. Please run Max Approve in the market aid menu below")
