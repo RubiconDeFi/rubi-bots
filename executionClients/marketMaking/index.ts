@@ -61,13 +61,6 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
  * @dev many of the functions and code in here come from marketaid.ts
  */ 
 async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguration) {
-    // get list of tokens based on selected network 
-    tokens = getTokensByNetwork(configuration.network)
-    // update erc20Tokens with new ERC20 instances for the new network
-    for (const tokenInfo of tokens) {
-        const token = new ERC20(tokenInfo.address, configuration.connections.signer);
-        erc20Tokens.push(token);
-    }
     console.log("Network state updated and token information retrieved")
 
     // step 1 - init aid factory based on the prev config settings
@@ -138,13 +131,7 @@ async function connectToExistingMarketAid(configuration: BotConfiguration, rl): 
     selectedAidAddress = await selectExistingMarketAid(aids);
     marketAid = new MarketAid(selectedAidAddress, configuration.connections.signer)
     console.log("Connected to MarketAid: ", marketAid.address)
-    
-    tokens = getTokensByNetwork(configuration.network)
-    // update erc20Tokens with new ERC20 instances for the new network
-    for (const tokenInfo of tokens) {
-        const token = new ERC20(tokenInfo.address, configuration.connections.signer);
-        erc20Tokens.push(token);
-    }
+
 
     return marketAid;
 }
@@ -496,6 +483,14 @@ function userConfirmStart(rl: any, userMarketAidAddress: string): Promise<string
  * @TODO If user provides a MarketAid - make sure it has approvals and balances of tokens they want to target
  */
 export async function startGenericMarketMakingBot(configuration: BotConfiguration, rl?: any, providedMarketAidAddress?: string, premium?: number) {
+    // Update the tokens based on network to use throughout flow
+    tokens = getTokensByNetwork(configuration.network)
+    // Update erc20Tokens with new ERC20 instances for the new network
+    for (const tokenInfo of tokens) {
+        const token = new ERC20(ethers.utils.getAddress(tokenInfo.address), configuration.connections.signer);
+        erc20Tokens.push(token);
+    }
+    
     // Pass through from config (either a websocket or JSON RPC is allowed)
     var myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider;
     myProvider = (configuration.connections.jsonRpcProvider);
@@ -510,6 +505,7 @@ export async function startGenericMarketMakingBot(configuration: BotConfiguratio
 
     if (userMarketAidAddress == "yes") {
         const marketAidForExisting = await connectToExistingMarketAid(configuration, rl)
+        userMarketAidAddress = marketAidForExisting.address
         // health check for marketaid
         // 1. have they approved market aid for assets they selected in their strategy
         // 2. what are the balances for the market aid
@@ -762,6 +758,3 @@ async function main(): Promise<void> {
             throw new Error(`Invalid command: ${command}`);
     }
 }
-
-
-//main()
