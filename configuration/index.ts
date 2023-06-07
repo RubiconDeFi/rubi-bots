@@ -73,39 +73,48 @@ async function marketMakingStrategyCallback(): Promise<MarketMakingStrategy> {
  * @returns {Promise<Network>} A promise that resolves with the selected network.
  */
 async function networkCallback(): Promise<Network> {
-    return new Promise(resolve => {
-        rl.question('\n What network would you like to execute this strategy on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n\n4. Arbitrum Goerli\n5. Polygon Mainnet\n6. Polygon Mumbai\n:', (answer) => {
-            switch (answer.toLowerCase()) {
-                case '1':
-                    console.log('\n Selected Optimism Mainnet');
-                    resolve(Network.OPTIMISM_MAINNET);
-                    break;
-                case '2':
-                    console.log('\n Selected Optimism Goerli');
-                    resolve(Network.OPTIMISM_GOERLI);
-                    break;
-                case '3':
-                    console.log('\n Selected Arbitrum Mainnet');
-                    resolve(Network.ARBITRUM_MAINNET);
-                    break;
-                case '4':
-                    console.log('\n Selected Arbitrum Goerli');
-                    resolve(Network.ARBITRUM_TESTNET);
-                    break;
-                case '5':
-                    console.log('\n Selected Polygon Mainnet');
-                    resolve(Network.POLYGON_MAINNET);
-                    break;
-                case '6':
-                    console.log('\n Selected Polygon Mumbai');
-                    resolve(Network.POLYGON_MUMBAI);
-                    break;
-                default:
-                    console.log('Invalid answer! Pick a number 1 through 4');
-                    resolve(Network.ERROR);
-                    break;
-            }
-        })
+    return new Promise(async (resolve) => {
+        const askQuestion = async () => {    
+            rl.question('\n What network would you like to execute this strategy on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n\n4. Arbitrum Goerli\n5. Polygon Mainnet\n6. Polygon Mumbai\n:', async (answer) => {
+                switch (answer.toLowerCase()) {
+                    case '1':
+                        console.log('\n Selected Optimism Mainnet');
+                        resolve(Network.OPTIMISM_MAINNET);
+                        break;
+                    case '2':
+                        console.log('\n Selected Optimism Goerli');
+                        resolve(Network.OPTIMISM_GOERLI);
+                        break;
+                    case '3':
+                        console.log('We are currenly working on Arbitrum Mainnet support!');
+                        await askQuestion();
+                        // console.log('\n Selected Arbitrum Mainnet');
+                        // resolve(Network.ARBITRUM_MAINNET);
+                        break;
+                    case '4':
+                        console.log('We are currenly working on Arbitrum Goerli support!');
+                        await askQuestion();
+                        // console.log('\n Selected Arbitrum Goerli');
+                        // resolve(Network.ARBITRUM_TESTNET);
+                        break;
+                    case '5':
+                        console.log('We are currenly working on Polygon Mainnet support!');
+                        await askQuestion();
+                        // console.log('\n Selected Polygon Mainnet');
+                        // resolve(Network.POLYGON_MAINNET);
+                        break;
+                    case '6':
+                        console.log('\n Selected Polygon Mumbai');
+                        resolve(Network.POLYGON_MUMBAI);
+                        break;
+                    default:
+                        console.log('Invalid answer! Pick a number 1 through 4');
+                        resolve(Network.ERROR);
+                        break;
+                }
+            })
+        }
+        await askQuestion()
     });
 }
 
