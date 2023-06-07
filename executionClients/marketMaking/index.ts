@@ -91,7 +91,11 @@ async function helpUserCreateNewMarketAidInstance(configuration: BotConfiguratio
     
     return { newMarketAidAddress, marketAid };
 }
-
+/**
+ * Callback to select an existing marketaid 
+ * @param aidCheck list of all the market aids
+ * @returns {Promise<string>} the address of an existing marketaid selection
+ */
 async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
     return new Promise((resolve) => {
         console.log("Here are you existing MarketAid instances: ")
@@ -110,6 +114,12 @@ async function selectExistingMarketAid(aidCheck: string[]): Promise<string> {
     });
 }
 
+/**
+ * Connect to an existing market aid 
+ * @param configuration bot configs for the strategy 
+ * @param rl readline instance
+ * @returns {Promise<MarketAid>} a market aid 
+ */
 async function connectToExistingMarketAid(configuration: BotConfiguration, rl): Promise<MarketAid> {
     let aids;
     let signer: string
@@ -131,7 +141,6 @@ async function connectToExistingMarketAid(configuration: BotConfiguration, rl): 
     selectedAidAddress = await selectExistingMarketAid(aids);
     marketAid = new MarketAid(selectedAidAddress, configuration.connections.signer)
     console.log("Connected to MarketAid: ", marketAid.address)
-
 
     return marketAid;
 }
@@ -440,8 +449,8 @@ async function getTokenBalances(marketAid: MarketAid) {
  */ 
 function userPremium(rl: any): Promise<number> {
     return new Promise(resolve => {
-        rl.question("Please provide a premium for your strategy (between 0 and 1):" , (answer) => {
-            if (answer > 0 && answer < 1) {
+        rl.question("Please provide a premium for your strategy (this is the additional spread, measured as a percent of price, to be applied to the strategy):" , (answer) => {
+            if (answer > 0) {
                 resolve(answer)
             }
             else {
