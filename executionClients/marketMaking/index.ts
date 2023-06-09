@@ -294,10 +294,8 @@ async function depositMenu(tokens: TokenInfo[], marketAid: MarketAid, rl) {
                     resolve(input);
                 });
             });
-
-            const amount = parseFloat(amountAnswer.trim());
-            const smallestUnitAmount = BigNumber.from((amount * 10 ** selectedToken.decimals).toFixed());
-            depositAmounts.push(smallestUnitAmount);
+            const formattedAmount = ethers.utils.parseUnits(amountAnswer, selectedToken.decimals)
+            depositAmounts.push(formattedAmount);
 
             await addAssetToDeposit();
         } else if (selectedIndex === tokens.length) {
