@@ -49,7 +49,7 @@ function userMarketAidCheckCallback(configuration: BotConfiguration, rl): Promis
             }
             else {
                 console.log("Invalid input. Please choose either 'yes' or 'no'")
-                userMarketAidCheckCallback(configuration, rl)
+                startGenericMarketMakingBot(configuration, rl)
             }
         })
     })
