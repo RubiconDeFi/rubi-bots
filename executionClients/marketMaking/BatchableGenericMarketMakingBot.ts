@@ -61,7 +61,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     override async placeInitialMarketMakingTrades(): Promise<void> {
         console.log("\nInitializing a market aid position to match the strategy book");
         // Target this book
-        console.log("target this book with place market making trades", this.strategy.targetBook);
+        // console.log("target this book with place market making trades", this.strategy.targetBook);
 
         // Loop through target book, and using the pattern below populate an array of values for askNumerators, askDenominators, bidNumerators, and bidDenominators
         var askNumerators = [];
@@ -116,8 +116,8 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     override async requoteMarketAidPosition(): Promise<void> {
         console.log("\nRequoting market aid position to match the strategy book");
         // TODO: implement web3 call to requote()
-        console.log(this.strategy.identifier, "target this book with batchRequote", this.strategy.targetBook);
-        console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
+        // console.log(this.strategy.identifier, "target this book with batchRequote", this.strategy.targetBook);
+        // console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
 
         // Grab all of the strategist trade IDs from MarketAid position tracker
         const strategistTradeIDs: BigNumber[] = [];
@@ -125,7 +125,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
             strategistTradeIDs.push(this.marketAidPositionTracker.onChainBookWithData[i].stratTradeID);
         }
 
-        console.log(this.strategy.identifier, "These are the relevant ids", strategistTradeIDs);
+        // console.log(this.strategy.identifier, "These are the relevant ids", strategistTradeIDs);
         // Print the map formatted
         console.log("these ids formatted", strategistTradeIDs.map((id) => id.toString()));
 
