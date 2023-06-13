@@ -121,7 +121,8 @@ export class GenericMarketMakingBot {
                 // Print the formatted ladder
                 return _uniQueryLadder;
             },
-            5000
+            // TODO: Extrapolate this to config
+            2000
         );
 
         this.strategy.updateNotifier.on('update', (liveBook) => {
