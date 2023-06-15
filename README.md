@@ -12,7 +12,7 @@ Welcome to `rubi-bots`! This repository hosts open-source market-making, liquida
 
 This repository has two main commands for users 
 1. `guidedStart` - the quickest way to get started with Rubicon and deploy a bot
-2. `aid` - this command allows you to manage your aid (deposits, withdrawls, etc) 
+2. `aid` - this command allows you to manage your Market Aid, should you choose to use it (deposits, withdrawls, etc) 
 
 For advanced users who want to get started with a bot, we currently have 2 market making bots available
 1. [Generic MarketMaking Bot](https://github.com/RubiconDeFi/rubi-bots/blob/master/executionClients/marketMaking/README.md#running-the-generic-market-making-bot)
@@ -32,7 +32,7 @@ To get started with `rubi-bots`, follow these steps:
     ```shell
         npm install
     ```
-## Run the guided start 
+## Run the Guided Start (optional)
 1. Run the command 
     ```shell
         npm run guidedStart
@@ -45,9 +45,9 @@ To get started with `rubi-bots`, follow these steps:
 - ✅ Target Venue Out Bid
 4. Choose between the following mainnet/testnet 
 - ✅ Optimism Mainnet/Goerli
-- ❌ Arbitrum Mainnet/Goerli [WIP]
+- ❌/✅ Arbitrum Mainnet/Goerli [WIP]
 - ❌/✅ Polygon Mainnet/Mumbai
-5. Based on your selection, you have certain available tokens for your strategy
+5. Based on your selection, you can select from available tokens for your strategy
 - Enter the tokens you want and enter `done` when finished
 6. If you have an existing `MarketAid` address, enter it here. Otherwise, enter `no` to start the creation process
 - For a robust MarketAid toolset, see `npm run aid` below
@@ -60,7 +60,7 @@ To get started with `rubi-bots`, follow these steps:
 - Pull all funds
 8. After managing, a final prompt asks you to confirm before the strategy executes
 
-## Run the aid management 
+## Run the Market Aid onboarding script (optional) 
 1. Run the command 
     ```shell
         npm run aid
@@ -68,19 +68,19 @@ To get started with `rubi-bots`, follow these steps:
 - ❌/✅ Optimism Mainnet/Goerli [WIP]
 - ❌ Arbitrum Mainnet/Goerli [WIP]
 - ❌/✅ Polygon Mainnet/Mumbai
-3. The aid menu will open allowing you to:
-- Connect to an existing aid
-- View existing aids
-- Create a new aid
+3. The `aid` menu will open allowing you to:
+- Connect to an existing Market Aid contract
+- View existing Market Aid contract
+- Create a new Market Aid contract
 
 ## Target Bots and Strategies to Build/Release
-- [WIP] Riskless MM strategy - AMM Up Only
-- [WIP] Competitive MM strategy - AMM Out Bid
-- Two Venue Arbitrage - Rubi vs Selected Venue
-- v2 Liquidator Bot - Money Market Activist
+-  Risk Minimized MM strategy
+-  Target Venue Out Bid MM strategy
+- [WIP] Two Venue Arbitrage - Rubi vs Selected Venue
+- [WIP]v2 Liquidator Bot - Money Market Activist
 
 ## Contributing
-Contributions to rubi-bots are welcome and encouraged! 
+Contributions to rubi-bots are welcome and encouraged! This is an open-source resource for the Rubicon ecosystem.
 
 ## License
 This project is licensed under the MIT License.
@@ -90,14 +90,14 @@ This project is licensed under the MIT License.
 - Learn more about the [Rubicon protocol](https://docs.rubicon.finance)
 - View the rest of our [codebase](https://github.com/RubiconDeFi/rubi-protocol-v2)
 
-## Risk Disclaimers
+## Risk Disclaimer
 
 **Experimental and in Development - Use at your own risk**
 
 ### Rubi-Bots Disclaimer
 
-This codebase is in Alpha is experimental and in development. It could contain bugs or change significantly between versions. Contributing through Issues or Pull Requests is welcome!
+This codebase is in Beta and is experimental and in development. It could contain bugs or change significantly between versions. Contributing through Issues or Pull Requests is welcome!
 
 ### Protocol Disclaimer
 
-Please refer to [this](https://docs.rubicon.finance/docs/protocol/rubicon-pools/risks) for information on the risks associated to the Rubicon Protocol.
+Please refer to [this](https://docs.rubicon.finance/docs/protocol/rubicon-pools/risks) for information on the risks associated with the Rubicon Protocol.
