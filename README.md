@@ -6,6 +6,10 @@ Open-source bots for traders and activists in the [Rubicon](https://docs.rubicon
 [![GitHub Issues](https://img.shields.io/github/issues/RubiconDeFi/rubi-bots.svg)](https://github.com/RubiconDeFi/rubi-bots/issues)
 [![GitHub Forks](https://img.shields.io/github/forks/RubiconDeFi/rubi-bots.svg)](https://github.com/RubiconDeFi/rubi-bots/network)
 
+## Risk Disclaimer
+
+**Experimental and in Development - Use at your own risk**
+
 ## Description
 
 Welcome to `rubi-bots`! This repository hosts open-source market-making, liquidator, and arbitrage bots in the Rubicon ecosystem. With a focus on improving performance and growing the Rubicon ecosystem together, `rubi-bots` serves as a one-stop shop for potential profit opportunities, learning resources, and avenues for technical improvement.
@@ -89,10 +93,6 @@ This project is licensed under the MIT License.
 - Learn more about [MarketAids](https://docs.rubicon.finance/protocol/rubicon-market/market-aid)
 - Learn more about the [Rubicon protocol](https://docs.rubicon.finance)
 - View the rest of our [codebase](https://github.com/RubiconDeFi/rubi-protocol-v2)
-
-## Risk Disclaimer
-
-**Experimental and in Development - Use at your own risk**
 
 ### Rubi-Bots Disclaimer
 
