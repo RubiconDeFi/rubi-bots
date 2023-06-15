@@ -765,3 +765,5 @@ async function main(): Promise<void> {
             throw new Error(`Invalid command: ${command}`);
     }
 }
+
+main();
