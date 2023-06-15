@@ -1,6 +1,9 @@
 import { TokenInfo, TokenList } from '@uniswap/token-lists';
 import { BigNumber, Transaction, ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
+import { GenericMarketMakingStrategy } from '../strategies/marketMaking/genericMarketMaking';
+import { RiskMinimizedStrategy } from '../strategies/marketMaking/riskMinimizedUpOnly';
+import { TargetVenueOutBidStrategy } from '../strategies/marketMaking/targetVenueOutBid';
 
 export enum Network {
     MAINNET = 1,
@@ -316,7 +319,7 @@ export const ETH_ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export type BotConfiguration = {
     botType: BotType;
-    strategy: any; //TODO: this should not be any there's def a type for it. Placeholder for now
+    strategy?: any; //TODO: this should not be any there's def a type for it. Placeholder for now
     network: Network;
     targetTokens?: TokenInfo[];
     connections: { jsonRpcProvider: ethers.providers.JsonRpcProvider, signer: ethers.Signer, websocketProvider?: ethers.providers.WebSocketProvider }
