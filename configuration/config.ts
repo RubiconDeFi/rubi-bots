@@ -319,7 +319,7 @@ export const ETH_ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export type BotConfiguration = {
     botType: BotType;
-    strategy?: any; //TODO: this should not be any there's def a type for it. Placeholder for now
+    strategy?: any; //scalability
     network: Network;
     targetTokens?: TokenInfo[];
     connections: { jsonRpcProvider: ethers.providers.JsonRpcProvider, signer: ethers.Signer, websocketProvider?: ethers.providers.WebSocketProvider }
