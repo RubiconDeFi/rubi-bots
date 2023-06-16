@@ -6,6 +6,7 @@ import { startGenericMarketMakingBot } from "../executionClients/marketMaking";
 import { ethers } from "ethers";
 
 import { rl } from "./marketAid"
+import { guidedStartGenericMarketMakingBot } from "../executionClients/marketMaking/GuidedStartGenericMarketMakingBot";
 
 dotenv.config();
 
@@ -212,7 +213,7 @@ async function main() {
                             };
                             console.log("\nThe bot is configured and ready to start!");
                             // 5. Start the bot with the configuration
-                            return startGenericMarketMakingBot(botConfiguration, rl);
+                            return guidedStartGenericMarketMakingBot(botConfiguration, rl);
                         });
                     });
                 });
