@@ -10,7 +10,8 @@
     "startBatchExecutorBot": "ts-node ./executionClients/marketMaking/index.ts",
     "graphclient:build": "cd monitoring/graphclient && graphclient build && rm .graphclient/package.json",
     "monitor": "cd monitoring && ts-node index.ts",
-    "build:monitor": "cd monitoring/graphclient && graphclient build && rm .graphclient/package.json && cd .. && ts-node index.ts"
+    "build:monitor": "cd monitoring/graphclient && graphclient build && rm .graphclient/package.json && cd .. && ts-node index.ts",
+    "aid": "ts-node ./configuration/marketAid.ts"
   },
   "repository": {
     "type": "git",
@@ -35,6 +36,7 @@
   },
   "homepage": "https://github.com/RubiconDeFi/rubi-bots#readme",
   "dependencies": {
+    "@ethersproject/abi": "^5.7.0",
     "@ethersproject/experimental": "^5.7.0",
     "@reduxjs/toolkit": "^1.9.5",
     "@types/node": "^18.11.18",

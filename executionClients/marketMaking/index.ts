@@ -245,7 +245,7 @@ async function startGenericMarketMakingBotFromArgs(): Promise<void> {
     if (!quoteTokenInfo) throw new Error(`No token found for address ${quote} on network ${chainId}`);
 
     // Read the premium value from the command line arguments
-    const premium = parseFloat(process.argv[7]);
+    const premium = parseFloat(process.argv[8]);
     if (!premium) throw new Error('No premium value found in process.argv');
 
     var config = {

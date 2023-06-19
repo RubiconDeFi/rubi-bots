@@ -121,6 +121,7 @@ export class GenericMarketMakingBot {
                 // Print the formatted ladder
                 return _uniQueryLadder;
             },
+            // TODO: Extrapolate this to config
             2000
         );
 
@@ -302,8 +303,8 @@ export class GenericMarketMakingBot {
     requoteMarketAidPosition(): void {
         console.log("\nRequoting market aid position to match the strategy book");
         // TODO: implement web3 call to requote()
-        console.log("target this book with batchRequote", this.strategy.targetBook);
-        console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
+        // console.log("target this book with batchRequote", this.strategy.targetBook);
+        // console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
 
         // Grab all of the strategist trade IDs from MarketAid position tracker
         const strategistTradeIDs: BigNumber[] = [];
@@ -311,7 +312,7 @@ export class GenericMarketMakingBot {
             strategistTradeIDs.push(this.marketAidPositionTracker.onChainBookWithData[i].stratTradeID);
         }
 
-        console.log("These are the relevant ids", strategistTradeIDs);
+        // console.log("These are the relevant ids", strategistTradeIDs);
         // Print the map formatted
         console.log("these ids formatted", strategistTradeIDs.map((id) => id.toString()));
 

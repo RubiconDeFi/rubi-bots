@@ -2,6 +2,7 @@ import { BigNumber, ethers } from 'ethers';
 import { EventEmitter } from 'events';
 import BatchableGenericMarketMakingBot from './BatchableGenericMarketMakingBot';
 import { BotConfiguration } from '../../configuration/config';
+import { formatUnits, parseUnits } from 'ethers/lib/utils';
 
 // Define the event types that the BatchStrategyExecutor will listen to
 interface BatchStrategyExecutorEvents {
@@ -75,7 +76,7 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
   // Event handler for 'addToBatch'
   private handleAddToBatch(data: any): void {
     // Add the data to the batch and trigger the execution if necessary
-    console.log("Adding to batch...", data);
+    // console.log("Adding to batch...", data);
 
     this.addToBatch(data);
     // if (!this.batchInProgress) {
@@ -139,10 +140,35 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
         console.log("\nShipping batch with gas estimate:", gasEstimate);
         this.batchInProgress = true;
 
-        const tx = await this.marketAid.connect(this.config.connections.signer).batchBox(payload, { gasLimit: gasEstimate });
+        /// TODO: Extrapolate to a better location to not slow batch execution
+        // https://docs.ethers.org/v5/api/providers/provider/#Provider-getFeeData
+        const provider = this.config.connections.jsonRpcProvider;
+        const feeData = await provider.getFeeData();
+        const formattedGasPrice = formatUnits(feeData.gasPrice, 'gwei');
+        
+        if (!feeData.gasPrice) {
+          console.log("\nNo gas price returned from provider, not shipping batch.");
+          this.batchInProgress = false;
+          return;
+        }
+
+        var tx;
+        console.log("Attempting batch at this gas price:", formattedGasPrice);
+        
+        try {
+          tx = await this.marketAid.connect(this.config.connections.signer).batchBox(payload,
+            {
+              gasLimit: gasEstimate,
+              gasPrice: feeData.gasPrice
+            });
+        } catch (error) {
+          console.log("batch error", error);
+          
+        }
+
         this.batchInProgress = true;
 
-        const receipt = await tx.wait();
+        const receipt = await tx.wait(1);
         this.batchInProgress = false;
 
         // Clear the batch
