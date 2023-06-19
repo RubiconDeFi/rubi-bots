@@ -1,0 +1,129 @@
+query TokenBalances($aid: String!) { # , $amount: Int! #TODO: determine why first is not working as a dynamic variable
+    aidTokens(
+        first: 1000, # $amount,
+        where: { aid: $aid }
+    ) {
+        aid {
+            id
+        }
+        token {
+            id
+        }
+        balance
+    } 
+}
+
+query Aids($aidID: Bytes!) {
+    aids(where: {id: $aidID}) {
+        id
+        created 
+        balances {
+            token {
+                id
+            }
+            balance
+        }
+    }
+}
+
+query Transactions($lastID: Bytes!, $aidID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int = 1000, $skip: Int = 0) {
+    transactions(
+        first: $first, 
+        skip: $skip, 
+        where: {
+            id_gt: $lastID,
+            aid: $aidID, 
+            timestamp_gte: $startTime,
+            timestamp_lte: $endTime
+        }
+    ) {
+        txn
+        timestamp
+        aid {
+            id
+        }
+        total_gas_fee
+        total_gas_fee_usd
+    }
+}
+
+query TokenHistory($lastID: Bytes!, $aidID: String!, $tokenID: String!, $startTime: BigInt!, $endTime: BigInt!, $first: Int, $skip: Int = 0) {
+    aidTokenHistories(
+        first: 1, #$first, 
+        skip: $skip, 
+        where: {
+            id_gt: $lastID,
+            aid: $aidID, 
+            aid_token: $tokenID,
+            timestamp_gte: $startTime,
+            timestamp_lte: $endTime
+        }
+    ) {
+        timestamp
+        aid {
+            id
+        }
+        aid_token {
+            token {
+                id
+            }
+        }
+        balance
+        transaction {
+            id
+        }
+    }
+}
+
+query TokenSnapshots($aidID: String!, $sixHour: BigInt!, $twelveHour: BigInt!, $oneDay: BigInt!, $twoDay: BigInt!) {
+    aidTokens(
+        first: 1000, 
+        where: {
+            aid: $aidID
+        }
+    ) {
+        aid {
+            id
+        }
+        token {
+            id
+        }
+        balance
+        six_hour: history(
+            first:1,
+            orderBy: timestamp, 
+            orderDirection: desc, 
+            where: {timestamp_lte: $sixHour }
+        ) {
+            timestamp 
+            balance
+        }
+        twelve_hour: history(
+            first:1,
+            orderBy: timestamp, 
+            orderDirection: desc, 
+            where: {timestamp_lte: $twelveHour}, 
+        ) {
+            timestamp
+            balance
+        }
+        one_day: history(
+            first:1,
+            orderBy: timestamp, 
+            orderDirection: desc, 
+            where: {timestamp_lte: $oneDay}, 
+        ) {
+            timestamp
+            balance
+        }
+        two_day: history(
+            first:1,
+            orderBy: timestamp,
+             orderDirection: desc, 
+            where: {timestamp_lte: $twoDay},
+        ) {
+            timestamp
+            balance
+        }
+    }
+}

@@ -1,0 +1,18 @@
+# .graphclientrc.yml
+sources:
+  - name: market-aid-optimism-mainnet
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/denverbaumgartner/market-aid-optimism-mainnet
+    transforms: 
+      - blockTracking: 
+          validateSchema: true
+          limitOfRecords: 1000
+plugins: 
+  - pollingLive: 
+      defaultInterval: 1000
+transforms: 
+  - autoPagination: 
+      validateSchema: true
+documents: 
+  - queries.graphql

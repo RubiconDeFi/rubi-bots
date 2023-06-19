@@ -1,0 +1,2523 @@
+schema {
+  query: Query
+  subscription: Subscription
+}
+
+"Marks the GraphQL type as indexable entity.  Each type that should be an entity is required to be annotated with this directive."
+directive @entity on OBJECT
+
+"Defined a Subgraph ID for an object type"
+directive @subgraphId(id: String!) on OBJECT
+
+"creates a virtual field on the entity that may be queried but cannot be set manually through the mappings API."
+directive @derivedFrom(field: String!) on FIELD_DEFINITION
+
+type Aid {
+  """ the address of the market aid contract """
+  id: Bytes!
+  """ time of creation """
+  created: BigInt!
+  """ map to the token balance entities """
+  balances(skip: Int = 0, first: Int = 100, orderBy: AidToken_orderBy, orderDirection: OrderDirection, where: AidToken_filter): [AidToken!]!
+  """ map to the offer entities """
+  offers(skip: Int = 0, first: Int = 100, orderBy: Offer_orderBy, orderDirection: OrderDirection, where: Offer_filter): [Offer!]!
+  """ map to the transaction entities """
+  transactions(skip: Int = 0, first: Int = 100, orderBy: Transaction_orderBy, orderDirection: OrderDirection, where: Transaction_filter): [Transaction!]!
+}
+
+type AidToken {
+  """ the address of the market aid contract and the asset address """
+  id: Bytes!
+  """ the market aid entity that this token balance belongs to """
+  aid: Aid!
+  """ map to the token entity of the asset """
+  token: Token!
+  """ the amount of the asset that the market aid contract holds """
+  balance: BigInt!
+  """ the history of the token balance """
+  history(skip: Int = 0, first: Int = 100, orderBy: AidTokenHistory_orderBy, orderDirection: OrderDirection, where: AidTokenHistory_filter): [AidTokenHistory!]!
+}
+
+type AidTokenHistory {
+  """ the address of the market aid contract, asset address, transaction hash, and log index 
+  """
+  id: Bytes!
+  """ the timestamp of the event that resulted in this change in token balance 
+  """
+  timestamp: BigInt!
+  """ the market aid entity that this token balance history belongs to """
+  aid: Aid!
+  """ the market aid token entity that this token balance history belongs to 
+  """
+  aid_token: AidToken!
+  """ the token entity of the asset """
+  token: Token!
+  """ the amount of the asset that the market aid contract holds, after the change 
+  """
+  balance: BigInt!
+  """ the net change in the amount of the asset that the market aid contract has 
+  """
+  balance_change: BigInt!
+  """ the event that resulted in this change in token balance, can be either fill, deposit, or withdraw 
+  """
+  transaction: Transaction!
+  """ the log index of the event that resulted in this change in token balance 
+  """
+  index: BigInt!
+  """ a boolean indicating if the event was a deposit / withdraw """
+  book_update: Boolean!
+}
+
+input AidTokenHistory_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  timestamp: BigInt
+  timestamp_not: BigInt
+  timestamp_gt: BigInt
+  timestamp_lt: BigInt
+  timestamp_gte: BigInt
+  timestamp_lte: BigInt
+  timestamp_in: [BigInt!]
+  timestamp_not_in: [BigInt!]
+  aid: String
+  aid_not: String
+  aid_gt: String
+  aid_lt: String
+  aid_gte: String
+  aid_lte: String
+  aid_in: [String!]
+  aid_not_in: [String!]
+  aid_contains: String
+  aid_contains_nocase: String
+  aid_not_contains: String
+  aid_not_contains_nocase: String
+  aid_starts_with: String
+  aid_starts_with_nocase: String
+  aid_not_starts_with: String
+  aid_not_starts_with_nocase: String
+  aid_ends_with: String
+  aid_ends_with_nocase: String
+  aid_not_ends_with: String
+  aid_not_ends_with_nocase: String
+  aid_: Aid_filter
+  aid_token: String
+  aid_token_not: String
+  aid_token_gt: String
+  aid_token_lt: String
+  aid_token_gte: String
+  aid_token_lte: String
+  aid_token_in: [String!]
+  aid_token_not_in: [String!]
+  aid_token_contains: String
+  aid_token_contains_nocase: String
+  aid_token_not_contains: String
+  aid_token_not_contains_nocase: String
+  aid_token_starts_with: String
+  aid_token_starts_with_nocase: String
+  aid_token_not_starts_with: String
+  aid_token_not_starts_with_nocase: String
+  aid_token_ends_with: String
+  aid_token_ends_with_nocase: String
+  aid_token_not_ends_with: String
+  aid_token_not_ends_with_nocase: String
+  aid_token_: AidToken_filter
+  token: String
+  token_not: String
+  token_gt: String
+  token_lt: String
+  token_gte: String
+  token_lte: String
+  token_in: [String!]
+  token_not_in: [String!]
+  token_contains: String
+  token_contains_nocase: String
+  token_not_contains: String
+  token_not_contains_nocase: String
+  token_starts_with: String
+  token_starts_with_nocase: String
+  token_not_starts_with: String
+  token_not_starts_with_nocase: String
+  token_ends_with: String
+  token_ends_with_nocase: String
+  token_not_ends_with: String
+  token_not_ends_with_nocase: String
+  token_: Token_filter
+  balance: BigInt
+  balance_not: BigInt
+  balance_gt: BigInt
+  balance_lt: BigInt
+  balance_gte: BigInt
+  balance_lte: BigInt
+  balance_in: [BigInt!]
+  balance_not_in: [BigInt!]
+  balance_change: BigInt
+  balance_change_not: BigInt
+  balance_change_gt: BigInt
+  balance_change_lt: BigInt
+  balance_change_gte: BigInt
+  balance_change_lte: BigInt
+  balance_change_in: [BigInt!]
+  balance_change_not_in: [BigInt!]
+  transaction: String
+  transaction_not: String
+  transaction_gt: String
+  transaction_lt: String
+  transaction_gte: String
+  transaction_lte: String
+  transaction_in: [String!]
+  transaction_not_in: [String!]
+  transaction_contains: String
+  transaction_contains_nocase: String
+  transaction_not_contains: String
+  transaction_not_contains_nocase: String
+  transaction_starts_with: String
+  transaction_starts_with_nocase: String
+  transaction_not_starts_with: String
+  transaction_not_starts_with_nocase: String
+  transaction_ends_with: String
+  transaction_ends_with_nocase: String
+  transaction_not_ends_with: String
+  transaction_not_ends_with_nocase: String
+  transaction_: Transaction_filter
+  index: BigInt
+  index_not: BigInt
+  index_gt: BigInt
+  index_lt: BigInt
+  index_gte: BigInt
+  index_lte: BigInt
+  index_in: [BigInt!]
+  index_not_in: [BigInt!]
+  book_update: Boolean
+  book_update_not: Boolean
+  book_update_in: [Boolean!]
+  book_update_not_in: [Boolean!]
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [AidTokenHistory_filter]
+  or: [AidTokenHistory_filter]
+}
+
+enum AidTokenHistory_orderBy {
+  id
+  timestamp
+  aid
+  aid__id
+  aid__created
+  aid_token
+  aid_token__id
+  aid_token__balance
+  token
+  token__id
+  token__symbol
+  token__decimals
+  balance
+  balance_change
+  transaction
+  transaction__id
+  transaction__block
+  transaction__index
+  transaction__txn
+  transaction__timestamp
+  transaction__from
+  transaction__eth_price
+  transaction__price_source
+  transaction__l2_gas_price
+  transaction__l2_gas_used
+  transaction__l2_execution_fee
+  transaction__l2_execution_fee_usd
+  transaction__l1_base_fee
+  transaction__l1_gas_used
+  transaction__l1_overhead
+  transaction__l1_scalar
+  transaction__l1_decimal
+  transaction__l1_fee
+  transaction__l1_fee_usd
+  transaction__total_gas_fee
+  transaction__total_gas_fee_usd
+  index
+  book_update
+}
+
+input AidToken_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  aid: String
+  aid_not: String
+  aid_gt: String
+  aid_lt: String
+  aid_gte: String
+  aid_lte: String
+  aid_in: [String!]
+  aid_not_in: [String!]
+  aid_contains: String
+  aid_contains_nocase: String
+  aid_not_contains: String
+  aid_not_contains_nocase: String
+  aid_starts_with: String
+  aid_starts_with_nocase: String
+  aid_not_starts_with: String
+  aid_not_starts_with_nocase: String
+  aid_ends_with: String
+  aid_ends_with_nocase: String
+  aid_not_ends_with: String
+  aid_not_ends_with_nocase: String
+  aid_: Aid_filter
+  token: String
+  token_not: String
+  token_gt: String
+  token_lt: String
+  token_gte: String
+  token_lte: String
+  token_in: [String!]
+  token_not_in: [String!]
+  token_contains: String
+  token_contains_nocase: String
+  token_not_contains: String
+  token_not_contains_nocase: String
+  token_starts_with: String
+  token_starts_with_nocase: String
+  token_not_starts_with: String
+  token_not_starts_with_nocase: String
+  token_ends_with: String
+  token_ends_with_nocase: String
+  token_not_ends_with: String
+  token_not_ends_with_nocase: String
+  token_: Token_filter
+  balance: BigInt
+  balance_not: BigInt
+  balance_gt: BigInt
+  balance_lt: BigInt
+  balance_gte: BigInt
+  balance_lte: BigInt
+  balance_in: [BigInt!]
+  balance_not_in: [BigInt!]
+  history_: AidTokenHistory_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [AidToken_filter]
+  or: [AidToken_filter]
+}
+
+enum AidToken_orderBy {
+  id
+  aid
+  aid__id
+  aid__created
+  token
+  token__id
+  token__symbol
+  token__decimals
+  balance
+  history
+}
+
+input Aid_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  created: BigInt
+  created_not: BigInt
+  created_gt: BigInt
+  created_lt: BigInt
+  created_gte: BigInt
+  created_lte: BigInt
+  created_in: [BigInt!]
+  created_not_in: [BigInt!]
+  balances_: AidToken_filter
+  offers_: Offer_filter
+  transactions_: Transaction_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Aid_filter]
+  or: [Aid_filter]
+}
+
+enum Aid_orderBy {
+  id
+  created
+  balances
+  offers
+  transactions
+}
+
+type Arb {
+  """ the transaction hash and log index of the arb event """
+  id: Bytes!
+  """ the transaction entity that this offer was created from """
+  transaction: Transaction!
+  """ the timestamp of the arb event """
+  timestamp: BigInt!
+  """ the market aid instance that the function was called on """
+  aid: Aid!
+  """ the asset of the trade, this is the asset that profits are calculated in 
+  """
+  asset: Token!
+  """ the other asset of the trade, this is the asset that is being traded against 
+  """
+  quote: Token!
+  """ the amount of the asset that was traded """
+  amount: BigInt!
+  """ the profit that was a result of the trade, denominated in the asset token 
+  """
+  profit: BigInt!
+}
+
+input Arb_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  transaction: String
+  transaction_not: String
+  transaction_gt: String
+  transaction_lt: String
+  transaction_gte: String
+  transaction_lte: String
+  transaction_in: [String!]
+  transaction_not_in: [String!]
+  transaction_contains: String
+  transaction_contains_nocase: String
+  transaction_not_contains: String
+  transaction_not_contains_nocase: String
+  transaction_starts_with: String
+  transaction_starts_with_nocase: String
+  transaction_not_starts_with: String
+  transaction_not_starts_with_nocase: String
+  transaction_ends_with: String
+  transaction_ends_with_nocase: String
+  transaction_not_ends_with: String
+  transaction_not_ends_with_nocase: String
+  transaction_: Transaction_filter
+  timestamp: BigInt
+  timestamp_not: BigInt
+  timestamp_gt: BigInt
+  timestamp_lt: BigInt
+  timestamp_gte: BigInt
+  timestamp_lte: BigInt
+  timestamp_in: [BigInt!]
+  timestamp_not_in: [BigInt!]
+  aid: String
+  aid_not: String
+  aid_gt: String
+  aid_lt: String
+  aid_gte: String
+  aid_lte: String
+  aid_in: [String!]
+  aid_not_in: [String!]
+  aid_contains: String
+  aid_contains_nocase: String
+  aid_not_contains: String
+  aid_not_contains_nocase: String
+  aid_starts_with: String
+  aid_starts_with_nocase: String
+  aid_not_starts_with: String
+  aid_not_starts_with_nocase: String
+  aid_ends_with: String
+  aid_ends_with_nocase: String
+  aid_not_ends_with: String
+  aid_not_ends_with_nocase: String
+  aid_: Aid_filter
+  asset: String
+  asset_not: String
+  asset_gt: String
+  asset_lt: String
+  asset_gte: String
+  asset_lte: String
+  asset_in: [String!]
+  asset_not_in: [String!]
+  asset_contains: String
+  asset_contains_nocase: String
+  asset_not_contains: String
+  asset_not_contains_nocase: String
+  asset_starts_with: String
+  asset_starts_with_nocase: String
+  asset_not_starts_with: String
+  asset_not_starts_with_nocase: String
+  asset_ends_with: String
+  asset_ends_with_nocase: String
+  asset_not_ends_with: String
+  asset_not_ends_with_nocase: String
+  asset_: Token_filter
+  quote: String
+  quote_not: String
+  quote_gt: String
+  quote_lt: String
+  quote_gte: String
+  quote_lte: String
+  quote_in: [String!]
+  quote_not_in: [String!]
+  quote_contains: String
+  quote_contains_nocase: String
+  quote_not_contains: String
+  quote_not_contains_nocase: String
+  quote_starts_with: String
+  quote_starts_with_nocase: String
+  quote_not_starts_with: String
+  quote_not_starts_with_nocase: String
+  quote_ends_with: String
+  quote_ends_with_nocase: String
+  quote_not_ends_with: String
+  quote_not_ends_with_nocase: String
+  quote_: Token_filter
+  amount: BigInt
+  amount_not: BigInt
+  amount_gt: BigInt
+  amount_lt: BigInt
+  amount_gte: BigInt
+  amount_lte: BigInt
+  amount_in: [BigInt!]
+  amount_not_in: [BigInt!]
+  profit: BigInt
+  profit_not: BigInt
+  profit_gt: BigInt
+  profit_lt: BigInt
+  profit_gte: BigInt
+  profit_lte: BigInt
+  profit_in: [BigInt!]
+  profit_not_in: [BigInt!]
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Arb_filter]
+  or: [Arb_filter]
+}
+
+enum Arb_orderBy {
+  id
+  transaction
+  transaction__id
+  transaction__block
+  transaction__index
+  transaction__txn
+  transaction__timestamp
+  transaction__from
+  transaction__eth_price
+  transaction__price_source
+  transaction__l2_gas_price
+  transaction__l2_gas_used
+  transaction__l2_execution_fee
+  transaction__l2_execution_fee_usd
+  transaction__l1_base_fee
+  transaction__l1_gas_used
+  transaction__l1_overhead
+  transaction__l1_scalar
+  transaction__l1_decimal
+  transaction__l1_fee
+  transaction__l1_fee_usd
+  transaction__total_gas_fee
+  transaction__total_gas_fee_usd
+  timestamp
+  aid
+  aid__id
+  aid__created
+  asset
+  asset__id
+  asset__symbol
+  asset__decimals
+  quote
+  quote__id
+  quote__symbol
+  quote__decimals
+  amount
+  profit
+}
+
+scalar BigDecimal
+
+scalar BigInt
+
+input BlockChangedFilter {
+  number_gte: Int!
+}
+
+input Block_height {
+  hash: Bytes
+  number: Int
+  number_gte: Int
+}
+
+type BookUpdate {
+  """ the market aid address, asset address, and transaction hash """
+  id: Bytes!
+  """ the timestamp of the book update event """
+  timestamp: BigInt!
+  """ the aid entity that this book update belongs to """
+  aid: Aid!
+  """ the market aid token entity that is tracking this asset """
+  aid_token: AidToken!
+  """ the transaction entity that this book was updated from """
+  transaction: Transaction!
+  """ the index of the log that this book update was created from """
+  index: BigInt!
+  """ the amount of the asset that was debited / credited """
+  amount: BigInt!
+  """ the user that sent or received funds from the contract """
+  user: Bytes
+}
+
+input BookUpdate_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  timestamp: BigInt
+  timestamp_not: BigInt
+  timestamp_gt: BigInt
+  timestamp_lt: BigInt
+  timestamp_gte: BigInt
+  timestamp_lte: BigInt
+  timestamp_in: [BigInt!]
+  timestamp_not_in: [BigInt!]
+  aid: String
+  aid_not: String
+  aid_gt: String
+  aid_lt: String
+  aid_gte: String
+  aid_lte: String
+  aid_in: [String!]
+  aid_not_in: [String!]
+  aid_contains: String
+  aid_contains_nocase: String
+  aid_not_contains: String
+  aid_not_contains_nocase: String
+  aid_starts_with: String
+  aid_starts_with_nocase: String
+  aid_not_starts_with: String
+  aid_not_starts_with_nocase: String
+  aid_ends_with: String
+  aid_ends_with_nocase: String
+  aid_not_ends_with: String
+  aid_not_ends_with_nocase: String
+  aid_: Aid_filter
+  aid_token: String
+  aid_token_not: String
+  aid_token_gt: String
+  aid_token_lt: String
+  aid_token_gte: String
+  aid_token_lte: String
+  aid_token_in: [String!]
+  aid_token_not_in: [String!]
+  aid_token_contains: String
+  aid_token_contains_nocase: String
+  aid_token_not_contains: String
+  aid_token_not_contains_nocase: String
+  aid_token_starts_with: String
+  aid_token_starts_with_nocase: String
+  aid_token_not_starts_with: String
+  aid_token_not_starts_with_nocase: String
+  aid_token_ends_with: String
+  aid_token_ends_with_nocase: String
+  aid_token_not_ends_with: String
+  aid_token_not_ends_with_nocase: String
+  aid_token_: AidToken_filter
+  transaction: String
+  transaction_not: String
+  transaction_gt: String
+  transaction_lt: String
+  transaction_gte: String
+  transaction_lte: String
+  transaction_in: [String!]
+  transaction_not_in: [String!]
+  transaction_contains: String
+  transaction_contains_nocase: String
+  transaction_not_contains: String
+  transaction_not_contains_nocase: String
+  transaction_starts_with: String
+  transaction_starts_with_nocase: String
+  transaction_not_starts_with: String
+  transaction_not_starts_with_nocase: String
+  transaction_ends_with: String
+  transaction_ends_with_nocase: String
+  transaction_not_ends_with: String
+  transaction_not_ends_with_nocase: String
+  transaction_: Transaction_filter
+  index: BigInt
+  index_not: BigInt
+  index_gt: BigInt
+  index_lt: BigInt
+  index_gte: BigInt
+  index_lte: BigInt
+  index_in: [BigInt!]
+  index_not_in: [BigInt!]
+  amount: BigInt
+  amount_not: BigInt
+  amount_gt: BigInt
+  amount_lt: BigInt
+  amount_gte: BigInt
+  amount_lte: BigInt
+  amount_in: [BigInt!]
+  amount_not_in: [BigInt!]
+  user: Bytes
+  user_not: Bytes
+  user_gt: Bytes
+  user_lt: Bytes
+  user_gte: Bytes
+  user_lte: Bytes
+  user_in: [Bytes!]
+  user_not_in: [Bytes!]
+  user_contains: Bytes
+  user_not_contains: Bytes
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [BookUpdate_filter]
+  or: [BookUpdate_filter]
+}
+
+enum BookUpdate_orderBy {
+  id
+  timestamp
+  aid
+  aid__id
+  aid__created
+  aid_token
+  aid_token__id
+  aid_token__balance
+  transaction
+  transaction__id
+  transaction__block
+  transaction__index
+  transaction__txn
+  transaction__timestamp
+  transaction__from
+  transaction__eth_price
+  transaction__price_source
+  transaction__l2_gas_price
+  transaction__l2_gas_used
+  transaction__l2_execution_fee
+  transaction__l2_execution_fee_usd
+  transaction__l1_base_fee
+  transaction__l1_gas_used
+  transaction__l1_overhead
+  transaction__l1_scalar
+  transaction__l1_decimal
+  transaction__l1_fee
+  transaction__l1_fee_usd
+  transaction__total_gas_fee
+  transaction__total_gas_fee_usd
+  index
+  amount
+  user
+}
+
+scalar Bytes
+
+type ExternalSwap {
+  """ the market aid address, venue address, transaction hash, and log index 
+  """
+  id: Bytes!
+  """ the timestamp of the external swap event """
+  timestamp: BigInt!
+  """ the aid entity that this external swap belongs to """
+  aid: Aid!
+  """ the asset that is being sold """
+  asset_sold: Token!
+  """ the asset that is received in exchange """
+  asset_received: Token!
+  """ the amount of the asset that was sold """
+  amount_sold: BigInt!
+  """ the amount of the asset that was received """
+  amount_received: BigInt!
+  """ the transaction entity that this external swap was created from """
+  transaction: Transaction!
+  """ the address of the venue that the swap was made on """
+  venue: Bytes!
+}
+
+input ExternalSwap_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  timestamp: BigInt
+  timestamp_not: BigInt
+  timestamp_gt: BigInt
+  timestamp_lt: BigInt
+  timestamp_gte: BigInt
+  timestamp_lte: BigInt
+  timestamp_in: [BigInt!]
+  timestamp_not_in: [BigInt!]
+  aid: String
+  aid_not: String
+  aid_gt: String
+  aid_lt: String
+  aid_gte: String
+  aid_lte: String
+  aid_in: [String!]
+  aid_not_in: [String!]
+  aid_contains: String
+  aid_contains_nocase: String
+  aid_not_contains: String
+  aid_not_contains_nocase: String
+  aid_starts_with: String
+  aid_starts_with_nocase: String
+  aid_not_starts_with: String
+  aid_not_starts_with_nocase: String
+  aid_ends_with: String
+  aid_ends_with_nocase: String
+  aid_not_ends_with: String
+  aid_not_ends_with_nocase: String
+  aid_: Aid_filter
+  asset_sold: String
+  asset_sold_not: String
+  asset_sold_gt: String
+  asset_sold_lt: String
+  asset_sold_gte: String
+  asset_sold_lte: String
+  asset_sold_in: [String!]
+  asset_sold_not_in: [String!]
+  asset_sold_contains: String
+  asset_sold_contains_nocase: String
+  asset_sold_not_contains: String
+  asset_sold_not_contains_nocase: String
+  asset_sold_starts_with: String
+  asset_sold_starts_with_nocase: String
+  asset_sold_not_starts_with: String
+  asset_sold_not_starts_with_nocase: String
+  asset_sold_ends_with: String
+  asset_sold_ends_with_nocase: String
+  asset_sold_not_ends_with: String
+  asset_sold_not_ends_with_nocase: String
+  asset_sold_: Token_filter
+  asset_received: String
+  asset_received_not: String
+  asset_received_gt: String
+  asset_received_lt: String
+  asset_received_gte: String
+  asset_received_lte: String
+  asset_received_in: [String!]
+  asset_received_not_in: [String!]
+  asset_received_contains: String
+  asset_received_contains_nocase: String
+  asset_received_not_contains: String
+  asset_received_not_contains_nocase: String
+  asset_received_starts_with: String
+  asset_received_starts_with_nocase: String
+  asset_received_not_starts_with: String
+  asset_received_not_starts_with_nocase: String
+  asset_received_ends_with: String
+  asset_received_ends_with_nocase: String
+  asset_received_not_ends_with: String
+  asset_received_not_ends_with_nocase: String
+  asset_received_: Token_filter
+  amount_sold: BigInt
+  amount_sold_not: BigInt
+  amount_sold_gt: BigInt
+  amount_sold_lt: BigInt
+  amount_sold_gte: BigInt
+  amount_sold_lte: BigInt
+  amount_sold_in: [BigInt!]
+  amount_sold_not_in: [BigInt!]
+  amount_received: BigInt
+  amount_received_not: BigInt
+  amount_received_gt: BigInt
+  amount_received_lt: BigInt
+  amount_received_gte: BigInt
+  amount_received_lte: BigInt
+  amount_received_in: [BigInt!]
+  amount_received_not_in: [BigInt!]
+  transaction: String
+  transaction_not: String
+  transaction_gt: String
+  transaction_lt: String
+  transaction_gte: String
+  transaction_lte: String
+  transaction_in: [String!]
+  transaction_not_in: [String!]
+  transaction_contains: String
+  transaction_contains_nocase: String
+  transaction_not_contains: String
+  transaction_not_contains_nocase: String
+  transaction_starts_with: String
+  transaction_starts_with_nocase: String
+  transaction_not_starts_with: String
+  transaction_not_starts_with_nocase: String
+  transaction_ends_with: String
+  transaction_ends_with_nocase: String
+  transaction_not_ends_with: String
+  transaction_not_ends_with_nocase: String
+  transaction_: Transaction_filter
+  venue: Bytes
+  venue_not: Bytes
+  venue_gt: Bytes
+  venue_lt: Bytes
+  venue_gte: Bytes
+  venue_lte: Bytes
+  venue_in: [Bytes!]
+  venue_not_in: [Bytes!]
+  venue_contains: Bytes
+  venue_not_contains: Bytes
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [ExternalSwap_filter]
+  or: [ExternalSwap_filter]
+}
+
+enum ExternalSwap_orderBy {
+  id
+  timestamp
+  aid
+  aid__id
+  aid__created
+  asset_sold
+  asset_sold__id
+  asset_sold__symbol
+  asset_sold__decimals
+  asset_received
+  asset_received__id
+  asset_received__symbol
+  asset_received__decimals
+  amount_sold
+  amount_received
+  transaction
+  transaction__id
+  transaction__block
+  transaction__index
+  transaction__txn
+  transaction__timestamp
+  transaction__from
+  transaction__eth_price
+  transaction__price_source
+  transaction__l2_gas_price
+  transaction__l2_gas_used
+  transaction__l2_execution_fee
+  transaction__l2_execution_fee_usd
+  transaction__l1_base_fee
+  transaction__l1_gas_used
+  transaction__l1_overhead
+  transaction__l1_scalar
+  transaction__l1_decimal
+  transaction__l1_fee
+  transaction__l1_fee_usd
+  transaction__total_gas_fee
+  transaction__total_gas_fee_usd
+  venue
+}
+
+type FeeTakeEntity {
+  """ the market aid address, asset address, transaction hash, and log index 
+  """
+  id: Bytes!
+  """ the timestamp of the fee take event """
+  timestamp: BigInt!
+  """ the aid entity that this fee take belongs to """
+  aid: Aid!
+  """ the asset the fee was taken in """
+  asset: Token!
+  """ the amount of the asset that was taken as a fee """
+  amount: BigInt!
+  """ the transaction entity that this fee take was created from """
+  transaction: Transaction!
+}
+
+input FeeTakeEntity_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  timestamp: BigInt
+  timestamp_not: BigInt
+  timestamp_gt: BigInt
+  timestamp_lt: BigInt
+  timestamp_gte: BigInt
+  timestamp_lte: BigInt
+  timestamp_in: [BigInt!]
+  timestamp_not_in: [BigInt!]
+  aid: String
+  aid_not: String
+  aid_gt: String
+  aid_lt: String
+  aid_gte: String
+  aid_lte: String
+  aid_in: [String!]
+  aid_not_in: [String!]
+  aid_contains: String
+  aid_contains_nocase: String
+  aid_not_contains: String
+  aid_not_contains_nocase: String
+  aid_starts_with: String
+  aid_starts_with_nocase: String
+  aid_not_starts_with: String
+  aid_not_starts_with_nocase: String
+  aid_ends_with: String
+  aid_ends_with_nocase: String
+  aid_not_ends_with: String
+  aid_not_ends_with_nocase: String
+  aid_: Aid_filter
+  asset: String
+  asset_not: String
+  asset_gt: String
+  asset_lt: String
+  asset_gte: String
+  asset_lte: String
+  asset_in: [String!]
+  asset_not_in: [String!]
+  asset_contains: String
+  asset_contains_nocase: String
+  asset_not_contains: String
+  asset_not_contains_nocase: String
+  asset_starts_with: String
+  asset_starts_with_nocase: String
+  asset_not_starts_with: String
+  asset_not_starts_with_nocase: String
+  asset_ends_with: String
+  asset_ends_with_nocase: String
+  asset_not_ends_with: String
+  asset_not_ends_with_nocase: String
+  asset_: Token_filter
+  amount: BigInt
+  amount_not: BigInt
+  amount_gt: BigInt
+  amount_lt: BigInt
+  amount_gte: BigInt
+  amount_lte: BigInt
+  amount_in: [BigInt!]
+  amount_not_in: [BigInt!]
+  transaction: String
+  transaction_not: String
+  transaction_gt: String
+  transaction_lt: String
+  transaction_gte: String
+  transaction_lte: String
+  transaction_in: [String!]
+  transaction_not_in: [String!]
+  transaction_contains: String
+  transaction_contains_nocase: String
+  transaction_not_contains: String
+  transaction_not_contains_nocase: String
+  transaction_starts_with: String
+  transaction_starts_with_nocase: String
+  transaction_not_starts_with: String
+  transaction_not_starts_with_nocase: String
+  transaction_ends_with: String
+  transaction_ends_with_nocase: String
+  transaction_not_ends_with: String
+  transaction_not_ends_with_nocase: String
+  transaction_: Transaction_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [FeeTakeEntity_filter]
+  or: [FeeTakeEntity_filter]
+}
+
+enum FeeTakeEntity_orderBy {
+  id
+  timestamp
+  aid
+  aid__id
+  aid__created
+  asset
+  asset__id
+  asset__symbol
+  asset__decimals
+  amount
+  transaction
+  transaction__id
+  transaction__block
+  transaction__index
+  transaction__txn
+  transaction__timestamp
+  transaction__from
+  transaction__eth_price
+  transaction__price_source
+  transaction__l2_gas_price
+  transaction__l2_gas_used
+  transaction__l2_execution_fee
+  transaction__l2_execution_fee_usd
+  transaction__l1_base_fee
+  transaction__l1_gas_used
+  transaction__l1_overhead
+  transaction__l1_scalar
+  transaction__l1_decimal
+  transaction__l1_fee
+  transaction__l1_fee_usd
+  transaction__total_gas_fee
+  transaction__total_gas_fee_usd
+}
+
+type Offer {
+  """ the id of the offer on the RubiconMarket contract """
+  id: ID!
+  """ the transaction entity that this offer was created from """
+  transaction: Transaction!
+  """ the market aid entity that created this offer """
+  maker: Aid!
+  """ the token that the offer will pay with """
+  pay_gem: Token!
+  """ the token that the maker offers to buy """
+  buy_gem: Token!
+  """ the amount of the pay token that the offer will pay - in the integer format 
+  """
+  pay_amt: BigInt!
+  """ the amount of the buy token that the offer will buy - in the integer format 
+  """
+  buy_amt: BigInt!
+  """ the amount of the pay token that the offer has paid out - in the integer format 
+  """
+  paid_amt: BigInt!
+  """ the amount of the buy token that the offer has bought - in the integer format 
+  """
+  bought_amt: BigInt!
+  """ boolean indicating if the offer was filled or not """
+  filled: Boolean!
+  """ boolean indicating if the offer was cancelled or not """
+  cancelled: Boolean!
+  """ boolean indicating if the offer is live or not """
+  live: Boolean!
+  """ the timestamp that offer was removed at"""
+  removed_timestamp: BigInt
+  """ the take events from this offer """
+  takes(skip: Int = 0, first: Int = 100, orderBy: Take_orderBy, orderDirection: OrderDirection, where: Take_filter): [Take!]!
+}
+
+input Offer_filter {
+  id: ID
+  id_not: ID
+  id_gt: ID
+  id_lt: ID
+  id_gte: ID
+  id_lte: ID
+  id_in: [ID!]
+  id_not_in: [ID!]
+  transaction: String
+  transaction_not: String
+  transaction_gt: String
+  transaction_lt: String
+  transaction_gte: String
+  transaction_lte: String
+  transaction_in: [String!]
+  transaction_not_in: [String!]
+  transaction_contains: String
+  transaction_contains_nocase: String
+  transaction_not_contains: String
+  transaction_not_contains_nocase: String
+  transaction_starts_with: String
+  transaction_starts_with_nocase: String
+  transaction_not_starts_with: String
+  transaction_not_starts_with_nocase: String
+  transaction_ends_with: String
+  transaction_ends_with_nocase: String
+  transaction_not_ends_with: String
+  transaction_not_ends_with_nocase: String
+  transaction_: Transaction_filter
+  maker: String
+  maker_not: String
+  maker_gt: String
+  maker_lt: String
+  maker_gte: String
+  maker_lte: String
+  maker_in: [String!]
+  maker_not_in: [String!]
+  maker_contains: String
+  maker_contains_nocase: String
+  maker_not_contains: String
+  maker_not_contains_nocase: String
+  maker_starts_with: String
+  maker_starts_with_nocase: String
+  maker_not_starts_with: String
+  maker_not_starts_with_nocase: String
+  maker_ends_with: String
+  maker_ends_with_nocase: String
+  maker_not_ends_with: String
+  maker_not_ends_with_nocase: String
+  maker_: Aid_filter
+  pay_gem: String
+  pay_gem_not: String
+  pay_gem_gt: String
+  pay_gem_lt: String
+  pay_gem_gte: String
+  pay_gem_lte: String
+  pay_gem_in: [String!]
+  pay_gem_not_in: [String!]
+  pay_gem_contains: String
+  pay_gem_contains_nocase: String
+  pay_gem_not_contains: String
+  pay_gem_not_contains_nocase: String
+  pay_gem_starts_with: String
+  pay_gem_starts_with_nocase: String
+  pay_gem_not_starts_with: String
+  pay_gem_not_starts_with_nocase: String
+  pay_gem_ends_with: String
+  pay_gem_ends_with_nocase: String
+  pay_gem_not_ends_with: String
+  pay_gem_not_ends_with_nocase: String
+  pay_gem_: Token_filter
+  buy_gem: String
+  buy_gem_not: String
+  buy_gem_gt: String
+  buy_gem_lt: String
+  buy_gem_gte: String
+  buy_gem_lte: String
+  buy_gem_in: [String!]
+  buy_gem_not_in: [String!]
+  buy_gem_contains: String
+  buy_gem_contains_nocase: String
+  buy_gem_not_contains: String
+  buy_gem_not_contains_nocase: String
+  buy_gem_starts_with: String
+  buy_gem_starts_with_nocase: String
+  buy_gem_not_starts_with: String
+  buy_gem_not_starts_with_nocase: String
+  buy_gem_ends_with: String
+  buy_gem_ends_with_nocase: String
+  buy_gem_not_ends_with: String
+  buy_gem_not_ends_with_nocase: String
+  buy_gem_: Token_filter
+  pay_amt: BigInt
+  pay_amt_not: BigInt
+  pay_amt_gt: BigInt
+  pay_amt_lt: BigInt
+  pay_amt_gte: BigInt
+  pay_amt_lte: BigInt
+  pay_amt_in: [BigInt!]
+  pay_amt_not_in: [BigInt!]
+  buy_amt: BigInt
+  buy_amt_not: BigInt
+  buy_amt_gt: BigInt
+  buy_amt_lt: BigInt
+  buy_amt_gte: BigInt
+  buy_amt_lte: BigInt
+  buy_amt_in: [BigInt!]
+  buy_amt_not_in: [BigInt!]
+  paid_amt: BigInt
+  paid_amt_not: BigInt
+  paid_amt_gt: BigInt
+  paid_amt_lt: BigInt
+  paid_amt_gte: BigInt
+  paid_amt_lte: BigInt
+  paid_amt_in: [BigInt!]
+  paid_amt_not_in: [BigInt!]
+  bought_amt: BigInt
+  bought_amt_not: BigInt
+  bought_amt_gt: BigInt
+  bought_amt_lt: BigInt
+  bought_amt_gte: BigInt
+  bought_amt_lte: BigInt
+  bought_amt_in: [BigInt!]
+  bought_amt_not_in: [BigInt!]
+  filled: Boolean
+  filled_not: Boolean
+  filled_in: [Boolean!]
+  filled_not_in: [Boolean!]
+  cancelled: Boolean
+  cancelled_not: Boolean
+  cancelled_in: [Boolean!]
+  cancelled_not_in: [Boolean!]
+  live: Boolean
+  live_not: Boolean
+  live_in: [Boolean!]
+  live_not_in: [Boolean!]
+  removed_timestamp: BigInt
+  removed_timestamp_not: BigInt
+  removed_timestamp_gt: BigInt
+  removed_timestamp_lt: BigInt
+  removed_timestamp_gte: BigInt
+  removed_timestamp_lte: BigInt
+  removed_timestamp_in: [BigInt!]
+  removed_timestamp_not_in: [BigInt!]
+  takes_: Take_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Offer_filter]
+  or: [Offer_filter]
+}
+
+enum Offer_orderBy {
+  id
+  transaction
+  transaction__id
+  transaction__block
+  transaction__index
+  transaction__txn
+  transaction__timestamp
+  transaction__from
+  transaction__eth_price
+  transaction__price_source
+  transaction__l2_gas_price
+  transaction__l2_gas_used
+  transaction__l2_execution_fee
+  transaction__l2_execution_fee_usd
+  transaction__l1_base_fee
+  transaction__l1_gas_used
+  transaction__l1_overhead
+  transaction__l1_scalar
+  transaction__l1_decimal
+  transaction__l1_fee
+  transaction__l1_fee_usd
+  transaction__total_gas_fee
+  transaction__total_gas_fee_usd
+  maker
+  maker__id
+  maker__created
+  pay_gem
+  pay_gem__id
+  pay_gem__symbol
+  pay_gem__decimals
+  buy_gem
+  buy_gem__id
+  buy_gem__symbol
+  buy_gem__decimals
+  pay_amt
+  buy_amt
+  paid_amt
+  bought_amt
+  filled
+  cancelled
+  live
+  removed_timestamp
+  takes
+}
+
+"""Defines the order direction, either ascending or descending"""
+enum OrderDirection {
+  asc
+  desc
+}
+
+type Query {
+  aid(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Aid
+  aids(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Aid_orderBy
+    orderDirection: OrderDirection
+    where: Aid_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Aid!]!
+  aidToken(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): AidToken
+  aidTokens(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: AidToken_orderBy
+    orderDirection: OrderDirection
+    where: AidToken_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [AidToken!]!
+  aidTokenHistory(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): AidTokenHistory
+  aidTokenHistories(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: AidTokenHistory_orderBy
+    orderDirection: OrderDirection
+    where: AidTokenHistory_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [AidTokenHistory!]!
+  transaction(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Transaction
+  transactions(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Transaction_orderBy
+    orderDirection: OrderDirection
+    where: Transaction_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Transaction!]!
+  offer(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Offer
+  offers(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Offer_orderBy
+    orderDirection: OrderDirection
+    where: Offer_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Offer!]!
+  take(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Take
+  takes(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Take_orderBy
+    orderDirection: OrderDirection
+    where: Take_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Take!]!
+  arb(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Arb
+  arbs(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Arb_orderBy
+    orderDirection: OrderDirection
+    where: Arb_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Arb!]!
+  bookUpdate(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): BookUpdate
+  bookUpdates(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: BookUpdate_orderBy
+    orderDirection: OrderDirection
+    where: BookUpdate_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [BookUpdate!]!
+  externalSwap(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): ExternalSwap
+  externalSwaps(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: ExternalSwap_orderBy
+    orderDirection: OrderDirection
+    where: ExternalSwap_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [ExternalSwap!]!
+  feeTakeEntity(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): FeeTakeEntity
+  feeTakeEntities(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: FeeTakeEntity_orderBy
+    orderDirection: OrderDirection
+    where: FeeTakeEntity_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [FeeTakeEntity!]!
+  token(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Token
+  tokens(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Token_orderBy
+    orderDirection: OrderDirection
+    where: Token_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Token!]!
+  """Access to subgraph metadata"""
+  _meta(block: Block_height): _Meta_
+}
+
+type Subscription {
+  aid(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Aid
+  aids(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Aid_orderBy
+    orderDirection: OrderDirection
+    where: Aid_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Aid!]!
+  aidToken(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): AidToken
+  aidTokens(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: AidToken_orderBy
+    orderDirection: OrderDirection
+    where: AidToken_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [AidToken!]!
+  aidTokenHistory(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): AidTokenHistory
+  aidTokenHistories(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: AidTokenHistory_orderBy
+    orderDirection: OrderDirection
+    where: AidTokenHistory_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [AidTokenHistory!]!
+  transaction(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Transaction
+  transactions(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Transaction_orderBy
+    orderDirection: OrderDirection
+    where: Transaction_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Transaction!]!
+  offer(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Offer
+  offers(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Offer_orderBy
+    orderDirection: OrderDirection
+    where: Offer_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Offer!]!
+  take(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Take
+  takes(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Take_orderBy
+    orderDirection: OrderDirection
+    where: Take_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Take!]!
+  arb(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Arb
+  arbs(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Arb_orderBy
+    orderDirection: OrderDirection
+    where: Arb_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Arb!]!
+  bookUpdate(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): BookUpdate
+  bookUpdates(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: BookUpdate_orderBy
+    orderDirection: OrderDirection
+    where: BookUpdate_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [BookUpdate!]!
+  externalSwap(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): ExternalSwap
+  externalSwaps(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: ExternalSwap_orderBy
+    orderDirection: OrderDirection
+    where: ExternalSwap_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [ExternalSwap!]!
+  feeTakeEntity(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): FeeTakeEntity
+  feeTakeEntities(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: FeeTakeEntity_orderBy
+    orderDirection: OrderDirection
+    where: FeeTakeEntity_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [FeeTakeEntity!]!
+  token(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Token
+  tokens(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: Token_orderBy
+    orderDirection: OrderDirection
+    where: Token_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [Token!]!
+  """Access to subgraph metadata"""
+  _meta(block: Block_height): _Meta_
+}
+
+type Take {
+  """ the transaction hash and log index of the take event """
+  id: Bytes!
+  """ the transaction entity that this offer was created from """
+  transaction: Transaction!
+  """ the user entity that took the offer """
+  taker: Bytes!
+  """ the token that the offer will pay with - what the taker receives """
+  pay_gem: Token!
+  """ the token that the offer offer to buy - what the taker pays"""
+  buy_gem: Token!
+  """ the amount of the pay token that the offer will pay - in the integer format - the amount the taker receives 
+  """
+  pay_amt: BigInt!
+  """ the amount of the buy token that the offer will buy - in the integer format - the amount the taker pays
+  """
+  buy_amt: BigInt!
+  """ the offer id that was taken """
+  offer_id: String!
+  """ the offer entity that was taken, if it is a market aid offer """
+  offer: Offer
+}
+
+input Take_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  transaction: String
+  transaction_not: String
+  transaction_gt: String
+  transaction_lt: String
+  transaction_gte: String
+  transaction_lte: String
+  transaction_in: [String!]
+  transaction_not_in: [String!]
+  transaction_contains: String
+  transaction_contains_nocase: String
+  transaction_not_contains: String
+  transaction_not_contains_nocase: String
+  transaction_starts_with: String
+  transaction_starts_with_nocase: String
+  transaction_not_starts_with: String
+  transaction_not_starts_with_nocase: String
+  transaction_ends_with: String
+  transaction_ends_with_nocase: String
+  transaction_not_ends_with: String
+  transaction_not_ends_with_nocase: String
+  transaction_: Transaction_filter
+  taker: Bytes
+  taker_not: Bytes
+  taker_gt: Bytes
+  taker_lt: Bytes
+  taker_gte: Bytes
+  taker_lte: Bytes
+  taker_in: [Bytes!]
+  taker_not_in: [Bytes!]
+  taker_contains: Bytes
+  taker_not_contains: Bytes
+  pay_gem: String
+  pay_gem_not: String
+  pay_gem_gt: String
+  pay_gem_lt: String
+  pay_gem_gte: String
+  pay_gem_lte: String
+  pay_gem_in: [String!]
+  pay_gem_not_in: [String!]
+  pay_gem_contains: String
+  pay_gem_contains_nocase: String
+  pay_gem_not_contains: String
+  pay_gem_not_contains_nocase: String
+  pay_gem_starts_with: String
+  pay_gem_starts_with_nocase: String
+  pay_gem_not_starts_with: String
+  pay_gem_not_starts_with_nocase: String
+  pay_gem_ends_with: String
+  pay_gem_ends_with_nocase: String
+  pay_gem_not_ends_with: String
+  pay_gem_not_ends_with_nocase: String
+  pay_gem_: Token_filter
+  buy_gem: String
+  buy_gem_not: String
+  buy_gem_gt: String
+  buy_gem_lt: String
+  buy_gem_gte: String
+  buy_gem_lte: String
+  buy_gem_in: [String!]
+  buy_gem_not_in: [String!]
+  buy_gem_contains: String
+  buy_gem_contains_nocase: String
+  buy_gem_not_contains: String
+  buy_gem_not_contains_nocase: String
+  buy_gem_starts_with: String
+  buy_gem_starts_with_nocase: String
+  buy_gem_not_starts_with: String
+  buy_gem_not_starts_with_nocase: String
+  buy_gem_ends_with: String
+  buy_gem_ends_with_nocase: String
+  buy_gem_not_ends_with: String
+  buy_gem_not_ends_with_nocase: String
+  buy_gem_: Token_filter
+  pay_amt: BigInt
+  pay_amt_not: BigInt
+  pay_amt_gt: BigInt
+  pay_amt_lt: BigInt
+  pay_amt_gte: BigInt
+  pay_amt_lte: BigInt
+  pay_amt_in: [BigInt!]
+  pay_amt_not_in: [BigInt!]
+  buy_amt: BigInt
+  buy_amt_not: BigInt
+  buy_amt_gt: BigInt
+  buy_amt_lt: BigInt
+  buy_amt_gte: BigInt
+  buy_amt_lte: BigInt
+  buy_amt_in: [BigInt!]
+  buy_amt_not_in: [BigInt!]
+  offer_id: String
+  offer_id_not: String
+  offer_id_gt: String
+  offer_id_lt: String
+  offer_id_gte: String
+  offer_id_lte: String
+  offer_id_in: [String!]
+  offer_id_not_in: [String!]
+  offer_id_contains: String
+  offer_id_contains_nocase: String
+  offer_id_not_contains: String
+  offer_id_not_contains_nocase: String
+  offer_id_starts_with: String
+  offer_id_starts_with_nocase: String
+  offer_id_not_starts_with: String
+  offer_id_not_starts_with_nocase: String
+  offer_id_ends_with: String
+  offer_id_ends_with_nocase: String
+  offer_id_not_ends_with: String
+  offer_id_not_ends_with_nocase: String
+  offer: String
+  offer_not: String
+  offer_gt: String
+  offer_lt: String
+  offer_gte: String
+  offer_lte: String
+  offer_in: [String!]
+  offer_not_in: [String!]
+  offer_contains: String
+  offer_contains_nocase: String
+  offer_not_contains: String
+  offer_not_contains_nocase: String
+  offer_starts_with: String
+  offer_starts_with_nocase: String
+  offer_not_starts_with: String
+  offer_not_starts_with_nocase: String
+  offer_ends_with: String
+  offer_ends_with_nocase: String
+  offer_not_ends_with: String
+  offer_not_ends_with_nocase: String
+  offer_: Offer_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Take_filter]
+  or: [Take_filter]
+}
+
+enum Take_orderBy {
+  id
+  transaction
+  transaction__id
+  transaction__block
+  transaction__index
+  transaction__txn
+  transaction__timestamp
+  transaction__from
+  transaction__eth_price
+  transaction__price_source
+  transaction__l2_gas_price
+  transaction__l2_gas_used
+  transaction__l2_execution_fee
+  transaction__l2_execution_fee_usd
+  transaction__l1_base_fee
+  transaction__l1_gas_used
+  transaction__l1_overhead
+  transaction__l1_scalar
+  transaction__l1_decimal
+  transaction__l1_fee
+  transaction__l1_fee_usd
+  transaction__total_gas_fee
+  transaction__total_gas_fee_usd
+  taker
+  pay_gem
+  pay_gem__id
+  pay_gem__symbol
+  pay_gem__decimals
+  buy_gem
+  buy_gem__id
+  buy_gem__symbol
+  buy_gem__decimals
+  pay_amt
+  buy_amt
+  offer_id
+  offer
+  offer__id
+  offer__pay_amt
+  offer__buy_amt
+  offer__paid_amt
+  offer__bought_amt
+  offer__filled
+  offer__cancelled
+  offer__live
+  offer__removed_timestamp
+}
+
+type Token {
+  """ address of the token """
+  id: Bytes!
+  """ symbol of the token """
+  symbol: String!
+  """ decimals of the token """
+  decimals: BigInt!
+}
+
+input Token_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  symbol: String
+  symbol_not: String
+  symbol_gt: String
+  symbol_lt: String
+  symbol_gte: String
+  symbol_lte: String
+  symbol_in: [String!]
+  symbol_not_in: [String!]
+  symbol_contains: String
+  symbol_contains_nocase: String
+  symbol_not_contains: String
+  symbol_not_contains_nocase: String
+  symbol_starts_with: String
+  symbol_starts_with_nocase: String
+  symbol_not_starts_with: String
+  symbol_not_starts_with_nocase: String
+  symbol_ends_with: String
+  symbol_ends_with_nocase: String
+  symbol_not_ends_with: String
+  symbol_not_ends_with_nocase: String
+  decimals: BigInt
+  decimals_not: BigInt
+  decimals_gt: BigInt
+  decimals_lt: BigInt
+  decimals_gte: BigInt
+  decimals_lte: BigInt
+  decimals_in: [BigInt!]
+  decimals_not_in: [BigInt!]
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Token_filter]
+  or: [Token_filter]
+}
+
+enum Token_orderBy {
+  id
+  symbol
+  decimals
+}
+
+type Transaction {
+  """ the transaction hash """
+  id: Bytes!
+  """ the block number """
+  block: BigInt!
+  """ the index of the transaction in the block """
+  index: BigInt!
+  """ transaction hash as a hex string """
+  txn: String!
+  """ the timestamp of the transaction """
+  timestamp: BigInt!
+  """ map to the transaction caller """
+  from: Bytes!
+  """ if the transaction originated from a market aid contract, map to the market aid entity 
+  """
+  aid: Aid
+  """ the price of eth at the time of the transaction :check:"""
+  eth_price: BigDecimal!
+  """ the source of the price data """
+  price_source: String!
+  """ the l2 gas price in eth :check:"""
+  l2_gas_price: BigDecimal!
+  """ the amount of gas used by the l2 transaction :check:"""
+  l2_gas_used: BigInt!
+  """ the l2 executino fee in eth """
+  l2_execution_fee: BigDecimal!
+  """ the l2 execution fee in USD """
+  l2_execution_fee_usd: BigDecimal!
+  """ the l1 base fee in eth :check:"""
+  l1_base_fee: BigDecimal!
+  """ the l1_gas_used :underestimate:"""
+  l1_gas_used: BigDecimal!
+  """ overhead in the l1 transaction """
+  l1_overhead: BigInt!
+  """ the l1 scalar """
+  l1_scalar: BigDecimal!
+  """ the l1 decimal to make dynamic scalar value """
+  l1_decimal: BigInt!
+  """ the l1 fee in eth """
+  l1_fee: BigDecimal!
+  """ the l1 fee in usd """
+  l1_fee_usd: BigDecimal!
+  """ the total gas fee in eth """
+  total_gas_fee: BigDecimal!
+  """ the total gas fee in usd """
+  total_gas_fee_usd: BigDecimal!
+  """ map to the entities """
+  offers(skip: Int = 0, first: Int = 100, orderBy: Offer_orderBy, orderDirection: OrderDirection, where: Offer_filter): [Offer!]!
+  takes(skip: Int = 0, first: Int = 100, orderBy: Take_orderBy, orderDirection: OrderDirection, where: Take_filter): [Take!]!
+  bookUpdates(skip: Int = 0, first: Int = 100, orderBy: BookUpdate_orderBy, orderDirection: OrderDirection, where: BookUpdate_filter): [BookUpdate!]!
+}
+
+input Transaction_filter {
+  id: Bytes
+  id_not: Bytes
+  id_gt: Bytes
+  id_lt: Bytes
+  id_gte: Bytes
+  id_lte: Bytes
+  id_in: [Bytes!]
+  id_not_in: [Bytes!]
+  id_contains: Bytes
+  id_not_contains: Bytes
+  block: BigInt
+  block_not: BigInt
+  block_gt: BigInt
+  block_lt: BigInt
+  block_gte: BigInt
+  block_lte: BigInt
+  block_in: [BigInt!]
+  block_not_in: [BigInt!]
+  index: BigInt
+  index_not: BigInt
+  index_gt: BigInt
+  index_lt: BigInt
+  index_gte: BigInt
+  index_lte: BigInt
+  index_in: [BigInt!]
+  index_not_in: [BigInt!]
+  txn: String
+  txn_not: String
+  txn_gt: String
+  txn_lt: String
+  txn_gte: String
+  txn_lte: String
+  txn_in: [String!]
+  txn_not_in: [String!]
+  txn_contains: String
+  txn_contains_nocase: String
+  txn_not_contains: String
+  txn_not_contains_nocase: String
+  txn_starts_with: String
+  txn_starts_with_nocase: String
+  txn_not_starts_with: String
+  txn_not_starts_with_nocase: String
+  txn_ends_with: String
+  txn_ends_with_nocase: String
+  txn_not_ends_with: String
+  txn_not_ends_with_nocase: String
+  timestamp: BigInt
+  timestamp_not: BigInt
+  timestamp_gt: BigInt
+  timestamp_lt: BigInt
+  timestamp_gte: BigInt
+  timestamp_lte: BigInt
+  timestamp_in: [BigInt!]
+  timestamp_not_in: [BigInt!]
+  from: Bytes
+  from_not: Bytes
+  from_gt: Bytes
+  from_lt: Bytes
+  from_gte: Bytes
+  from_lte: Bytes
+  from_in: [Bytes!]
+  from_not_in: [Bytes!]
+  from_contains: Bytes
+  from_not_contains: Bytes
+  aid: String
+  aid_not: String
+  aid_gt: String
+  aid_lt: String
+  aid_gte: String
+  aid_lte: String
+  aid_in: [String!]
+  aid_not_in: [String!]
+  aid_contains: String
+  aid_contains_nocase: String
+  aid_not_contains: String
+  aid_not_contains_nocase: String
+  aid_starts_with: String
+  aid_starts_with_nocase: String
+  aid_not_starts_with: String
+  aid_not_starts_with_nocase: String
+  aid_ends_with: String
+  aid_ends_with_nocase: String
+  aid_not_ends_with: String
+  aid_not_ends_with_nocase: String
+  aid_: Aid_filter
+  eth_price: BigDecimal
+  eth_price_not: BigDecimal
+  eth_price_gt: BigDecimal
+  eth_price_lt: BigDecimal
+  eth_price_gte: BigDecimal
+  eth_price_lte: BigDecimal
+  eth_price_in: [BigDecimal!]
+  eth_price_not_in: [BigDecimal!]
+  price_source: String
+  price_source_not: String
+  price_source_gt: String
+  price_source_lt: String
+  price_source_gte: String
+  price_source_lte: String
+  price_source_in: [String!]
+  price_source_not_in: [String!]
+  price_source_contains: String
+  price_source_contains_nocase: String
+  price_source_not_contains: String
+  price_source_not_contains_nocase: String
+  price_source_starts_with: String
+  price_source_starts_with_nocase: String
+  price_source_not_starts_with: String
+  price_source_not_starts_with_nocase: String
+  price_source_ends_with: String
+  price_source_ends_with_nocase: String
+  price_source_not_ends_with: String
+  price_source_not_ends_with_nocase: String
+  l2_gas_price: BigDecimal
+  l2_gas_price_not: BigDecimal
+  l2_gas_price_gt: BigDecimal
+  l2_gas_price_lt: BigDecimal
+  l2_gas_price_gte: BigDecimal
+  l2_gas_price_lte: BigDecimal
+  l2_gas_price_in: [BigDecimal!]
+  l2_gas_price_not_in: [BigDecimal!]
+  l2_gas_used: BigInt
+  l2_gas_used_not: BigInt
+  l2_gas_used_gt: BigInt
+  l2_gas_used_lt: BigInt
+  l2_gas_used_gte: BigInt
+  l2_gas_used_lte: BigInt
+  l2_gas_used_in: [BigInt!]
+  l2_gas_used_not_in: [BigInt!]
+  l2_execution_fee: BigDecimal
+  l2_execution_fee_not: BigDecimal
+  l2_execution_fee_gt: BigDecimal
+  l2_execution_fee_lt: BigDecimal
+  l2_execution_fee_gte: BigDecimal
+  l2_execution_fee_lte: BigDecimal
+  l2_execution_fee_in: [BigDecimal!]
+  l2_execution_fee_not_in: [BigDecimal!]
+  l2_execution_fee_usd: BigDecimal
+  l2_execution_fee_usd_not: BigDecimal
+  l2_execution_fee_usd_gt: BigDecimal
+  l2_execution_fee_usd_lt: BigDecimal
+  l2_execution_fee_usd_gte: BigDecimal
+  l2_execution_fee_usd_lte: BigDecimal
+  l2_execution_fee_usd_in: [BigDecimal!]
+  l2_execution_fee_usd_not_in: [BigDecimal!]
+  l1_base_fee: BigDecimal
+  l1_base_fee_not: BigDecimal
+  l1_base_fee_gt: BigDecimal
+  l1_base_fee_lt: BigDecimal
+  l1_base_fee_gte: BigDecimal
+  l1_base_fee_lte: BigDecimal
+  l1_base_fee_in: [BigDecimal!]
+  l1_base_fee_not_in: [BigDecimal!]
+  l1_gas_used: BigDecimal
+  l1_gas_used_not: BigDecimal
+  l1_gas_used_gt: BigDecimal
+  l1_gas_used_lt: BigDecimal
+  l1_gas_used_gte: BigDecimal
+  l1_gas_used_lte: BigDecimal
+  l1_gas_used_in: [BigDecimal!]
+  l1_gas_used_not_in: [BigDecimal!]
+  l1_overhead: BigInt
+  l1_overhead_not: BigInt
+  l1_overhead_gt: BigInt
+  l1_overhead_lt: BigInt
+  l1_overhead_gte: BigInt
+  l1_overhead_lte: BigInt
+  l1_overhead_in: [BigInt!]
+  l1_overhead_not_in: [BigInt!]
+  l1_scalar: BigDecimal
+  l1_scalar_not: BigDecimal
+  l1_scalar_gt: BigDecimal
+  l1_scalar_lt: BigDecimal
+  l1_scalar_gte: BigDecimal
+  l1_scalar_lte: BigDecimal
+  l1_scalar_in: [BigDecimal!]
+  l1_scalar_not_in: [BigDecimal!]
+  l1_decimal: BigInt
+  l1_decimal_not: BigInt
+  l1_decimal_gt: BigInt
+  l1_decimal_lt: BigInt
+  l1_decimal_gte: BigInt
+  l1_decimal_lte: BigInt
+  l1_decimal_in: [BigInt!]
+  l1_decimal_not_in: [BigInt!]
+  l1_fee: BigDecimal
+  l1_fee_not: BigDecimal
+  l1_fee_gt: BigDecimal
+  l1_fee_lt: BigDecimal
+  l1_fee_gte: BigDecimal
+  l1_fee_lte: BigDecimal
+  l1_fee_in: [BigDecimal!]
+  l1_fee_not_in: [BigDecimal!]
+  l1_fee_usd: BigDecimal
+  l1_fee_usd_not: BigDecimal
+  l1_fee_usd_gt: BigDecimal
+  l1_fee_usd_lt: BigDecimal
+  l1_fee_usd_gte: BigDecimal
+  l1_fee_usd_lte: BigDecimal
+  l1_fee_usd_in: [BigDecimal!]
+  l1_fee_usd_not_in: [BigDecimal!]
+  total_gas_fee: BigDecimal
+  total_gas_fee_not: BigDecimal
+  total_gas_fee_gt: BigDecimal
+  total_gas_fee_lt: BigDecimal
+  total_gas_fee_gte: BigDecimal
+  total_gas_fee_lte: BigDecimal
+  total_gas_fee_in: [BigDecimal!]
+  total_gas_fee_not_in: [BigDecimal!]
+  total_gas_fee_usd: BigDecimal
+  total_gas_fee_usd_not: BigDecimal
+  total_gas_fee_usd_gt: BigDecimal
+  total_gas_fee_usd_lt: BigDecimal
+  total_gas_fee_usd_gte: BigDecimal
+  total_gas_fee_usd_lte: BigDecimal
+  total_gas_fee_usd_in: [BigDecimal!]
+  total_gas_fee_usd_not_in: [BigDecimal!]
+  offers_: Offer_filter
+  takes_: Take_filter
+  bookUpdates_: BookUpdate_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Transaction_filter]
+  or: [Transaction_filter]
+}
+
+enum Transaction_orderBy {
+  id
+  block
+  index
+  txn
+  timestamp
+  from
+  aid
+  aid__id
+  aid__created
+  eth_price
+  price_source
+  l2_gas_price
+  l2_gas_used
+  l2_execution_fee
+  l2_execution_fee_usd
+  l1_base_fee
+  l1_gas_used
+  l1_overhead
+  l1_scalar
+  l1_decimal
+  l1_fee
+  l1_fee_usd
+  total_gas_fee
+  total_gas_fee_usd
+  offers
+  takes
+  bookUpdates
+}
+
+type _Block_ {
+  """The hash of the block"""
+  hash: Bytes
+  """The block number"""
+  number: Int!
+  """Integer representation of the timestamp stored in blocks for the chain"""
+  timestamp: Int
+}
+
+"""The type for the top-level _meta field"""
+type _Meta_ {
+  """
+  Information about a specific subgraph block. The hash of the block
+  will be null if the _meta field has a block constraint that asks for
+  a block number. It will be filled if the _meta field has no block constraint
+  and therefore asks for the latest  block
+  
+  """
+  block: _Block_!
+  """The deployment ID"""
+  deployment: String!
+  """If `true`, the subgraph encountered indexing errors at some past block"""
+  hasIndexingErrors: Boolean!
+}
+
+enum _SubgraphErrorPolicy_ {
+  """Data will be returned even if the subgraph has indexing errors"""
+  allow
+  """
+  If the subgraph has indexing errors, data will be omitted. The default.
+  """
+  deny
+}
