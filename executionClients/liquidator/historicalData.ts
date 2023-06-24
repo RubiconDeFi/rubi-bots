@@ -23,15 +23,36 @@ export async function historicAccountsViaChainState(myProvider: ethers.providers
     let currEnterEvents: ethers.Event[];
     let currExitEvents: ethers.Event[];
     let progress;
-    const blockIncrement = 50000; // 50 000 TODO: is this too large?  too small?
-    // TODO: make sure we don't have loop overlap (querying for after botStartBlock).  Could result in some events getting added multiple times.  Possible solution is to just remove duplicate entries at the end but that's extra work
-    for (let startBlock = comptrollerCreationBlock; startBlock <= botStartBlock; startBlock += blockIncrement) {
-        // Finds all MarketEntered and MarketExited events from comptroller contract creation block to block bot started on
-        // TODO: make sure we're never getting more than 10,000 query results
-        currEnterEvents = await comptrollerInstance.queryFilter(enterFilter, startBlock, startBlock + blockIncrement);
-        currExitEvents = await comptrollerInstance.queryFilter(exitFilter, startBlock, startBlock + blockIncrement);
+    let blockIncrementReduced: boolean = false; // true if block-increment was reduced and needs to be returned to original size
+    //let blockIncrementIncreased: boolean = false; // true if block-increment was increased and needs to be returned to original size
+    let currentBlock = comptrollerCreationBlock;
+    let blockIncrement = 50000; // 50 000 TODO: is this too large?  too small?
+    const originalBlockIncrement = blockIncrement; // for returning increment to original size
+    // TODO: make sure we don't have loop overlap (querying for after botcurrentBlock).  Could result in some events getting added multiple times.  Possible solution is to just remove duplicate entries at the end but that's extra work
+    //for (let currentBlock = comptrollerCreationBlock; currentBlock <= botcurrentBlock; currentBlock += blockIncrement) {
+    while (currentBlock <= botStartBlock) {
 
-        // build array of accounts who have entered a market
+        // Finds all MarketEntered and MarketExited events from comptroller contract creation block to block bot started on
+        try {
+            currEnterEvents = await comptrollerInstance.queryFilter(enterFilter, currentBlock, currentBlock + blockIncrement);
+            currExitEvents = await comptrollerInstance.queryFilter(exitFilter, currentBlock, currentBlock + blockIncrement);    
+        }
+        catch (error) { //TODO: catch only query too large errors from provider
+            console.log("query too large. Rescaling and trying again");
+            currentBlock -= blockIncrement; // revert last loop's increment because it was too large
+            blockIncrement = Math.floor(blockIncrement / 2) // reduce size of increment
+            currentBlock += blockIncrement; // add new increment
+            blockIncrementReduced = true;
+            continue; // skip to start of next loop. re-try query with smaller blockIncrement
+        }
+
+        // if blockIncrement was reduced, return it to its original size
+        if ( blockIncrementReduced ) {
+            blockIncrement = originalBlockIncrement;
+            blockIncrementReduced = false;
+        }
+
+        // add to array of accounts who have entered a market
         for (const event of currEnterEvents) {
             cumEnteredEvents.push({
               account: event.args.account,
@@ -40,7 +61,7 @@ export async function historicAccountsViaChainState(myProvider: ethers.providers
             });
         }
 
-        // build array of accounts who have exited a market
+        // add to array of accounts who have exited a market
         for (const event of currExitEvents) {
             cumExitedEvents.push({
               account: event.args.account,
@@ -48,10 +69,17 @@ export async function historicAccountsViaChainState(myProvider: ethers.providers
               blockNumber: event.blockNumber
             });
         }
-        progress = (((startBlock - comptrollerCreationBlock) / (botStartBlock - comptrollerCreationBlock)) * 100).toFixed(2);
-        console.log("this currEnterEvents / currExitEvents: " + currEnterEvents.length + " / " + currExitEvents.length + "   " + progress + "%");
+        
+        progress = (((currentBlock - comptrollerCreationBlock) / (botStartBlock - comptrollerCreationBlock)) * 100).toFixed(2);
+        console.log("Number of currEnterEvents / currExitEvents: " + currEnterEvents.length + " / " + currExitEvents.length + "   " + progress + "%");
         //console.log("Current MarketEntered / MarketExited: " + cumEnteredEvents.length + " / " + cumExitedEvents.length + "   " + progress + "%");
+        
+        // last query was successful, so try a larger range of blocks
+        //blockIncrement = blockIncrement*2;
+        currentBlock += blockIncrement; // increment current block by blockIncrement
+        // TODO: if currentBlock is close to botStartBlock, don't go over
     }
+
     console.log("Number of MarketEntered Events: " + cumEnteredEvents.length);
     console.log("Number of MarketExited Events: " + cumExitedEvents.length);
 
@@ -84,13 +112,13 @@ export async function historicAccountsViaChainState(myProvider: ethers.providers
 // Use returned block number as starting block to find historical positions (positions opened before bot creation)
 // TODO: should I not pass in provider?
 // TODO: this is ugly as hell.  Refactor to trim parameters.  Shouldn't have to pass provider each time
-async function findContractCreationBlock(myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider, address: string, startBlock: number, endBlock: number): Promise<number> {
+async function findContractCreationBlock(myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider, address: string, currentBlock: number, endBlock: number): Promise<number> {
 
-    if (startBlock >= endBlock) {
-        return startBlock;
+    if (currentBlock >= endBlock) {
+        return currentBlock;
     }
 
-    let midBlock = Math.floor((startBlock + endBlock) / 2);
+    let midBlock = Math.floor((currentBlock + endBlock) / 2);
     // returns contract code (as hex) of address at midBlock.  If no contract is deployed, returns '0x'
     let codeHex = await myProvider.getCode(address, midBlock);
 
@@ -100,6 +128,6 @@ async function findContractCreationBlock(myProvider: ethers.providers.JsonRpcPro
     }
     else {
         // contract was already created, search lower half
-        return findContractCreationBlock(myProvider, address, startBlock, midBlock-1);
+        return findContractCreationBlock(myProvider, address, currentBlock, midBlock-1);
     }
 }
