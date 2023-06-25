@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { BotConfiguration } from "../../configuration/config";
 import COMPTROLLER_INTERFACE from "../../configuration/abis/Comptroller";
-import { historicAccountsViaChainState } from "./historicalData"
+import { reader } from "./historicalData"
 import { start } from "repl";
 
 export async function startLiquidatorBot(configuration: BotConfiguration) {
@@ -19,7 +19,11 @@ export async function startLiquidatorBot(configuration: BotConfiguration) {
         myProvider // TODO: use websocket (why?)
     );
 
-    await historicAccountsViaChainState(myProvider, comptrollerInstance);
+    const botCreationBlock = await myProvider.getBlockNumber();
+    let myReader = new reader(myProvider, comptrollerInstance, botCreationBlock);
+
+    await myReader.getPastPositions();
+    console.log("Done! It only took " + myReader.runningJobs + " tries!");
     // first test a call to closeFactorMantissa() view returns uint
     //console.log(await comptrollerInstance.closeFactorMantissa());
 
