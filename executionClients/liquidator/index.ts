@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { BotConfiguration } from "../../configuration/config";
-import COMPTROLLER_INTERFACE from "../../configuration/abis/Comptroller";
+import { COMPTROLLER_INTERFACE } from "../../configuration/abis/Comptroller";
 import { reader } from "./historicalData"
 import { start } from "repl";
 
@@ -22,8 +22,8 @@ export async function startLiquidatorBot(configuration: BotConfiguration) {
     const botCreationBlock = await myProvider.getBlockNumber();
     let myReader = new reader(myProvider, comptrollerInstance, botCreationBlock);
 
-    await myReader.getPastPositions();
-    console.log("Done! It only took " + myReader.runningJobs + " tries!");
+    await myReader.getHistoricPositions();
+    console.log("Number of historic open positions: " + myReader.historicPositions.length);
     // first test a call to closeFactorMantissa() view returns uint
     //console.log(await comptrollerInstance.closeFactorMantissa());
 
