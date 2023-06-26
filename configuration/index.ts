@@ -231,7 +231,6 @@ async function main() {
                 //return networkCallback().then(async (selectedNetwork: Network) => {
                     const selectedNetwork = Network.MAINNET; //TODO this is temp for testing. remove
                     console.log("The user selected this network", selectedNetwork);
-                    // TODO: Which tokens to target
                     const botConfiguration: BotConfiguration = {
                         botType: BotType.Liquidator,
                         //strategy: selectedStrat,

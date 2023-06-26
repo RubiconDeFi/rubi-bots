@@ -18,10 +18,10 @@ export async function startLiquidatorBot(configuration: BotConfiguration) {
         myProvider // TODO: use websocket (why?)
     );
 
-    const botCreationBlock = await myProvider.getBlockNumber();
-
     let myChainReader = new chainReader(configuration, comptrollerInstance);
 
+    // build list of active accounts by starting a listener and finding historic 
+    // MarketEntered/Exited events
     myChainReader.start();
 
     //console.log(await comptrollerInstance.closeFactorMantissa());

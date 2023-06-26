@@ -19,6 +19,7 @@ export class chainReader {
     private historicPositions: Position[];  // TODO: we don't need this to be a class variable.  refactor so it can be garbage collected when we're done discovering historic positions
     private backlogMarketExits: Position[]; // TODO: we don't need this to be a class variable.  refactor so it can be garbage collected when we're done discovering historic positions
     
+
     constructor(
         configuration: BotConfiguration, 
         comptrollerInstance: ethers.Contract
@@ -32,13 +33,18 @@ export class chainReader {
         this.loadingHistoricPositions = false;
     }
 
+
     async start() {
         this.botStartBlock = await this.myProvider.getBlockNumber();
 
         // start both processes
         // TODO: ensure these start on the same block
         let historicPositions = this.getHistoricPositions();
-        this.listenForUpdates();
+        this.listenForUpdates();  
+        // TODO: question.  
+        // listenForUpdates() starts listeners that run perpetually, so do variables declared in start()
+        // get garbage collected?  Does start() not return because of listenForUpdates()?
+        // Ex: does historicPositions get garbage collected?
 
         // wait until done finding historic positions, then combine both arrays
         await historicPositions;
@@ -50,7 +56,10 @@ export class chainReader {
         console.log("Number of open positions: " + this.activePositions.length);
     }
 
+
     // TODO: does ethers .on Event Listener wait for block to be confirmed?
+    // starts an event listener for MarketEntered and MarketExited events
+    // when an event is found, adds (MarketEntered) or removes (MarketExited) from activePositions
     async listenForUpdates() {
 
         this.comptrollerInstance.on('MarketEntered', (cToken, account) => {
@@ -60,7 +69,6 @@ export class chainReader {
                 account: account
             });
         }) 
-        console.log("Listening for MarketEntered events!");
 
         this.comptrollerInstance.on('MarketExited', (cToken, account) => {
             console.log("NEW MARKET EXITED EVENT");
@@ -79,13 +87,14 @@ export class chainReader {
                 this.removeExitedFromActive([{cToken, account}], this.activePositions);
             }
             
-        }) 
-        console.log("Listening for MarketExited events!");
+        })
     }
 
+    // starts process of getting historic active positions
     private async getHistoricPositions() {
         this.loadingHistoricPositions = true;
 
+        // find comptroller creation block to start search from
         const comptrollerCreationBlock = await this.findComptrollerCreationBlock(0, this.botStartBlock);
         console.log("Comptroller creation block found: " + comptrollerCreationBlock);
 
@@ -94,6 +103,8 @@ export class chainReader {
 
         const enteredEvents: Position[] = [];
         const exitedEvents: Position[] = [];
+
+        // call to recursive function to make the query
         await this.getHistoricMarketEnterExit(
             comptrollerCreationBlock, 
             this.botStartBlock, 
@@ -105,8 +116,8 @@ export class chainReader {
 
         console.log("Final enter / exit lengths: " + enteredEvents.length + " \ " + exitedEvents.length);
 
-        // remove matching elements of exitedEvents from enteredEvents 
-        // resulting in entered events being only active positions at time of bot start
+        // remove matching elements of exitedEvents from enteredEvents. 
+        // results in entered events consisting of only active positions at time of bot start
         this.removeExitedFromActive(exitedEvents, enteredEvents);
 
         this.historicPositions = enteredEvents;
@@ -125,8 +136,8 @@ export class chainReader {
                 activePosition.account === currExitedPosition.account
             );
 
-            // If we found a matching Position of currently active position, remove it.
-            // Otherwise, throw an error.  A MarketExited event can only come after a matching
+            // If currExitedPosition matches an element in activePositions, remove it.
+            // Otherwise, throw an error.  A MarketExited event should only ever come after a corresponding
             // MarketEntered event.
             if (index !== -1) {
                 activePositions.splice(index, 1);
@@ -136,8 +147,11 @@ export class chainReader {
         }
     }
 
-    // Recursively ...
-    // initially called with
+    // Query for all MarketEntered and MarketExited events.
+    // If the provider limits the number of query results (ex: Infura), split the query in half and 
+    // recursively call function twice more, searching upper and lower halves until it succeeds.
+    // If the provider is your own node, this should be quick :)
+    // initially called with:
     // startBlock = comptrollerCreationBlock
     // endBlock = this.botStartBlock
     private async getHistoricMarketEnterExit(
@@ -156,17 +170,21 @@ export class chainReader {
 
         let currEnterEvents: ethers.Event[], currExitEvents: ethers.Event[];
 
+        // try the query
         try {
             currEnterEvents = await this.comptrollerInstance.queryFilter(enterFilter, startBlock, endBlock);
             currExitEvents = await this.comptrollerInstance.queryFilter(exitFilter, startBlock, endBlock);    
         }
         catch (error) { // TODO: how tf to catch only "query returned more than 10000 results" errors
+            // cut block range in half
             const middleBlock = Math.round((startBlock + endBlock) / 2);
+            // query lower half
             await this.getHistoricMarketEnterExit(startBlock, middleBlock, enteredEvents, exitedEvents, enterFilter, exitFilter);
+            // query upper half
             await this.getHistoricMarketEnterExit(middleBlock + 1, endBlock, enteredEvents, exitedEvents, enterFilter, exitFilter);
             return;
         }
-        console.log("Got one!  Size of entered / exited: " + currEnterEvents.length + " / " + currExitEvents.length);
+        console.log("Query success!  Size of entered / exited: " + currEnterEvents.length + " / " + currExitEvents.length);
         
         // add to array of accounts who have entered a market
         for (const event of currEnterEvents) {
@@ -190,15 +208,18 @@ export class chainReader {
     // This seems to usually miss the correct block by 1 or 2.  Negligible for its current use.
     async findComptrollerCreationBlock(startBlock: number, endBlock: number): Promise<number> {
 
+        // we're looking for the Comptroller.sol creation block
         const address = this.comptrollerInstance.address;
 
+        // termination condition
         if (startBlock >= endBlock) {
             return startBlock;
         }
 
         let midBlock = Math.floor((startBlock + endBlock) / 2);
 
-        // returns contract code (as hex) of address at midBlock.  If no contract is deployed, returns '0x'
+        // returns contract code (as hex) of address at midBlock.  
+        // If the contract is NOT found at midBlock, returns '0x'
         let codeHex = await this.myProvider.getCode(address, midBlock);
 
         if (codeHex == "0x") {
