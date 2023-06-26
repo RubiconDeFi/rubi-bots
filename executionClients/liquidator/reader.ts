@@ -16,8 +16,7 @@ export class chainReader {
     public botStartBlock: number;
     public loadingHistoricPositions: boolean; 
     public activePositions: Position[];
-    private historicPositions: Position[];  // TODO: we don't need this to be a class variable.  refactor so it can be garbage collected when we're done discovering historic positions
-    private backlogMarketExits: Position[]; // TODO: we don't need this to be a class variable.  refactor so it can be garbage collected when we're done discovering historic positions
+    private backlogMarketExits: Position[];
     
 
     constructor(
@@ -27,7 +26,6 @@ export class chainReader {
 
         this.myProvider = configuration.connections.jsonRpcProvider;
         this.comptrollerInstance = comptrollerInstance;
-        this.historicPositions = [];
         this.activePositions = [];
         this.backlogMarketExits = [];
         this.loadingHistoricPositions = false;
@@ -47,8 +45,7 @@ export class chainReader {
         // Ex: does historicPositions get garbage collected?
 
         // wait until done finding historic positions, then combine both arrays
-        await historicPositions;
-        this.activePositions = this.activePositions.concat(this.historicPositions);
+        this.activePositions = this.activePositions.concat(await historicPositions);
 
         // Now we can remove MarketExits that were emitted while we were finding historic positions
         this.removeExitedFromActive(this.backlogMarketExits, this.activePositions);
@@ -120,9 +117,9 @@ export class chainReader {
         // results in entered events consisting of only active positions at time of bot start
         this.removeExitedFromActive(exitedEvents, enteredEvents);
 
-        this.historicPositions = enteredEvents;
-
         this.loadingHistoricPositions = false;
+
+        return enteredEvents;
     }
 
     // Removes a Position from activePositions if there is a matching position in exitedPositions
