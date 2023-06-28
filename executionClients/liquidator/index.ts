@@ -20,11 +20,24 @@ export async function startLiquidatorBot(configuration: BotConfiguration) {
 
     let myChainReader = new chainReader(configuration, comptrollerInstance);
 
+    process.on('exit', async (code) => {
+        console.log('Process exiting with code:', code);
+        await myChainReader.saveData();
+    });
+
     // build list of active accounts by starting a listener and finding historic 
     // MarketEntered/Exited events
-    myChainReader.start();
+    let readerStarted = myChainReader.start();
+    
+    // Ask any config questions while reader is loading
+    await readerStarted;
+    console.log("Length: " + myChainReader.activePositions.length);
 
     //console.log(await comptrollerInstance.closeFactorMantissa());
+    console.log("Our lucky guest: ");
+    console.log(await comptrollerInstance.getAssetsIn(myChainReader.activePositions[69].account));
+    console.log(await comptrollerInstance.getAccountLiquidity(myChainReader.activePositions[69].account));
+
 
 }
 

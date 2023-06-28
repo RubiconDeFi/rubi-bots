@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import fs from 'fs';
 import { BotConfiguration } from "../../configuration/config";
 
 // TODO: move
@@ -16,6 +17,7 @@ export class chainReader {
     public botStartBlock: number;
     public loadingHistoricPositions: boolean; 
     public activePositions: Position[];
+    private activePositionsPath: string;
     private backlogMarketExits: Position[];
     
 
@@ -29,15 +31,30 @@ export class chainReader {
         this.activePositions = [];
         this.backlogMarketExits = [];
         this.loadingHistoricPositions = false;
+        this.activePositionsPath = 'executionClients/liquidator/activePositions.json';
     }
 
 
     async start() {
+        let startBlock: number;
+
         this.botStartBlock = await this.myProvider.getBlockNumber();
+
+        // First check if we already have some historical data
+        const lastKnownBlock = this.loadData();
+        if (lastKnownBlock > 0) {
+            startBlock = lastKnownBlock;
+        }
+        else {
+            console.log('No file found or file does not have proper data.  Finding comptroller creation block');
+            // find comptroller creation block to start search from
+            startBlock = await this.findComptrollerCreationBlock(0, this.botStartBlock);
+            console.log("Comptroller creation block found: " + startBlock);
+        }
 
         // start both processes
         // TODO: ensure these start on the same block
-        let historicPositions = this.getHistoricPositions();
+        let historicPositions = this.getHistoricPositions(startBlock);
         this.listenForUpdates();  
         // TODO: question.  
         // listenForUpdates() starts listeners that run perpetually, so do variables declared in start()
@@ -50,7 +67,56 @@ export class chainReader {
         // Now we can remove MarketExits that were emitted while we were finding historic positions
         this.removeExitedFromActive(this.backlogMarketExits, this.activePositions);
 
+        // since we just queried historical positions we should save so we don't have to again
+        this.saveData();
+
         console.log("Number of open positions: " + this.activePositions.length);
+    }
+
+
+    loadData(): number {
+
+        let storedData: string, storedObj: any, lastBlock: number;
+
+        try {
+            storedData = fs.readFileSync(this.activePositionsPath, 'utf-8');
+            storedObj = JSON.parse(storedData);  
+        }
+        catch ( error ) {
+            if (error.code === 'ENOENT') {
+                // file does not exist
+                return -1;
+            }
+            console.error("Error reading file: " + error);
+            throw error;
+        }
+
+        if ( 
+            storedObj.lastBlock !== undefined && 
+            storedObj.activePositions !== undefined
+        ) {
+            lastBlock = storedObj.lastBlock;
+            this.activePositions = storedObj.activePositions
+            console.log("data successfully loaded.  Starting from block " + lastBlock);
+        }
+        else {
+            lastBlock = -1;
+            console.log("data loaded but couldn't read data");
+        }
+
+        return lastBlock;
+    }
+
+
+    async saveData() {
+        const lastBlock = await this.myProvider.getBlockNumber();
+        const data = {
+            lastBlock: lastBlock,
+            activePositions: this.activePositions
+        }
+
+        // TODO: does this create the file if it doesn't exit?
+        fs.writeFileSync(this.activePositionsPath, JSON.stringify(data));
     }
 
 
@@ -87,13 +153,10 @@ export class chainReader {
         })
     }
 
-    // starts process of getting historic active positions
-    private async getHistoricPositions() {
-        this.loadingHistoricPositions = true;
 
-        // find comptroller creation block to start search from
-        const comptrollerCreationBlock = await this.findComptrollerCreationBlock(0, this.botStartBlock);
-        console.log("Comptroller creation block found: " + comptrollerCreationBlock);
+    // starts process of getting historic active positions
+    private async getHistoricPositions(startBlock: number) {
+        this.loadingHistoricPositions = true;
 
         const enterFilter = this.comptrollerInstance.filters['MarketEntered']();
         const exitFilter = this.comptrollerInstance.filters['MarketExited']();
@@ -103,7 +166,7 @@ export class chainReader {
 
         // call to recursive function to make the query
         await this.getHistoricMarketEnterExit(
-            comptrollerCreationBlock, 
+            startBlock, 
             this.botStartBlock, 
             enteredEvents, 
             exitedEvents, 
@@ -111,7 +174,7 @@ export class chainReader {
             exitFilter
         );
 
-        console.log("Final enter / exit lengths: " + enteredEvents.length + " \ " + exitedEvents.length);
+        console.log("Final queried enter / exit lengths: " + enteredEvents.length + " \ " + exitedEvents.length);
 
         // remove matching elements of exitedEvents from enteredEvents. 
         // results in entered events consisting of only active positions at time of bot start
@@ -122,27 +185,6 @@ export class chainReader {
         return enteredEvents;
     }
 
-    // Removes a Position from activePositions if there is a matching position in exitedPositions
-    private removeExitedFromActive(exitedPositions: Position[], activePositions: Position[]) {
-        console.log("Doing some trimming...");
-
-        for (const currExitedPosition of exitedPositions) {
-
-            const index = activePositions.findIndex(activePosition => 
-                activePosition.cToken === currExitedPosition.cToken && 
-                activePosition.account === currExitedPosition.account
-            );
-
-            // If currExitedPosition matches an element in activePositions, remove it.
-            // Otherwise, throw an error.  A MarketExited event should only ever come after a corresponding
-            // MarketEntered event.
-            if (index !== -1) {
-                activePositions.splice(index, 1);
-            } else {
-                throw new Error(`Matching event not found for cToken: ${currExitedPosition.cToken}, account: ${currExitedPosition.account}`);
-            }
-        }
-    }
 
     // Query for all MarketEntered and MarketExited events.
     // If the provider limits the number of query results (ex: Infura), split the query in half and 
@@ -199,6 +241,29 @@ export class chainReader {
             });
         }
     }
+
+
+    // Removes a Position from activePositions if there is a matching position in exitedPositions
+    private removeExitedFromActive(exitedPositions: Position[], activePositions: Position[]) {
+
+        for (const currExitedPosition of exitedPositions) {
+
+            const index = activePositions.findIndex(activePosition => 
+                activePosition.cToken === currExitedPosition.cToken && 
+                activePosition.account === currExitedPosition.account
+            );
+
+            // If currExitedPosition matches an element in activePositions, remove it.
+            // Otherwise, throw an error.  A MarketExited event should only ever come after a corresponding
+            // MarketEntered event.
+            if (index !== -1) {
+                activePositions.splice(index, 1);
+            } else {
+                throw new Error(`Matching event not found for cToken: ${currExitedPosition.cToken}, account: ${currExitedPosition.account}`);
+            }
+        }
+    }
+
 
     // Binary search on-chain to find block at which contract is created
     // Use returned block number as starting block to find historical positions
