@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { BotConfiguration } from "../../configuration/config";
 import COMPTROLLER_INTERFACE from "../../configuration/abis/Comptroller";
-import { chainReader } from "./reader"
+import { liquidatorBot } from "./liquidatorBot";
 import { start } from "repl";
 
 export async function startLiquidatorBot(configuration: BotConfiguration) {
@@ -18,25 +18,17 @@ export async function startLiquidatorBot(configuration: BotConfiguration) {
         myProvider // TODO: use websocket (why?)
     );
 
-    let myChainReader = new chainReader(configuration, comptrollerInstance);
+    // TODO: where to move this?
+    // process.on('exit', async (code) => {
+    //     console.log('Process exiting with code:', code);
+    //     await myChainReader.saveData();
+    // });
 
-    process.on('exit', async (code) => {
-        console.log('Process exiting with code:', code);
-        await myChainReader.saveData();
-    });
-
-    // build list of active accounts by starting a listener and finding historic 
-    // MarketEntered/Exited events
-    let readerStarted = myChainReader.start();
-    
+    let myLiqBot = new liquidatorBot(configuration, comptrollerInstance);
+    myLiqBot.start();
     // Ask any config questions while reader is loading
-    await readerStarted;
-    console.log("Length: " + myChainReader.activePositions.length);
+    // TODO: how to do this now since we're starting the reader in liquidatorBot?
 
-    //console.log(await comptrollerInstance.closeFactorMantissa());
-    console.log("Our lucky guest: ");
-    console.log(await comptrollerInstance.getAssetsIn(myChainReader.activePositions[69].account));
-    console.log(await comptrollerInstance.getAccountLiquidity(myChainReader.activePositions[69].account));
 
 
 }

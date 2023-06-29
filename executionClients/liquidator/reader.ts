@@ -11,7 +11,6 @@ export type Position = {
 
 export class chainReader {
 
-    public configuration: BotConfiguration;
     public myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider;
     public comptrollerInstance: ethers.Contract;
     public botStartBlock: number;
