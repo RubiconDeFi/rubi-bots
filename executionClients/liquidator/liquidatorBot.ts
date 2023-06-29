@@ -51,43 +51,6 @@ export class liquidatorBot {
     }
 
     private async watchAccountLiquidity () {
-        // how many concurrent processes to start calling getAccountLiquidity
-        // divides activePositions up into numBatches equal parts and calls readAccountsLiquidity for each
-        // TODO: This can't be the best way to do this.  Working with mainnet data so activePositions has around 200,000 
-        // entries.  If we identify a strategy that can scale for mainnet data, we're set forever
-        const numBatches = 5;
-
-        const multi = new MultiCall(this.myProvider);
-
-        // calls function to search through all active positions for underwater positions.  
-        // When it's done searching, wait `seconds` then call again
-        // TODO: using infinite loop feels really gross.  There's probably a safer and cleaner way
-        while (true) {
-
-            const batchSize = Math.ceil(this.reader.activePositions.length / numBatches);
-            const batchPromises: Promise<void>[] = [];
-
-            for (let i = 0; i < numBatches; i++) {
-                const start = i * batchSize;
-                const end = Math.min(start + batchSize, this.reader.activePositions.length);
-
-                const batchPromise = this.readAccountsLiquidity(start, end, multi);
-                batchPromises.push(batchPromise);
-            }
-
-            await Promise.all(batchPromises);
-            console.log("Done calling");
-
-            // sleep before next call
-            // TODO: maybe unnecessary 
-            const seconds = 60;
-            await new Promise(r => setTimeout(r, seconds * 1000));
-        }
-
-        
-    }
-
-    private async readAccountsLiquidity(start: number, end: number, multi: MultiCall) {
 
         type Input = {
             target: string,
@@ -95,63 +58,61 @@ export class liquidatorBot {
             args: string[]
         }
 
-        // searches from start to end by increments of 50
-        // anything larger than 50 and multicall errors out because of 24kb smart contract size
-        for (let i = start; i < end; i += 50) {
-            //console.log((i/end)*100 + "%");
+        // number of promises to run at once
+        const batchSize = 1000;
 
-            const inputs: Input[] = [];
+        const multi = new MultiCall(this.myProvider);
 
-            // adds 50 accounts to the next query
-            for(let j = 0; j < 50 && j + i < this.reader.activePositions.length; j++) {
-                inputs.push({
-                    target: this.trollInstance.address,
-                    function: 'getAccountLiquidity',
-                    args: [this.reader.activePositions[j+i].account]
-                });
-            }
+        // calls function to search through all active positions for underwater positions.
+        while (true) {
+            
+            let batchPromises: Promise<[number, any[]]>[] = [];
 
-            // TODO: fill in
-            var data: [number, any[]];
-            try {
-                data = await multi.multiCall(COMPTROLLER_INTERFACE, inputs);
-            }
-            catch {
+            // queries (50 * batchSize) accounts at a time
+            for (let i = 0; i < this.reader.activePositions.length; i += 50) {
+                console.log(((i/this.reader.activePositions.length)*100).toFixed(2) + "%");
+                let inputs: Input[] = [];
 
-            }
-        
-            // data[0] is block number
-            // data[1] is array of 'getAccountLiquidity' results
-            // data[1][i] is a specific tuple result of a single call of `getAccountLiquidity`
-            // data[1][i][0] is "error" bignum.  == 0 on success
-            // data[1][i][1] is "liquidity" bignum.  !=0 means account has available liquidity
-            // data[1][i][2] is "shortfall" bignum.  !=0 means account is below collateral requirement and is subject to liquidation
-            // inputs[i].args an array of arguments for multicall.  In this case it's just the account address
-            for (let i = 0; i < data.length; i++) {
+                // adds 50 accounts to the next query
+                for(let j = 0; j < 50 && j + i < this.reader.activePositions.length; j++) {
+                    inputs.push({
+                        target: this.trollInstance.address,
+                        function: 'getAccountLiquidity',
+                        args: [this.reader.activePositions[j+i].account]
+                    });
+                }
                 
-                const [error, liquidity, shortfall] = data[1][i];
-                const addr = inputs[i].args;
-                // console.log(error);
-                // console.log(liquidity);
-                // console.log(shortfall);
-                // console.log(acct + "\n");
+                if (batchPromises.length >= batchSize) {
+                    console.log("Batch size reached.  Waiting for current promises to resolve");
+                    await Promise.allSettled(batchPromises);
+                    batchPromises = []; // reset.  TODO: idk if I have to manually reset it here
+                }
 
-                // TODO: can I remove accounts that have 0 liquidity AND 0 shortfall?
-                if (!error.isZero()) {
-                    console.error("Error in querying account liquidity");
-                    console.log(error);
-                }
-                if (!liquidity.isZero()) {
-                    // account has available liquidity
-                }
-                if (!shortfall.isZero()) {
-                    // LIQUIDATE!!!
-                    // account is below collateral requirement and is subject to liquidation
-                    this.investigateLiquidate();
-                }
+                let data: Promise<[number, any[]]> = multi.multiCall(COMPTROLLER_INTERFACE, inputs);
+                batchPromises.push(data);
+                data.then((res) => {
+                    // handle result
+                    for (let i = 0; i < res.length; i++) {
+
+                        const [error, liquidity, shortfall] = res[1][i];
+                        const addr = inputs[i].args;
+                        // console.log(error);
+                        // console.log(liquidity);
+                        // console.log(shortfall);
+                        // console.log(addr + "\n");
+                    }
+                });
+
+                // small delay to allow for SIGINT (ctrl+c) to be handled
+                await new Promise((resolve) => setTimeout(resolve, 5));
             }
+
+            console.log("Done calling");
         }
+
+        
     }
+
 
     private async investigateLiquidate() {
         // calculations and such

@@ -258,7 +258,8 @@ export class chainReader {
             if (index !== -1) {
                 activePositions.splice(index, 1);
             } else {
-                throw new Error(`Matching event not found for cToken: ${currExitedPosition.cToken}, account: ${currExitedPosition.account}`);
+                // TODO: resolve
+                //throw new Error(`Matching event not found for cToken: ${currExitedPosition.cToken}, account: ${currExitedPosition.account}`);
             }
         }
     }
