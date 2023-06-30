@@ -18,18 +18,10 @@ export async function startLiquidatorBot(configuration: BotConfiguration) {
         myProvider // TODO: use websocket (why?)
     );
 
-    // TODO: where to move this?
-    // process.on('exit', async (code) => {
-    //     console.log('Process exiting with code:', code);
-    //     await myChainReader.saveData();
-    // });
-
     let myLiqBot = new liquidatorBot(configuration, comptrollerInstance);
     myLiqBot.start();
     // Ask any config questions while reader is loading
     // TODO: how to do this now since we're starting the reader in liquidatorBot?
-
-
 
 }
 

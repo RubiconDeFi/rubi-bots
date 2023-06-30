@@ -32,6 +32,14 @@ export const marketAidFactoriesByNetwork: Record<number, string> = {
     [Network.POLYGON_MUMBAI]: getAddress('0x4841DcC66F6CfC600382ec98f34d43332c535B9B'),
 };
 
+// TODO: fill in with deployed addresses
+export const comptrollerByNetwork: Record<number, string> = {
+    [Network.OPTIMISM_GOERLI]: getAddress(''),
+    [Network.OPTIMISM_MAINNET]: getAddress(''),
+    [Network.ARBITRUM_TESTNET]: getAddress(''),
+    [Network.ARBITRUM_MAINNET]: getAddress(''),
+}
+
 // Input tokens 
 export const tokenList: TokenList = {
     name: 'Rubicon Token List',
@@ -362,3 +370,10 @@ export type OnChainBookWithData = OnChainBookOrderWithData[] | any[];
 // Returns infor for a single strat trade id, could be one order
 // SIZES IMPLICITLY IN THE CLASSIC ASSET amount??
 export type OnChainBookOrderWithData = { askPrice: number, askSize: number, bidPrice: number, bidSize: number, stratTradeID: BigNumber }
+
+// for liquidator bot
+// TODO: would this be better as a mapping?
+export type Position = {
+    cToken: string[];  // array of cToken addresses
+    account: string; // address
+}

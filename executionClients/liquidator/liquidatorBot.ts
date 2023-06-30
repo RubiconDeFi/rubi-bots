@@ -1,7 +1,8 @@
 import COMPTROLLER_INTERFACE from "../../configuration/abis/Comptroller";
-import { BotConfiguration } from "../../configuration/config";
+import { BotConfiguration, Position } from "../../configuration/config";
 import { MultiCall } from '@indexed-finance/multicall';
-import { chainReader, Position } from "./reader"; // TODO: move Position somewhere
+import { chainReader } from "./chainReader";
+import { graphReader } from "./graphReader";
 import { ethers } from "ethers";
 
 
@@ -12,14 +13,15 @@ export class liquidatorBot {
     public configuration: BotConfiguration; // TODO: don't need to set this in both the bot and reader
     public trollInstance: ethers.Contract; // TODO: don't need to set this in both the bot and reader
     public myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider; // TODO: don't need to set this in both the bot and reader
+    public reader: chainReader | graphReader;
+    public myChainReader: chainReader;
+    public myGraphReader: graphReader;
     private closeFactorMantissa: ethers.BigNumber;
-    private reader: chainReader;
 
     constructor(
         configuration: BotConfiguration, 
         trollInstance: ethers.Contract
         ) {
-
         this.configuration = configuration;
         this.myProvider = configuration.connections.jsonRpcProvider;
         this.trollInstance = trollInstance;
@@ -28,9 +30,11 @@ export class liquidatorBot {
 
     async start () {
 
+        this.myChainReader = new chainReader(this.configuration, this.trollInstance);
+        this.myGraphReader = new graphReader(this.configuration, this.trollInstance);
         // start reader
-        // TODO: should I do this here or in constructor?
-        this.reader = new chainReader(this.configuration, this.trollInstance);
+        // TODO: should default to graphReader
+        this.reader = this.myChainReader;
 
         // build list of active accounts by starting a listener and finding historic 
         // MarketEntered/Exited events
@@ -95,7 +99,7 @@ export class liquidatorBot {
                 if (batchPromises.length >= batchSize) {
                     console.log("Batch size reached.  Waiting for current promises to resolve");
                     await Promise.allSettled(batchPromises);
-                    batchPromises = []; // reset.  TODO: idk if I have to manually reset it here
+                    batchPromises = []; // reset
                 }
 
                 // makes multicall query
@@ -104,15 +108,20 @@ export class liquidatorBot {
                 data.then((res) => {
                     // handle result
                     //console.log(res[1]);
-                    // for (let i = 0; i < res.length; i++) {
+                    for (let i = 0; i < res.length; i++) {
 
-                    //     const [error, liquidity, shortfall] = res[1][i];
-                    //     const addr = inputs[i].args;
-                    //     console.log(error);
-                    //     console.log(liquidity);
-                    //     console.log(shortfall);
-                    //     console.log(addr + "\n");
-                    // }
+                        const [error, liquidity, shortfall] = res[1][i];
+                        const account = inputs[i].args[0]; // address
+                        // console.log(error);
+                        // console.log(liquidity);
+                        // console.log(shortfall);
+                        // console.log(addr + "\n");
+
+                        // if shortfall != 0 then account is below collateral requirement and subject to liquidation
+                        if (!shortfall.isZero()) {
+                            this.investigateLiquidate(account);
+                        }
+                    }
                 });
 
                 // small delay to allow for SIGINT (ctrl+c) to be handled
@@ -126,9 +135,9 @@ export class liquidatorBot {
     }
 
 
-    private async investigateLiquidate() {
+    private async investigateLiquidate(account: string) {
         // calculations and such
-        console.log("liquidate the mfer");
+        console.log("liquidate the mfer " + account);
     }
 
 
