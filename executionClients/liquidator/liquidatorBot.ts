@@ -1,7 +1,7 @@
 import COMPTROLLER_INTERFACE from "../../configuration/abis/Comptroller";
 import { BotConfiguration } from "../../configuration/config";
 import { MultiCall } from '@indexed-finance/multicall';
-import { chainReader } from "./reader";
+import { chainReader, Position } from "./reader"; // TODO: move Position somewhere
 import { ethers } from "ethers";
 
 
@@ -36,7 +36,9 @@ export class liquidatorBot {
         // MarketEntered/Exited events
         let readerStarted = this.reader.start();
 
+        console.log("starting reader");
         await readerStarted;
+        console.log("reader started");
 
         // get close factor mantissa
         // TODO: how often should this be updated?
@@ -59,6 +61,9 @@ export class liquidatorBot {
         }
 
         // number of promises to run at once
+        // ensures we don't reach the heap size limit
+        // TODO: 1000 is a bit arbitrary.  
+        // Wasn't running into heap size issues, maybe increase?
         const batchSize = 1000;
 
         const multi = new MultiCall(this.myProvider);
@@ -67,6 +72,8 @@ export class liquidatorBot {
         while (true) {
             
             let batchPromises: Promise<[number, any[]]>[] = [];
+
+            console.log("Unique addresses: " + this.reader.activePositions.length);
 
             // queries (50 * batchSize) accounts at a time
             for (let i = 0; i < this.reader.activePositions.length; i += 50) {
@@ -80,27 +87,32 @@ export class liquidatorBot {
                         function: 'getAccountLiquidity',
                         args: [this.reader.activePositions[j+i].account]
                     });
+                    //console.log(this.reader.activePositions[j+i].account);
                 }
                 
+                // if we have batchSize queries already sent, wait until they resolve before
+                // sending the next query
                 if (batchPromises.length >= batchSize) {
                     console.log("Batch size reached.  Waiting for current promises to resolve");
                     await Promise.allSettled(batchPromises);
                     batchPromises = []; // reset.  TODO: idk if I have to manually reset it here
                 }
 
+                // makes multicall query
                 let data: Promise<[number, any[]]> = multi.multiCall(COMPTROLLER_INTERFACE, inputs);
                 batchPromises.push(data);
                 data.then((res) => {
                     // handle result
-                    for (let i = 0; i < res.length; i++) {
+                    //console.log(res[1]);
+                    // for (let i = 0; i < res.length; i++) {
 
-                        const [error, liquidity, shortfall] = res[1][i];
-                        const addr = inputs[i].args;
-                        // console.log(error);
-                        // console.log(liquidity);
-                        // console.log(shortfall);
-                        // console.log(addr + "\n");
-                    }
+                    //     const [error, liquidity, shortfall] = res[1][i];
+                    //     const addr = inputs[i].args;
+                    //     console.log(error);
+                    //     console.log(liquidity);
+                    //     console.log(shortfall);
+                    //     console.log(addr + "\n");
+                    // }
                 });
 
                 // small delay to allow for SIGINT (ctrl+c) to be handled
