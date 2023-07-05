@@ -33,12 +33,12 @@ export const marketAidFactoriesByNetwork: Record<number, string> = {
 };
 
 // TODO: fill in with deployed addresses
-export const comptrollerByNetwork: Record<number, string> = {
-    [Network.OPTIMISM_GOERLI]: getAddress(''),
-    [Network.OPTIMISM_MAINNET]: getAddress(''),
-    [Network.ARBITRUM_TESTNET]: getAddress(''),
-    [Network.ARBITRUM_MAINNET]: getAddress(''),
-}
+// export const comptrollerByNetwork: Record<number, string> = {
+//     [Network.OPTIMISM_GOERLI]: getAddress(''),
+//     [Network.OPTIMISM_MAINNET]: getAddress(''),
+//     [Network.ARBITRUM_TESTNET]: getAddress(''),
+//     [Network.ARBITRUM_MAINNET]: getAddress(''),
+// }
 
 // Input tokens 
 export const tokenList: TokenList = {

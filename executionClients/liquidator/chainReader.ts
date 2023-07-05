@@ -1,10 +1,14 @@
 import { ethers } from "ethers";
 import fs from 'fs';
-import { reader } from "./reader"
 import { BotConfiguration, Position } from "../../configuration/config";
 
-export class chainReader extends reader{
+export class chainReader {
 
+    public myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider;
+    public comptrollerInstance: ethers.Contract;
+    public botStartBlock: number;
+    public activePositions: Position[];
+    public savedPositionsFile: string;
     public loadingHistoricPositions: boolean;
     private backlogMarketExits: Position[];
     
@@ -12,14 +16,13 @@ export class chainReader extends reader{
         configuration: BotConfiguration, 
         comptrollerInstance: ethers.Contract
         ) {
-        super(configuration, comptrollerInstance);
+        this.myProvider = configuration.connections.jsonRpcProvider;
+        this.comptrollerInstance = comptrollerInstance;
+        this.activePositions = [];
+        this.botStartBlock = 0;
+        this.savedPositionsFile = 'executionClients/liquidator/activePositions.json';
         this.backlogMarketExits = [];
         this.loadingHistoricPositions = false;
-    }
-
-    // TODO: finish
-    async receiveHandoff(block: number) {
-        
     }
 
     async start() {
@@ -67,6 +70,43 @@ export class chainReader extends reader{
 
         fs.writeFileSync(this.savedPositionsFile, JSON.stringify(data));
     }
+
+        // attempts to load activePositions.json
+    // on success, returns the stored block number to be used as the block to start searching from
+    // on failure, returns -1
+    loadData(): number {
+
+        let storedData: string, storedObj: any, lastBlock: number;
+
+        try {
+            storedData = fs.readFileSync(this.savedPositionsFile, 'utf-8');
+            storedObj = JSON.parse(storedData);  
+        }
+        catch ( error ) {
+            if (error.code === 'ENOENT') {
+                // file does not exist
+                return -1;
+            }
+            console.error("Error reading file: " + error);
+            throw error;
+        }
+
+        if ( 
+            storedObj.lastBlock !== undefined && 
+            storedObj.activePositions !== undefined
+        ) {
+            lastBlock = storedObj.lastBlock;
+            this.activePositions = storedObj.activePositions;
+            console.log("Data successfully loaded.  Starting from block " + lastBlock);
+        }
+        else {
+            lastBlock = -1;
+            console.log("data loaded but couldn't read data");
+        }
+
+        return lastBlock;
+    }
+
 
 
     // TODO: does ethers .on Event Listener wait for block to be confirmed?

@@ -1,8 +1,7 @@
 import COMPTROLLER_INTERFACE from "../../configuration/abis/Comptroller";
 import { BotConfiguration, Position } from "../../configuration/config";
 import { MultiCall } from '@indexed-finance/multicall';
-import { chainReader } from "./chainReader";
-import { graphReader } from "./graphReader";
+import { chainReader } from "./chainReader"; // TODO: move Position somewhere
 import { ethers } from "ethers";
 
 
@@ -13,10 +12,8 @@ export class liquidatorBot {
     public configuration: BotConfiguration; // TODO: don't need to set this in both the bot and reader
     public trollInstance: ethers.Contract; // TODO: don't need to set this in both the bot and reader
     public myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider; // TODO: don't need to set this in both the bot and reader
-    public reader: chainReader | graphReader;
-    public myChainReader: chainReader;
-    public myGraphReader: graphReader;
     private closeFactorMantissa: ethers.BigNumber;
+    private reader: chainReader;
 
     constructor(
         configuration: BotConfiguration, 
@@ -25,16 +22,13 @@ export class liquidatorBot {
         this.configuration = configuration;
         this.myProvider = configuration.connections.jsonRpcProvider;
         this.trollInstance = trollInstance;
-        this.closeFactorMantissa = ethers.BigNumber.from(-1);
     }
 
     async start () {
 
-        this.myChainReader = new chainReader(this.configuration, this.trollInstance);
-        this.myGraphReader = new graphReader(this.configuration, this.trollInstance);
         // start reader
-        // TODO: should default to graphReader
-        this.reader = this.myChainReader;
+        // TODO: should I do this here or in constructor?
+        this.reader = new chainReader(this.configuration, this.trollInstance);
 
         // build list of active accounts by starting a listener and finding historic 
         // MarketEntered/Exited events
@@ -44,9 +38,6 @@ export class liquidatorBot {
         await readerStarted;
         console.log("reader started");
 
-        // get close factor mantissa
-        // TODO: how often should this be updated?
-        this.closeFactorMantissa = await this.trollInstance.closeFactorMantissa();
 
         //console.log("Our lucky guest: ");
         //console.log(await this.trollInstance.getAssetsIn(this.reader.activePositions[742].account));
