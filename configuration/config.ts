@@ -33,7 +33,7 @@ export const marketAidFactoriesByNetwork: Record<number, string> = {
     [Network.OPTIMISM_MAINNET]: getAddress('0x267D94C6e67e4436EFfE092b08d040cFF36B2DA7'),
     [Network.POLYGON_MUMBAI]: getAddress('0x4841DcC66F6CfC600382ec98f34d43332c535B9B'),
     [Network.ARBITRUM_TESTNET]: getAddress('0x746750031Cc56Ccb386D9a6a0fcAb34C0A138BbD'),
-    // [Network.ARBITRUM_MAINNET]: getAddress('TODO!!!!'),
+    [Network.ARBITRUM_MAINNET]: getAddress('0x6CB24A263732579EfD56f3E071851e989d78cE75'),
 };
 
 // Input tokens 
