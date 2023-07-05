@@ -23,6 +23,7 @@ export const marketAddressesByNetwork: Record<number, string> = {
     [Network.OPTIMISM_GOERLI]: getAddress('0x6cD8666aBB003073e45D69E5b3aa0b0Fe9CDBF91'),
     [Network.OPTIMISM_MAINNET]: getAddress('0x7a512d3609211e719737E82c7bb7271eC05Da70d'),
     [Network.POLYGON_MUMBAI]: getAddress('0x10418D9e730fa659b0Baf0b640ee41FcF4EA2aaE'),
+    [Network.ARBITRUM_TESTNET]: getAddress('0x506407f25B746C39807c03A96DD595a6BE223211'),
     [Network.ARBITRUM_MAINNET]: getAddress('0xC715a30FDe987637A082Cf5F19C74648b67f2db8'),
 };
 
@@ -31,6 +32,7 @@ export const marketAidFactoriesByNetwork: Record<number, string> = {
     [Network.OPTIMISM_GOERLI]: getAddress('0x2D77E00EfE8375903eaD1135BD1eb31cBcf1bA69'),
     [Network.OPTIMISM_MAINNET]: getAddress('0x267D94C6e67e4436EFfE092b08d040cFF36B2DA7'),
     [Network.POLYGON_MUMBAI]: getAddress('0x4841DcC66F6CfC600382ec98f34d43332c535B9B'),
+    [Network.ARBITRUM_TESTNET]: getAddress('0x746750031Cc56Ccb386D9a6a0fcAb34C0A138BbD'),
     // [Network.ARBITRUM_MAINNET]: getAddress('TODO!!!!'),
 };
 
