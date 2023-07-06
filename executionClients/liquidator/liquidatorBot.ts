@@ -7,6 +7,7 @@ import CERC20_INTERFACE from "../../configuration/abis/CErc20";
 
 
 // TODO/question: can I get rid of accounts with 0 liquidity and 0 shortfall?
+// TODO: ask which token they want to get paid out in
 
 export class liquidatorBot {
 
