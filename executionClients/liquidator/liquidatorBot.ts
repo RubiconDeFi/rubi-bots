@@ -3,6 +3,7 @@ import { BotConfiguration, Position } from "../../configuration/config";
 import { MultiCall } from '@indexed-finance/multicall';
 import { chainReader } from "./chainReader"; // TODO: move Position somewhere
 import { ethers } from "ethers";
+import CERC20_INTERFACE from "../../configuration/abis/CErc20";
 
 
 // TODO/question: can I get rid of accounts with 0 liquidity and 0 shortfall?
@@ -38,12 +39,6 @@ export class liquidatorBot {
         await readerStarted;
         console.log("reader started");
 
-
-        //console.log("Our lucky guest: ");
-        //console.log(await this.trollInstance.getAssetsIn(this.reader.activePositions[742].account));
-        // console.log(await this.trollInstance.getAccountLiquidity(this.reader.activePositions[20].account));
-        // console.log(this.reader.activePositions[20].account);
-
         this.watchAccountLiquidity();
     }
 
@@ -72,7 +67,7 @@ export class liquidatorBot {
 
             // queries (50 * batchSize) accounts at a time
             for (let i = 0; i < this.reader.activePositions.length; i += 50) {
-                console.log(((i/this.reader.activePositions.length)*100).toFixed(2) + "%");
+                //console.log(((i/this.reader.activePositions.length)*100).toFixed(2) + "%");
                 let inputs: Input[] = [];
 
                 // adds 50 accounts to the next query
@@ -110,6 +105,7 @@ export class liquidatorBot {
 
                         // if shortfall != 0 then account is below collateral requirement and subject to liquidation
                         if (!shortfall.isZero()) {
+                            // TODO: fire this in correct order maybe?
                             this.investigateLiquidate(account);
                         }
                     }
@@ -128,7 +124,92 @@ export class liquidatorBot {
 
     private async investigateLiquidate(account: string) {
         // calculations and such
-        console.log("liquidate the mfer " + account);
+        //console.log("liquidate the mfer " + account);
+
+        const closeFactor = await this.trollInstance.closeFactorMantissa();
+        const liquidationIncentive = await this.trollInstance.liquidationIncentiveMantissa();
+        if (closeFactor === null || liquidationIncentive === null) {
+          console.log('Borrower computation error: closeFactor|liquidationIncentive === null');
+          return null;
+        }
+
+        let borrowBalances: [string, ethers.BigNumber][] = [];
+        const assetsIn: string = await this.trollInstance.getAssetsIn(account);
+        for ( const asset of assetsIn ) {
+
+            // TODO: move && figure out better way of creating cToken instances
+            const cTokenInstance = new ethers.Contract(
+                asset,
+                CERC20_INTERFACE,
+                this.myProvider // TODO: use websocket (why?)
+            );
+
+            const borrowBalance: ethers.BigNumber = await cTokenInstance.borrowBalanceStored(account);
+            borrowBalances.push([asset, borrowBalance]);
+        }
+        console.log("Account: " + account);
+        for (const curr of borrowBalances) {
+            if (!curr[1].isZero())
+            console.log(curr);
+        }
+
+
+        // max_liquidation_amount_in_eth = total_borrow_value_in_eth * close_factor
+        // token_borrow_balance_underlying_in_eth = token_borrow_balance_underlying * underlying_asset_to_eth_exchange_rate
+        // total_borrow_value_in_eth = sum(token_borrow_balance_underlying_in_eth)
+        // token_supply_balance_underlying_in_eth = token_supply_balance_underlying * underlying_asset_to_eth_exchange_rate
+        // total_supply_value_in_eth = sum(token_supply_balance_underlying_in_eth * collateral_factor)
+        // max_collectible_amount_in_eth = sum(token_supply_balance_underlying_in_eth)
+
+        
+        // /* We calculate the number of collateral tokens that will be seized */
+        // (uint amountSeizeError, uint seizeTokens) = comptroller.liquidateCalculateSeizeTokens(address(this), address(cTokenCollateral), repayAmount);
+        // /**
+        //  * @notice Calculate number of tokens of collateral asset to seize given an underlying amount
+        //  * @dev Used in liquidation (called in cToken.liquidateBorrowFresh)
+        //  * @param cTokenBorrowed The address of the borrowed cToken
+        //  * @param cTokenCollateral The address of the collateral cToken
+        //  * @param actualRepayAmount The amount of cTokenBorrowed underlying to convert into cTokenCollateral tokens
+        //  * @return (errorCode, number of cTokenCollateral tokens to be seized in a liquidation)
+        //  */
+        // function liquidateCalculateSeizeTokens(address cTokenBorrowed, address cTokenCollateral, uint actualRepayAmount) external view returns (uint, uint) {
+        //     /* Read oracle prices for borrowed and collateral markets */
+        //     uint priceBorrowedMantissa = oracle.getUnderlyingPrice(CToken(cTokenBorrowed));
+        //     uint priceCollateralMantissa = oracle.getUnderlyingPrice(CToken(cTokenCollateral));
+        //     if (priceBorrowedMantissa == 0 || priceCollateralMantissa == 0) {
+        //         return (uint(Error.PRICE_ERROR), 0);
+        //     }
+        //     /*
+        //     * Get the exchange rate and calculate the number of collateral tokens to seize:
+        //     *  seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
+        //     *  seizeTokens = seizeAmount / exchangeRate
+        //     *   = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
+        //     */
+        //     uint exchangeRateMantissa = CToken(cTokenCollateral).exchangeRateStored(); // Note: reverts on error
+        //     uint seizeTokens;
+        //     Exp memory numerator;
+        //     Exp memory denominator;
+        //     Exp memory ratio;
+        //     MathError mathErr;
+        //     (mathErr, numerator) = mulExp(liquidationIncentiveMantissa, priceBorrowedMantissa);
+        //     if (mathErr != MathError.NO_ERROR) {
+        //         return (uint(Error.MATH_ERROR), 0);
+        //     }
+        //     (mathErr, denominator) = mulExp(priceCollateralMantissa, exchangeRateMantissa);
+        //     if (mathErr != MathError.NO_ERROR) {
+        //         return (uint(Error.MATH_ERROR), 0);
+        //     }
+        //     (mathErr, ratio) = divExp(numerator, denominator);
+        //     if (mathErr != MathError.NO_ERROR) {
+        //         return (uint(Error.MATH_ERROR), 0);
+        //     }
+        //     (mathErr, seizeTokens) = mulScalarTruncate(ratio, actualRepayAmount);
+        //     if (mathErr != MathError.NO_ERROR) {
+        //         return (uint(Error.MATH_ERROR), 0);
+        //     }
+        //     return (uint(Error.NO_ERROR), seizeTokens);
+        // }
+
     }
 
 
