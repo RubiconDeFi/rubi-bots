@@ -434,3 +434,16 @@ export type OnChainBookWithData = OnChainBookOrderWithData[] | any[];
 // Returns infor for a single strat trade id, could be one order
 // SIZES IMPLICITLY IN THE CLASSIC ASSET amount??
 export type OnChainBookOrderWithData = { askPrice: number, askSize: number, bidPrice: number, bidSize: number, stratTradeID: BigNumber }
+
+
+// *** TODO: DYNAMICALLY GRAB THIS FROM THE CHAIN INSTEAD
+// Mapping used in min order sizes
+export const MIN_ORDER_SIZES: Record<string, number> = {
+    WETH: 0.0022,
+    DAI: 5,
+    USDC: 5,
+    USDT: 5,
+    WBTC: 0.00015,
+    ARB: 4,
+    OP: 3,
+};

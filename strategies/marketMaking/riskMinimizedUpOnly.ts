@@ -4,6 +4,7 @@
 // Extends the GenericMarketMakingStrategy class and overrides the updateTargetBook method
 import { GenericMarketMakingStrategy } from "./genericMarketMaking";
 import { GenericLiquidityVenue } from "../../liquidityVenues/generic";
+import { MIN_ORDER_SIZES } from "../../configuration/config";
 
 export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
     premium: number;
@@ -71,6 +72,23 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
                         size: 0
                     }
                 }
+            
+                const bidSymbol = this.getAssetPair().quote.symbol;
+                // Assuming "asset" to represent the asset name for this order
+                var minSize = MIN_ORDER_SIZES[bidSymbol];
+
+                const adjustedSize = minSize / bid.price;
+
+                minSize = adjustedSize;
+                if (minSize == undefined) {
+                    minSize = 0;
+                    console.log("Min size is undefined for asset: ", bidSymbol);
+                }
+            
+                if (bid.size < minSize) {
+                    console.log(`Bid size ${bid.size} for asset ${bidSymbol} is less than minimum ${minSize}. Adjusting to minimum size.`);
+                    bid.size = minSize;
+                }
                 return bid;
             });
             this.targetBook.asks = this.targetBook.asks.map((ask) => {
@@ -80,8 +98,23 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
                         size: 0
                     }
                 }
+            
+                const askSymbol = this.getAssetPair().asset.symbol;
+                // Assuming "asset" to represent the asset name for this order
+                var minSize = MIN_ORDER_SIZES[askSymbol];
+
+                if (minSize == undefined) {
+                    minSize = 0;
+                    console.log("Min size is undefined for asset: ", askSymbol);
+                }
+            
+                if (ask.size < minSize) {
+                    console.log(`Ask size ${ask.size} for asset ${minSize} is less than minimum ${minSize}. Adjusting to minimum size.`);
+                    ask.size = minSize;
+                }
                 return ask;
             });
+            
 
             console.log(this.identifier, " - This is targetBook: ", this.targetBook);
 
