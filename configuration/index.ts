@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { TokenInfo } from "@uniswap/token-lists";
 import { BotConfiguration, BotType, ETH_ZERO_ADDRESS, MarketMakingStrategy, Network, tokenList } from "./config";
 import { startGenericMarketMakingBot } from "../executionClients/marketMaking";
+import { startLiquidatorBot } from "../executionClients/liquidator";
 import { ethers } from "ethers";
 
 import { rl } from "./marketAid"
@@ -28,8 +29,8 @@ async function botTypeUserCallback(): Promise<BotType> {
               await askQuestion();
               break;
             case '3':
-              console.log('Sorry! :( No liquidator bots yet');
-              await askQuestion();
+              console.log('\nSuper! Lets liquidate some fools!');
+              resolve(BotType.Liquidator);
               break;
             case '4':
               console.log('SEE YOU DEFI COWBOY...');
@@ -76,7 +77,7 @@ async function marketMakingStrategyCallback(): Promise<MarketMakingStrategy> {
 async function networkCallback(): Promise<Network> {
     return new Promise(async (resolve) => {
         const askQuestion = async () => {    
-            rl.question('\n What network would you like to execute this strategy on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n\n4. Arbitrum Goerli\n5. Polygon Mainnet\n6. Polygon Mumbai\n:', async (answer) => {
+            rl.question('\n What network would you like to execute this strategy on?\n1. Optimism Mainnet\n2. Optimism Goerli\n3. Arbitrum Mainnet\n4. Arbitrum Goerli\n5. Polygon Mainnet\n6. Polygon Mumbai\n:', async (answer) => {
                 switch (answer.toLowerCase()) {
                     case '1':
                         console.log('\n Selected Optimism Mainnet');
@@ -224,9 +225,23 @@ async function main() {
                 break;
             case BotType.Liquidator:
                 // Configure the liquidator bot...
-                // Start the liquidator bot
-                // return startLiquidatorBot();
-                break;
+                // 2. What network(s) would you like to execute liquidator bot on?
+                // TODO: add back in network selection
+                // TODO: token selection
+                //return networkCallback().then(async (selectedNetwork: Network) => {
+                    const selectedNetwork = Network.MAINNET; //TODO this is temp for testing. remove
+                    console.log("The user selected this network", selectedNetwork);
+                    const botConfiguration: BotConfiguration = {
+                        botType: BotType.Liquidator,
+                        //strategy: selectedStrat,
+                        network: selectedNetwork,
+                        //targetTokens: selectedTokens,
+                        connections: getNetworkConnectionsInfo(selectedNetwork)
+                    };
+                    console.log("\nThe bot is configured and ready to start!");
+                    // Start the liquidator bot!
+                    return startLiquidatorBot(botConfiguration);
+                //});
             default:
                 console.log("\n No bot type selected. Exiting...");
                 break;

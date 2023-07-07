@@ -5,6 +5,10 @@ node_modules/
 yarn.lock
 .vscode
 package-lock.json
+executionClients/liquidator/activePositions.json
+executionClients/liquidator/hardhat/node_modules/
+executionClients/liquidator/hardhat/node_modules/*
+executionClients/liquidator/hardhat/package-lock.json
 
 # Cloud Configuration
 notes.txt
