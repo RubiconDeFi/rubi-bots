@@ -73,76 +73,6 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryPayments, Ownable {
         uint amount;
     }
 
-    /** 
-     * Mimics CToken.sol's balanceOfUnderlying but uses view function exchangeRateStored() 
-     * instead of non-view exchangeRateCurrent().
-     * 
-     * @param _addr the address of the account to query
-     * @param _cToken a cToken that _addr has a balance of
-     * @return The number of tokens owned by "_addr"
-     */
-    function balanceOfUnderlyingStored(address _addr, address _cToken) internal view returns (uint) {
-        uint exchangeRate = CErc20Storage(_cToken).exchangeRateStored(); // returns calculated exchange rate scaled by 1e18
-        return (LowGasSafeMath.mul(exchangeRate, CErc20Storage(_cToken).balanceOf(_addr))) / 1e18;
-    }
-
-    /**
-     * View version of currentLiquidateAmount.  
-     * Uses view versions of borrowBalanceCurrent (borrowBalanceStored) and balanceOfUnderlying (balanceOfUnderlying).
-     * Doesn't accrue interest so won't be entirely accurate.  
-     * Used to calculate if a potential liquidation could be profitable.
-     *
-     * @param _borrower the Compound user to liquidate
-     * @param _repayCToken a CToken for which _borrower is in debt
-     * @param _seizeCToken a CToken for which _borrower has a supply balance
-     * @return The estimated maximum amount of _repayCToken that we can use to liquidate _borrower
-     */
-    function estimateLiquidateAmount(address _borrower, address _repayCToken, address _seizeCToken) external view returns (uint){
-        ( , uint liquidity, ) = comptroller.getAccountLiquidity(_borrower);
-        if (liquidity != 0) return 0;
-
-        // uint(10**18) adjustments ensure that all place values are dedicated
-        // to repay and seize precision rather than unnecessary closeFact and liqIncent decimals
-        uint repayMax = LowGasSafeMath.mul(CErc20Storage(_repayCToken).borrowBalanceStored(_borrower), closeFact) / uint(10**18);
-        uint seizeMax = LowGasSafeMath.mul(balanceOfUnderlyingStored(_borrower, _seizeCToken), uint(10**18)) / liqIncent;
-
-        uint uPriceRepay = priceOracle.getUnderlyingPrice(_repayCToken);
-
-        // Gas savings -- instead of making new vars `repayMax_Eth` and `seizeMax_Eth` just reassign
-        repayMax *= uPriceRepay;
-        seizeMax *= priceOracle.getUnderlyingPrice(_seizeCToken);
-
-        // Gas savings -- instead of creating new var `repay_Eth = repayMax < seizeMax ? ...` and then
-        // converting to underlying _repayCToken units by dividing by uPriceRepay, we can do it all in one step
-        return ((repayMax < seizeMax) ? repayMax : seizeMax) / uPriceRepay;
-    }
-
-    /**
-     * @param _borrower the Compound user to liquidate
-     * @param _repayCToken a CToken for which _borrower is in debt
-     * @param _seizeCToken a CToken for which _borrower has a supply balance
-     * @return The maximum amount of _repayCToken that we can use to liquidate _borrower
-     */
-    function currentLiquidateAmount(address _borrower, address _repayCToken, address _seizeCToken) internal returns (uint){
-        ( , uint liquidity, ) = comptroller.getAccountLiquidity(_borrower);
-        if (liquidity != 0) return 0;
-
-        // uint(10**18) adjustments ensure that all place values are dedicated
-        // to repay and seize precision rather than unnecessary closeFact and liqIncent decimals
-        uint repayMax = CErc20(_repayCToken).borrowBalanceCurrent(_borrower) * closeFact / uint(10**18);
-        uint seizeMax = CErc20(_seizeCToken).balanceOfUnderlying(_borrower) * uint(10**18) / liqIncent;
-
-        uint uPriceRepay = priceOracle.getUnderlyingPrice(_repayCToken);
-
-        // Gas savings -- instead of making new vars `repayMax_Eth` and `seizeMax_Eth` just reassign
-        repayMax *= uPriceRepay;
-        seizeMax *= priceOracle.getUnderlyingPrice(_seizeCToken);
-
-        // Gas savings -- instead of creating new var `repay_Eth = repayMax < seizeMax ? ...` and then
-        // converting to underlying _repayCToken units by dividing by uPriceRepay, we can do it all in one step
-        return ((repayMax < seizeMax) ? repayMax : seizeMax) / uPriceRepay;
-    }
-
 
     /**
      * Liquidate a Compound user with a flash swap
@@ -157,7 +87,7 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryPayments, Ownable {
         address _borrower, 
         address _repayCToken, 
         address _seizeCToken
-    ) external onlyOwner {
+    ) external onlyOwner returns (uint) {
         uint amount = currentLiquidateAmount(_borrower, _repayCToken, _seizeCToken);
         address repayUnderlying = CErc20Storage(_repayCToken).underlying();
         PoolAddress.PoolKey memory poolKey;
@@ -198,6 +128,26 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryPayments, Ownable {
 
         // from here on out we have a balance of underlying repayCTokens which are our profits
         // TODO: swap to desired asset and pay back owner
+
+        uint balanceRepayUnderlying = IERC20(repayUnderlying).balanceOf(address(this));
+
+        // Approve the router to spend our repayUnderlying
+        TransferHelper.safeApprove(repayUnderlying, address(SwapRouter), balanceRepayUnderlying);
+
+        ISwapRouter.ExactInputSingleParams memory params =
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: repayUnderlying,
+                tokenOut: desiredToken,
+                fee: 500,
+                recipient: owner(), // send directly to owner
+                deadline: block.timestamp + 1 minutes,
+                amountIn: balanceRepayUnderlying,
+                amountOutMinimum: 0, // TODO: use a price oracle to get a good price
+                sqrtPriceLimitX96: 0
+            });
+
+        // execute the swap and return the amount of desiredToken sent to owner
+        return SwapRouter.exactInputSingle(params);
     }
 
     /**
@@ -276,10 +226,80 @@ contract Liquidator is IUniswapV3FlashCallback, PeripheryPayments, Ownable {
 
         // Execute the swap
         SwapRouter.exactInputSingle(params);
-        TransferHelper.safeApprove(underlyingSeizeToken, address(SwapRouter), 0); // reset approved tokens
 
         // Pay back borrowed funds
         TransferHelper.safeApprove(decoded.repayUnderlying, address(this), amountOwedToPool);
         pay(decoded.repayUnderlying, address(this), msg.sender, amountOwedToPool);
     }
+
+    /** 
+     * Mimics CToken.sol's balanceOfUnderlying but uses view function exchangeRateStored() 
+     * instead of non-view exchangeRateCurrent().
+     * 
+     * @param _addr the address of the account to query
+     * @param _cToken a cToken that _addr has a balance of
+     * @return The number of tokens owned by "_addr"
+     */
+    function balanceOfUnderlyingStored(address _addr, address _cToken) internal view returns (uint) {
+        uint exchangeRate = CErc20Storage(_cToken).exchangeRateStored(); // returns calculated exchange rate scaled by 1e18
+        return (LowGasSafeMath.mul(exchangeRate, CErc20Storage(_cToken).balanceOf(_addr))) / 1e18;
+    }
+
+    /**
+     * View version of currentLiquidateAmount.  
+     * Uses view versions of borrowBalanceCurrent (borrowBalanceStored) and balanceOfUnderlying (balanceOfUnderlying).
+     * Doesn't accrue interest so won't be entirely accurate.  
+     * Used to calculate if a potential liquidation could be profitable.
+     *
+     * @param _borrower the Compound user to liquidate
+     * @param _repayCToken a CToken for which _borrower is in debt
+     * @param _seizeCToken a CToken for which _borrower has a supply balance
+     * @return The estimated maximum amount of _repayCToken that we can use to liquidate _borrower
+     */
+    function estimateLiquidateAmount(address _borrower, address _repayCToken, address _seizeCToken) external view returns (uint){
+        ( , uint liquidity, ) = comptroller.getAccountLiquidity(_borrower);
+        if (liquidity != 0) return 0;
+
+        // uint(10**18) adjustments ensure that all place values are dedicated
+        // to repay and seize precision rather than unnecessary closeFact and liqIncent decimals
+        uint repayMax = LowGasSafeMath.mul(CErc20Storage(_repayCToken).borrowBalanceStored(_borrower), closeFact) / uint(10**18);
+        uint seizeMax = LowGasSafeMath.mul(balanceOfUnderlyingStored(_borrower, _seizeCToken), uint(10**18)) / liqIncent;
+
+        uint uPriceRepay = priceOracle.getUnderlyingPrice(_repayCToken);
+
+        // Gas savings -- instead of making new vars `repayMax_Eth` and `seizeMax_Eth` just reassign
+        repayMax *= uPriceRepay;
+        seizeMax *= priceOracle.getUnderlyingPrice(_seizeCToken);
+
+        // Gas savings -- instead of creating new var `repay_Eth = repayMax < seizeMax ? ...` and then
+        // converting to underlying _repayCToken units by dividing by uPriceRepay, we can do it all in one step
+        return ((repayMax < seizeMax) ? repayMax : seizeMax) / uPriceRepay;
+    }
+
+    /**
+     * @param _borrower the Compound user to liquidate
+     * @param _repayCToken a CToken for which _borrower is in debt
+     * @param _seizeCToken a CToken for which _borrower has a supply balance
+     * @return The maximum amount of _repayCToken that we can use to liquidate _borrower
+     */
+    function currentLiquidateAmount(address _borrower, address _repayCToken, address _seizeCToken) internal returns (uint){
+        ( , uint liquidity, ) = comptroller.getAccountLiquidity(_borrower);
+        if (liquidity != 0) return 0;
+
+        // uint(10**18) adjustments ensure that all place values are dedicated
+        // to repay and seize precision rather than unnecessary closeFact and liqIncent decimals
+        uint repayMax = CErc20(_repayCToken).borrowBalanceCurrent(_borrower) * closeFact / uint(10**18);
+        uint seizeMax = CErc20(_seizeCToken).balanceOfUnderlying(_borrower) * uint(10**18) / liqIncent;
+
+        uint uPriceRepay = priceOracle.getUnderlyingPrice(_repayCToken);
+
+        // Gas savings -- instead of making new vars `repayMax_Eth` and `seizeMax_Eth` just reassign
+        repayMax *= uPriceRepay;
+        seizeMax *= priceOracle.getUnderlyingPrice(_seizeCToken);
+
+        // Gas savings -- instead of creating new var `repay_Eth = repayMax < seizeMax ? ...` and then
+        // converting to underlying _repayCToken units by dividing by uPriceRepay, we can do it all in one step
+        return ((repayMax < seizeMax) ? repayMax : seizeMax) / uPriceRepay;
+    }
+
 }
