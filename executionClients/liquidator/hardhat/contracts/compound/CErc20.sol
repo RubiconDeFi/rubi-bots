@@ -16,5 +16,8 @@ interface CErc20 {
 }
 
 interface CErc20Storage {
+    function borrowBalanceStored(address account) external view returns (uint);
     function underlying() external view returns (address);
+    function exchangeRateStored() external view returns (uint);
+    function balanceOf(address owner) external view returns (uint256);
 }
