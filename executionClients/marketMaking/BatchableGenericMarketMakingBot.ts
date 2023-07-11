@@ -44,7 +44,7 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
 
         console.log("This is the address of the ACCOUNT REFERENCE im watching...", this.marketAidPositionTracker.myReferenceOperator);
         console.log("This is the Market Aid address:", this.marketAid.address);
-        
+
         // Validate liquidity allocation values
         if (liquidityAllocation.asset < 0 || liquidityAllocation.asset > 1000 || liquidityAllocation.quote < 0 || liquidityAllocation.quote > 1000) {
             throw new Error(`Invalid liquidity allocation: asset and quote values must be in the range 0 <= x <= 1000`);
@@ -119,6 +119,20 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         // console.log(this.strategy.identifier, "target this book with batchRequote", this.strategy.targetBook);
         // console.log("Need to update from this book", this.marketAidPositionTracker.liveBook);
 
+        var _targetBook = this.strategy.targetBook;
+
+        // console.log("PRE REQUOTE this is available liquidity", `${this.assetPair.asset.symbol}`, formatUnits(this.availableLiquidity.assetWeiAmount, this.assetPair.asset.decimals), `${this.assetPair.quote.symbol}`, formatUnits(this.availableLiquidity.quoteWeiAmount, this.assetPair.quote.decimals));
+
+        // console.log("PRE REQUOTE is the target book", _targetBook);
+        // const totalAskSize = _targetBook.asks.reduce((acc, ask) => acc + ask.size, 0);
+        // // // Convert totalBidSize from asset amount to quote amount
+        // const totalBidSize = _targetBook.bids.reduce((acc, bid) => acc + (bid.size * bid.price), 0);
+        // // Print amount formatted
+        // console.log("PRE REQUOTE total ask size", totalAskSize);
+        // console.log("PRE REQUOTE total bid size", totalBidSize);
+
+
+
         // Grab all of the strategist trade IDs from MarketAid position tracker
         const strategistTradeIDs: BigNumber[] = [];
         for (let i = 0; i < this.marketAidPositionTracker.onChainBookWithData.length; i++) {
@@ -148,12 +162,12 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         // TODO: adapt this to drive on batchRequote
         // ************************************
         // TODO: check that this works?
-        for (let index = 0; index < this.strategy.targetBook.asks.length; index++) {
-            const ask = this.strategy.targetBook.asks[index];
-            const askNumerator = parseUnits((this.strategy.targetBook.asks[index].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
-            const askDenominator = parseUnits((this.strategy.targetBook.asks[index].price * (this.strategy.targetBook.asks[index].size * assetSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
-            const bidNumerator = parseUnits((this.strategy.targetBook.bids[index].price * (this.strategy.targetBook.bids[index].size * quoteSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
-            const bidDenominator = parseUnits((this.strategy.targetBook.bids[index].size * quoteSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
+        for (let index = 0; index < _targetBook.asks.length; index++) {
+            const ask = _targetBook.asks[index];
+            const askNumerator = parseUnits((_targetBook.asks[index].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
+            const askDenominator = parseUnits((_targetBook.asks[index].price * (_targetBook.asks[index].size * assetSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+            const bidNumerator = parseUnits((_targetBook.bids[index].price * (_targetBook.bids[index].size * quoteSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
+            const bidDenominator = parseUnits((_targetBook.bids[index].size * quoteSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
 
             askNumerators.push(askNumerator);
             askDenominators.push(askDenominator);
@@ -245,8 +259,8 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
                 // console.log(this.strategy.identifier, "Got this after getStratTotalLiquidity", r);
 
                 // Log formatted the response
-                console.log("Formatted Liquidity - Asset Amount:", formatUnits(r.assetWeiAmount, 18));
-                console.log("Formatted Liquidity - Quote Amount:", formatUnits(r.quoteWeiAmount, 18));
+                console.log(`Formatted Liquidity - ${this.config.targetTokens[0].symbol} Asset Amount:`, formatUnits(r.assetWeiAmount, this.config.targetTokens[0].decimals));
+                console.log(`Formatted Liquidity - ${this.config.targetTokens[1].symbol} Quote Amount:`, formatUnits(r.quoteWeiAmount, this.config.targetTokens[1].decimals));
 
                 // Adjust asset and quote wei amounts with liquidity allocation
 
