@@ -844,9 +844,9 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
     // console.log("I think this is my available liquidity", availableLiquidity);
 
     // Print as formatted values
-    console.log("I think this is my available liquidity", formatUnits(availableLiquidity.assetWeiAmount, 18), formatUnits(availableLiquidity.quoteWeiAmount, 18));
+    // console.log("I think this is my available liquidity", formatUnits(availableLiquidity.assetWeiAmount, 18), formatUnits(availableLiquidity.quoteWeiAmount, 18));
 
-    console.log('This could be right quote amount', formatUnits(availableLiquidity.quoteWeiAmount, 6));
+    // console.log('This could be right quote amount', formatUnits(availableLiquidity.quoteWeiAmount, 6));
 
     // Chat GPT helped me with this lol
     // TODO: update this from linear to exponential
