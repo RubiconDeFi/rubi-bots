@@ -103,6 +103,8 @@ export class RiskMinimizedStrategy extends GenericMarketMakingStrategy {
                 // Assuming "asset" to represent the asset name for this order
                 var minSize = MIN_ORDER_SIZES[askSymbol];
 
+                // console.log("This is ASSET minSize: ", minSize);
+                
                 if (minSize == undefined) {
                     minSize = 0;
                     console.log("Min size is undefined for asset: ", askSymbol);

@@ -50,7 +50,7 @@ export class GenericLiquidityVenue {
     // Emit through this.updateNotifier a ping every time the liveBook is updated that also returns the updated liveBook
     emitUpdate() {
         console.log("\nEmitting Liquidity Venue update from", this.identifier);
-        console.log("Live Book:", this.liveBook);
+        // console.log("Live Book:", this.liveBook);
         
         this.updateNotifier.emit('update', this.liveBook);
     }
