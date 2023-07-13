@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 pragma abicoder v2;
 // TODO: license
-
 // TODO: decide on appropriate pool fee
 
 // Import Uniswap components
@@ -22,6 +21,10 @@ import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Liquidator is Ownable {
+
+    // custom error to save gas instead of require statement strings
+    error LiquidationNotProfitable();
+    
     using LowGasSafeMath for uint256;
 
     ISwapRouter public swapRouter;
@@ -36,15 +39,15 @@ contract Liquidator is Ownable {
 
     constructor( 
         address _swapRouter,
-        address _desiredToken,
         address _comptrollerAddr,
-        address _aavePool
-    ) { // TODO: is peripheryImmutableState needed?
+        address _aavePool,
+        address _desiredToken
+    ) {
         swapRouter = ISwapRouter(_swapRouter);
-        desiredToken = _desiredToken;
         comptroller = Comptroller(_comptrollerAddr);
         priceOracle = PriceOracle(comptroller.oracle());
         AAVE_POOL = IPool(_aavePool);
+        desiredToken = _desiredToken;
 
         // TODO: how often do these change?  How often should we update?
         closeFact = comptroller.closeFactorMantissa();
@@ -64,7 +67,14 @@ contract Liquidator is Ownable {
         address seizeCToken;
     }
 
-    // AAVE flash loan version
+    /**
+     * Liquidate a user with an AAVEv3 flash loan
+     *
+     * @param _borrower the user to liquidate
+     * @param _repayCToken cToken for which the user is in debt
+     * @param _seizeCToken cToken for which the user has a supply balance
+     * @return The amount of desiredToken sent to owner as profit
+     */
     function liquidate(        
         address _borrower, 
         address _repayCToken, 
@@ -113,12 +123,29 @@ contract Liquidator is Ownable {
 
         // execute the swap and return the amount of desiredToken sent to owner
         uint amountOut = swapRouter.exactInputSingle(params);
-        require(amountOut > 0, "Liquidate was not profitable");
 
+        // revert if there is no profit
+        if (amountOut == 0) {
+            revert LiquidationNotProfitable();
+        }
+
+        // return amount profited
         return amountOut;
     }
 
-    // AAVE flashloan callback
+
+    /**
+     * AAVEv3 flash loan callback.
+     *
+     * @param underlyingRepayToken token that was sent to this contract 
+     * @param amount of underlyingRepayToken sent
+     * @param premium additional fee owed to AAVE pool
+     * @param initiator address of contract that called the swap (should be address(this))
+     * @param params FlashCallbackData struct passed from liquidate(). 
+     *        Has properties borrower, repayCToken, seizeCToken
+     * @return True
+     * @dev called by AAVEv3 pool
+     */
     function executeOperation(
         address underlyingRepayToken,
         uint256 amount,
@@ -133,7 +160,7 @@ contract Liquidator is Ownable {
         require(initiator == address(this)); 
         require(msg.sender == poolToRepay);
         
-        // decoded has properties borrower, repayCToken, seizeCToken, poolKey, amount
+        // decoded has properties borrower, repayCToken, seizeCToken
         FlashCallbackData memory decoded = abi.decode(params, (FlashCallbackData));
 
         // case where we're seizing and repaying same asset
@@ -195,173 +222,6 @@ contract Liquidator is Ownable {
         return true;
     }
     
-
-    // struct FlashCallbackData {
-    //     address borrower;
-    //     address repayCToken;
-    //     address seizeCToken;
-    //     PoolAddress.PoolKey poolKey;
-    //     address underlyingRepayToken;
-    //     uint amount;
-    // }
-
-    // /**
-    //  * Liquidate a Compound user with a flash swap
-    //  *
-    //  * @param _borrower the Compound user to liquidate
-    //  * @param _repayCToken cToken for which the user is in debt
-    //  * @param _seizeCToken cToken for which the user has a supply balance
-    //  * @notice the order of params for getPoolKey(address tokenA, address tokenB, uint24 fee) do NOT 
-    //  *      match up to the pool's token0 and token1.  Must be careful in checking
-    //  */
-    // function liquidate(
-    //     address _borrower, 
-    //     address _repayCToken, 
-    //     address _seizeCToken
-    // ) external onlyOwner returns (uint) {
-    //     uint amount = _currentLiquidateAmount(_borrower, _repayCToken, _seizeCToken);
-    //     address underlyingRepayToken = CErc20Storage(_repayCToken).underlying();
-    //     PoolAddress.PoolKey memory poolKey;
-
-    //     // Default tokenA to WEth since that has the best liquidity on UniV3
-    //     // but _repayCToken is cWEth, then we would end up trying to get a pool of WETH/WETH and error out.
-    //     // If underlyingRepayToken is WEth, set tokenB to be the token with next highest liquidity, USDC
-    //     if (underlyingRepayToken == WETH9) {
-    //         //                               tokenA,        tokenB, fee level
-    //         poolKey = PoolAddress.getPoolKey(underlyingRepayToken, USDC, 500);
-    //     }
-    //     else {
-    //         //                               tokenA,         tokenB, fee level
-    //         poolKey = PoolAddress.getPoolKey(underlyingRepayToken, WETH9, 500);
-    //     }
-
-    //     IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
-
-    //     // if the pool's token0 is underlyingRepayToken, set amount0=amount and amount1=0
-    //     // do the opposite if underlyingRepayToken is pool's token1
-    //     // see @notice
-    //     uint amount0 = (pool.token0() == underlyingRepayToken) ? amount : 0;
-    //     uint amount1 = (pool.token0() == underlyingRepayToken) ? 0 : amount;
-
-    //     // Initiate flash swap
-    //     bytes memory data = abi.encode(
-    //         FlashCallbackData({
-    //             borrower: _borrower, 
-    //             repayCToken: _repayCToken, 
-    //             seizeCToken: _seizeCToken,
-    //             poolKey: poolKey,
-    //             underlyingRepayToken: underlyingRepayToken,
-    //             amount: amount
-    //         })
-    //     );
-        
-    //     pool.flash(address(this), amount0, amount1, data);
-
-    //     // from here on out we have a balance of underlying repayCTokens which are our profits
-    //     // TODO: swap to desired asset and pay back owner
-
-    //     uint balanceUnderlyingRepayToken = IERC20(underlyingRepayToken).balanceOf(address(this));
-
-    //     // Approve the router to spend our underlyingRepayToken
-    //     TransferHelper.safeApprove(underlyingRepayToken, address(swapRouter), balanceUnderlyingRepayToken);
-
-    //     ISwapRouter.ExactInputSingleParams memory params =
-    //         ISwapRouter.ExactInputSingleParams({
-    //             tokenIn: underlyingRepayToken,
-    //             tokenOut: desiredToken,
-    //             fee: 500,
-    //             recipient: owner(), // send directly to owner
-    //             deadline: block.timestamp + 1 minutes,
-    //             amountIn: balanceUnderlyingRepayToken,
-    //             amountOutMinimum: 0, // TODO: use a price oracle to get a good price
-    //             sqrtPriceLimitX96: 0
-    //         });
-
-    //     // execute the swap and return the amount of desiredToken sent to owner
-    //     return swapRouter.exactInputSingle(params);
-    // }
-
-    // /**
-    //  * The function that gets called in the middle of a flash swap
-    //  * @param fee0 additional amount owed back to the pool of token0
-    //  * @param fee1 additional amount owed back to the pool of token1
-    //  * @param data FlashCallbackData struct passed from liquidate()
-    //  * @dev msg.sender is the pool
-    //  * @notice we don't know which of the pool's tokens (token0 or token1) is our underlying repayToken
-    //  */
-    // function uniswapV3FlashCallback(
-    //     uint256 fee0,
-    //     uint256 fee1,
-    //     bytes calldata data
-    // ) override external {
- 
-    //     // decoded has properties borrower, repayCToken, seizeCToken, poolKey,  underlyingRepayToken, amount
-    //     FlashCallbackData memory decoded = abi.decode(data, (FlashCallbackData));
-
-    //     // ensures that msg.sender is our pool
-    //     // reverts if msg.sender != address of our pool(via poolKey)
-    //     CallbackValidation.verifyCallback(factory, decoded.poolKey);
-
-    //     // we only requested an amount of one token, so only one fee should be > 0
-    //     // But we don't know if we requested the pool's token0 or token1
-    //     uint amountOwedToPool = (fee0 > 0) ? LowGasSafeMath.add(decoded.amount, fee0) : LowGasSafeMath.add(decoded.amount, fee1);
-
-    //     if (decoded.repayCToken == decoded.seizeCToken) {
-
-    //         // Perform the liquidation
-    //         //                         token,                    to,                  value
-    //         TransferHelper.safeApprove(underlyingRepayToken, decoded.repayCToken, decoded.amount); 
-    //         CErc20(decoded.repayCToken).liquidateBorrow(decoded.borrower, decoded.amount, decoded.seizeCToken);
-    //         TransferHelper.safeApprove(underlyingRepayToken, decoded.repayCToken, 0); // reset approval TODO: is this needed?
-
-    //         // Redeem all our seized cTokens for underlying ERC20
-    //         CErc20(decoded.seizeCToken).redeem(IERC20(decoded.seizeCToken).balanceOf(address(this)));
-    //         // now we have underlying seizeToken which is same as underlying repayToken
-
-    //         // pay back borrowed funds
-    //         TransferHelper.safeApprove(underlyingRepayToken, address(this), amountOwedToPool);
-    //         pay(underlyingRepayToken, address(this), msg.sender, amountOwedToPool); 
-    //         return;
-    //     }
-
-    //     // Perform the liquidation
-    //     //                         token,                       to,              value
-    //     TransferHelper.safeApprove(underlyingRepayToken, decoded.repayCToken, decoded.amount); 
-    //     CErc20(decoded.repayCToken).liquidateBorrow(decoded.borrower, decoded.amount, decoded.seizeCToken);
-    //     TransferHelper.safeApprove(underlyingRepayToken, decoded.repayCToken, 0); // reset approval TODO: is this needed?
-
-    //     // Redeem all our seized cTokens for underlying ERC20
-    //     CErc20(decoded.seizeCToken).redeem(IERC20(decoded.seizeCToken).balanceOf(address(this)));
-    //     address underlyingSeizeToken = CErc20Storage(decoded.seizeCToken).underlying();
-
-    //     // Now we have a balance of underlying seizeToken.
-    //     // We have to swap into underlying repayToken to pay off flash loan
-    //     // After paying off flash loan, we are left with a profit in units of underlying repayToken
-
-    //     // Approves swapRouter for all our underlying seizeToken 
-    //     uint amountToSwap = IERC20(underlyingSeizeToken).balanceOf(address(this));
-    //     TransferHelper.safeApprove(underlyingSeizeToken, address(swapRouter), amountToSwap);
-        
-    //     // set up swap for all underlying seizeToken back into underlying repayToken (so we can pay back borrowed funds)
-    //     ISwapRouter.ExactInputSingleParams memory params = 
-    //         ISwapRouter.ExactInputSingleParams({
-    //             tokenIn: underlyingSeizeToken,
-    //             tokenOut: underlyingRepayToken,
-    //             fee: 500, // 0.05%
-    //             recipient: address(this), // Transfer back to this contract
-    //             deadline: block.timestamp + 1 minutes, // TODO: pick a non-arbitrary time
-    //             amountIn: amountToSwap,
-    //             amountOutMinimum: amountOwedToPool, // TODO: use a price oracle to make sure we get a good price
-    //             sqrtPriceLimitX96: 0 
-    //     });
-
-    //     // Execute the swap
-    //     swapRouter.exactInputSingle(params);
-
-    //     // Pay back borrowed funds
-    //     TransferHelper.safeApprove(underlyingRepayToken, address(this), amountOwedToPool);
-    //     pay(underlyingRepayToken, address(this), msg.sender, amountOwedToPool);
-    // }
 
     /**
      * @param _borrower the Compound user to liquidate
