@@ -14,7 +14,6 @@ export class liquidatorBot {
     public configuration: BotConfiguration; // TODO: don't need to set this in both the bot and reader
     public trollInstance: ethers.Contract; // TODO: don't need to set this in both the bot and reader
     public myProvider: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider; // TODO: don't need to set this in both the bot and reader
-    private closeFactorMantissa: ethers.BigNumber;
     private reader: chainReader;
 
     constructor(
@@ -106,7 +105,6 @@ export class liquidatorBot {
 
                         // if shortfall != 0 then account is below collateral requirement and subject to liquidation
                         if (!shortfall.isZero()) {
-                            // TODO: fire this in correct order maybe?
                             this.investigateLiquidate(account);
                         }
                     }
@@ -134,8 +132,9 @@ export class liquidatorBot {
           return null;
         }
 
-        let borrowBalances: [string, ethers.BigNumber][] = [];
+        // get all cToken markets account is currently in
         const assetsIn: string = await this.trollInstance.getAssetsIn(account);
+        let borrowBalances: [string, ethers.BigNumber][] = [];
         for ( const asset of assetsIn ) {
 
             // TODO: move && figure out better way of creating cToken instances
