@@ -13,3 +13,4 @@ npx hardhat run scripts/deploy.ts
 ```
 
 TODO: this is just for devs.  You don't really need to touch anything. blah blah blah
+TODO: move this to a better spot

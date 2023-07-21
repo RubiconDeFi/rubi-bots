@@ -58,7 +58,8 @@ export class liquidatorBot {
 
         const multi = new MultiCall(this.myProvider);
 
-        // calls function to search through all active positions for underwater positions.
+        // perpetual job to search through all active positions for underwater positions.
+        // TODO: infinite while loop is incredibly sketch.  There's a better way to do this
         while (true) {
             
             let batchPromises: Promise<[number, any[]]>[] = [];
@@ -103,6 +104,7 @@ export class liquidatorBot {
                         // console.log(shortfall);
                         // console.log(addr + "\n");
 
+                        // TODO: CAN I REMOVE ACCOUNTS WITH 0 LIQUIDITY AND 0 SHORTFALL???
                         // if shortfall != 0 then account is below collateral requirement and subject to liquidation
                         if (!shortfall.isZero()) {
                             this.investigateLiquidate(account);
@@ -134,7 +136,7 @@ export class liquidatorBot {
 
         // get all cToken markets account is currently in
         const assetsIn: string = await this.trollInstance.getAssetsIn(account);
-        let borrowBalances: [string, ethers.BigNumber][] = [];
+        let snapShots: [string, ethers.BigNumber][] = [];
         for ( const asset of assetsIn ) {
 
             // TODO: move && figure out better way of creating cToken instances
@@ -144,15 +146,57 @@ export class liquidatorBot {
                 this.myProvider // TODO: use websocket (why?)
             );
 
-            const borrowBalance: ethers.BigNumber = await cTokenInstance.borrowBalanceStored(account);
-            borrowBalances.push([asset, borrowBalance]);
+            //const borrowBalance: ethers.BigNumber = await cTokenInstance.borrowBalanceStored(account);
+            const snapShot = await cTokenInstance.getAccountSnapshot(account);
+            //const underlying = await cTokenInstance.underlying();
+            snapShots.push([asset, snapShot]);
         }
         console.log("Account: " + account);
-        for (const curr of borrowBalances) {
-            if (!curr[1].isZero())
-            console.log(curr);
-        }
+        let bestSeizeToken: string = '0';
+        let bestSeizeTokenUSDAmt: ethers.BigNumber = ethers.BigNumber.from(0);
+        let bestRepayToken: string = '0';
+        let bestRepayTokenUSDAmt: ethers.BigNumber = ethers.BigNumber.from(0);
+        for (const currToken of snapShots) {
+            const token: string = currToken[0];
+            const error: ethers.BigNumber = currToken[1][0];
+            const balance: ethers.BigNumber = currToken[1][1];
+            const borrowed: ethers.BigNumber = currToken[1][2];
+            const exchangeRate: ethers.BigNumber = currToken[1][3];
+            // console.log("   Token: " + token);
+            // console.log("   error: " + error);
+            // console.log("   balance: " + balance); // one of these will be our seizeCToken
+            // console.log("   borrowed: " + borrowed);// one of these will be our repayCToken
+            // console.log("   exchange rate: " + exchangeRate);
+            // const underlying: string = currToken[2];
+            // console.log("   underling asset: " + underlying + "\n")
 
+            // TODO: profits can be maximized further by comparing all repay to all seize
+            // and calculating liquidateCalculateSeizeTokens (look at comptroller) on each 
+            // combination.  But intensive and I'm lazy currently
+
+            // find best cToken to seize
+            const underlyingUSDValue: ethers.BigNumber = await this.getUSDPriceOfUnderlying(token)
+            const underlyingBalance: ethers.BigNumber = balance.mul(exchangeRate); // TODO: verify
+            const USDBalance: ethers.BigNumber = underlyingUSDValue.mul(underlyingBalance);
+
+            if(USDBalance.gt(bestSeizeTokenUSDAmt)) {
+                bestSeizeToken = token;
+                bestSeizeTokenUSDAmt = USDBalance;
+            }
+
+            // find best cToken to repay
+            // maximize priceOfBorrowed*amountBorrowed
+            const USDBorrowed: ethers.BigNumber = borrowed.mul(underlyingUSDValue)
+
+            if(USDBorrowed.gt(bestRepayTokenUSDAmt)) {
+                bestRepayToken = token;
+                bestRepayTokenUSDAmt = USDBorrowed;
+            }
+        }
+        console.log("Best repayCToken: " + bestRepayToken);
+        console.log("Best seizeCToken: " + bestSeizeToken + "\n");
+
+        // TODO: call liquidate on our contract
 
         // max_liquidation_amount_in_eth = total_borrow_value_in_eth * close_factor
         // token_borrow_balance_underlying_in_eth = token_borrow_balance_underlying * underlying_asset_to_eth_exchange_rate
@@ -161,55 +205,12 @@ export class liquidatorBot {
         // total_supply_value_in_eth = sum(token_supply_balance_underlying_in_eth * collateral_factor)
         // max_collectible_amount_in_eth = sum(token_supply_balance_underlying_in_eth)
 
-        
-        // /* We calculate the number of collateral tokens that will be seized */
-        // (uint amountSeizeError, uint seizeTokens) = comptroller.liquidateCalculateSeizeTokens(address(this), address(cTokenCollateral), repayAmount);
-        // /**
-        //  * @notice Calculate number of tokens of collateral asset to seize given an underlying amount
-        //  * @dev Used in liquidation (called in cToken.liquidateBorrowFresh)
-        //  * @param cTokenBorrowed The address of the borrowed cToken
-        //  * @param cTokenCollateral The address of the collateral cToken
-        //  * @param actualRepayAmount The amount of cTokenBorrowed underlying to convert into cTokenCollateral tokens
-        //  * @return (errorCode, number of cTokenCollateral tokens to be seized in a liquidation)
-        //  */
-        // function liquidateCalculateSeizeTokens(address cTokenBorrowed, address cTokenCollateral, uint actualRepayAmount) external view returns (uint, uint) {
-        //     /* Read oracle prices for borrowed and collateral markets */
-        //     uint priceBorrowedMantissa = oracle.getUnderlyingPrice(CToken(cTokenBorrowed));
-        //     uint priceCollateralMantissa = oracle.getUnderlyingPrice(CToken(cTokenCollateral));
-        //     if (priceBorrowedMantissa == 0 || priceCollateralMantissa == 0) {
-        //         return (uint(Error.PRICE_ERROR), 0);
-        //     }
-        //     /*
-        //     * Get the exchange rate and calculate the number of collateral tokens to seize:
-        //     *  seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
-        //     *  seizeTokens = seizeAmount / exchangeRate
-        //     *   = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
-        //     */
-        //     uint exchangeRateMantissa = CToken(cTokenCollateral).exchangeRateStored(); // Note: reverts on error
-        //     uint seizeTokens;
-        //     Exp memory numerator;
-        //     Exp memory denominator;
-        //     Exp memory ratio;
-        //     MathError mathErr;
-        //     (mathErr, numerator) = mulExp(liquidationIncentiveMantissa, priceBorrowedMantissa);
-        //     if (mathErr != MathError.NO_ERROR) {
-        //         return (uint(Error.MATH_ERROR), 0);
-        //     }
-        //     (mathErr, denominator) = mulExp(priceCollateralMantissa, exchangeRateMantissa);
-        //     if (mathErr != MathError.NO_ERROR) {
-        //         return (uint(Error.MATH_ERROR), 0);
-        //     }
-        //     (mathErr, ratio) = divExp(numerator, denominator);
-        //     if (mathErr != MathError.NO_ERROR) {
-        //         return (uint(Error.MATH_ERROR), 0);
-        //     }
-        //     (mathErr, seizeTokens) = mulScalarTruncate(ratio, actualRepayAmount);
-        //     if (mathErr != MathError.NO_ERROR) {
-        //         return (uint(Error.MATH_ERROR), 0);
-        //     }
-        //     return (uint(Error.NO_ERROR), seizeTokens);
-        // }
+    }
 
+    // use getUnderlyingPrice
+    // the returned price will be scaled by 10^(36 - underlying.decimals), so make sure to handle it
+    async getUSDPriceOfUnderlying(token: string): Promise<ethers.BigNumber> {
+        return ethers.BigNumber.from(1);
     }
 
 

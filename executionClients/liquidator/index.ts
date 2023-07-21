@@ -18,6 +18,8 @@ export async function startLiquidatorBot(configuration: BotConfiguration) {
         myProvider // TODO: use websocket (why?)
     );
 
+    // TODO: Deploy or find the liquidator bot contract
+
     let myLiqBot = new liquidatorBot(configuration, comptrollerInstance);
     myLiqBot.start();
     // Ask any config questions while reader is loading
