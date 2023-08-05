@@ -58,40 +58,38 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
     }
 
     // Override placeInitialMarketMakingTrades
+    // Override placeInitialMarketMakingTrades
     override async placeInitialMarketMakingTrades(): Promise<void> {
         console.log("\nInitializing a market aid position to match the strategy book");
-        // Target this book
-        // console.log("target this book with place market making trades", this.strategy.targetBook);
 
-        // Loop through target book, and using the pattern below populate an array of values for askNumerators, askDenominators, bidNumerators, and bidDenominators
         var askNumerators = [];
         var askDenominators = [];
         var bidNumerators = [];
         var bidDenominators = [];
 
-        // Loop through the asks and bids of the target book and populate the above arrays using the pattern below
+        // Loop through the asks and bids of the target book and populate the above arrays
         for (let i = 0; i < this.strategy.targetBook.asks.length; i++) {
-            askNumerators.push(parseUnits(this.strategy.targetBook.asks[i].size.toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals));
-            askDenominators.push(parseUnits((this.strategy.targetBook.asks[i].price * this.strategy.targetBook.asks[i].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
+            const ask = this.strategy.targetBook.asks[i];
+            const bid = this.strategy.targetBook.bids[i];
+
+            // Skip this iteration if both bid and ask sizes are zero
+            if (ask.size === 0 && bid.size === 0) {
+                console.log("Skipping this iteration because both bid and ask sizes are zero");
+                continue;
+            }
+
+            askNumerators.push(parseUnits(ask.size.toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals));
+            askDenominators.push(parseUnits((ask.price * ask.size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
+
+            bidNumerators.push(parseUnits((bid.price * bid.size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
+            bidDenominators.push(parseUnits(bid.size.toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals));
         }
-
-        for (let i = 0; i < this.strategy.targetBook.bids.length; i++) {
-            bidNumerators.push(parseUnits((this.strategy.targetBook.bids[i].price * this.strategy.targetBook.bids[i].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals));
-            bidDenominators.push(parseUnits(this.strategy.targetBook.bids[i].size.toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals));
-        }
-
-        // Here is what a single offer might look like via placeMarketMakingTrades()
-        // Note this assumes that strategy.targetBook size all references asset amounts
-        // const askNumerator = parseUnits(this.strategy.targetBook.asks[0].size.toString(), this.assetPair.asset.decimals);
-        // const askDenominator = parseUnits((this.strategy.targetBook.asks[0].price * this.strategy.targetBook.asks[0].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
-        // const bidNumerator = parseUnits((this.strategy.targetBook.bids[0].price * this.strategy.targetBook.bids[0].size).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
-        // const bidDenominator = parseUnits(this.strategy.targetBook.bids[0].size.toString(), this.assetPair.asset.decimals);
-
 
         if (this.makingInitialBook) {
             console.log("Already making initial book, not making another - 0");
-            return
-        };
+            return;
+        }
+
         // Encode the function data for batchPlaceInitialMarketMakingTrades
         const calldata = this.marketAid.interface.encodeFunctionData("batchMarketMakingTrades(address[2],uint256[],uint256[],uint256[],uint256[],address)", [
             [this.assetPair.asset.address, this.assetPair.quote.address],
@@ -104,12 +102,8 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
 
         // Emit the event with the encoded function data for further processing
         this.eventEmitter.emit('placeInitialMarketMakingTrades', calldata as unknown as Call);
-
-        // console.log("Emitted placeInitialMarketMakingTrades, now waiting for 2 seconds to avoid spam...");
-
-        // // Hold execution here and set a timeout to avoid spamming before moving forward
-        // await new Promise(r => setTimeout(r, 2000)); // Should be block time
     }
+
 
     // Add any new methods or properties specific to the BatchableGenericMarketMakingBot class
     // Function that calls requote() on the market-aid
@@ -164,6 +158,13 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
         // TODO: check that this works?
         for (let index = 0; index < _targetBook.asks.length; index++) {
             const ask = _targetBook.asks[index];
+            const bid = _targetBook.bids[index];
+
+            // Skip this iteration if both bid and ask sizes are zero
+            if (ask.size === 0 && bid.size === 0) {
+                console.log("Skipping this iteration because both bid and ask sizes are zero");
+                continue;
+            }
             const askNumerator = parseUnits((_targetBook.asks[index].size * assetSideBias).toFixed(this.assetPair.asset.decimals), this.assetPair.asset.decimals);
             const askDenominator = parseUnits((_targetBook.asks[index].price * (_targetBook.asks[index].size * assetSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
             const bidNumerator = parseUnits((_targetBook.bids[index].price * (_targetBook.bids[index].size * quoteSideBias)).toFixed(this.assetPair.quote.decimals), this.assetPair.quote.decimals);
@@ -181,14 +182,25 @@ class BatchableGenericMarketMakingBot extends GenericMarketMakingBot {
             const askPrice = parseFloat(formatUnits(askDenominators[i], this.assetPair.quote.decimals)) / parseFloat(formatUnits(askNumerators[i], this.assetPair.asset.decimals));
             const bidPrice = parseFloat(formatUnits(bidNumerators[i], this.assetPair.quote.decimals)) / parseFloat(formatUnits(bidDenominators[i], this.assetPair.asset.decimals));
 
-            console.log(`Ask price for trade ${i + 1}: ${askPrice}`);
-            console.log(`Bid price for trade ${i + 1}: ${bidPrice}`);
+            console.log(`Ask price for trade ${i + 1}: ${askPrice}, ${this.assetPair.asset.symbol}-${this.assetPair.quote.symbol}`);
+            console.log(`Bid price for trade ${i + 1}: ${bidPrice}, ${this.assetPair.asset.symbol}-${this.assetPair.quote.symbol}`);
         }
+        // console.log("askNumerators", askNumerators);
+        // console.log("askDenominators", askDenominators);
+
+        console.log("Lengths of the arrays", strategistTradeIDs.length, askNumerators.length, askDenominators.length, bidNumerators.length, bidDenominators.length);
+
+        // Check the lengths of all of them, if they don't match then wipeOnChainBook and return
+        if (strategistTradeIDs.length !== askNumerators.length || askNumerators.length !== askDenominators.length || askDenominators.length !== bidNumerators.length || bidNumerators.length !== bidDenominators.length) {
+            console.log("Lengths of the arrays don't match, wiping on chain book and returning");
+            await this.wipeOnChainBook();
+            return;
+        }
+
         if (this.requotingOutstandingBook) return;
 
         this.requotingOutstandingBook = true;
 
-        console.log("Lengths of the arrays", askNumerators.length, askDenominators.length, bidNumerators.length, bidDenominators.length);
 
         // Encode the function data for batchRequoteOffers
         const calldata = this.marketAid.interface.encodeFunctionData("batchRequoteOffers(uint256[],address[2],uint256[],uint256[],uint256[],uint256[],address)", [

@@ -153,6 +153,8 @@ export class GenericMarketMakingBot {
         const marketAidBook = this.marketAidPositionTracker.liveBook;
         // TODO: solve for this better
 
+        // LOG THE ASSET PAIR SYMBOLS
+        console.log('THIS ASSET PAIR IN COMPARE', this.assetPair);
         console.log('THIS STRATEGY BOOK IN COMPARE', strategyBook);
 
 
@@ -286,7 +288,7 @@ export class GenericMarketMakingBot {
                 const askSize = ask.size;
                 // console.log("Ask size:", askSize);
                 // console.log("Total allocated:", totalAllocated);
-                if (totalAllocated + askSize > quoteLiquidity) {
+                if (totalAllocated + askSize > assetLiquidity) {
                     // console.log("Ask is greater than available liquidity, setting size to 0");
                     strategyBook.asks[i].size = 0;
                 } else {
@@ -302,7 +304,7 @@ export class GenericMarketMakingBot {
                 const bidSize = bid.size * bid.price;
                 // console.log("Bid size:", bidSize);
                 // console.log("Total allocated:", totalAllocated);
-                if (totalAllocated + bidSize > assetLiquidity) {
+                if (totalAllocated + bidSize > quoteLiquidity) {
                     // console.log("Bid is greater than available liquidity, setting size to 0");
                     strategyBook.bids[i].size = 0;
                 } else {
@@ -385,8 +387,10 @@ export class GenericMarketMakingBot {
                     // this.requoteMarketAidPosition();
 
                     // Until we can requote where targets.length != desiredLiquidity curve.length, we will wipe the book
-                    console.log("Market Aid book is less in length than the target book, wiping the on-chain book");
-                    this.wipeOnChainBook();
+                    
+                    
+                    // console.log("Market Aid book is less in length than the target book, wiping the on-chain book");
+                    // this.wipeOnChainBook();
                 }
             }
         }
@@ -952,6 +956,8 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
         const referencePrice = (targetBook.asks[0].price + targetBook.bids[0].price) / 2;
         if (!referencePrice || isNaN(referencePrice)) {
             console.log("\nFAIL NAN REFERENCE PRICE, WILL NOT PROCEED");
+
+            // TODO: This as initialization condition is quite bad
             return {
                 assetLadder: assetLadder,
                 quoteLadder: quoteLadder
@@ -967,6 +973,7 @@ export function getLadderFromAvailableLiquidity(availableLiquidity: MarketAidAva
             console.log("\nHUMAN READABLE QUOTE LADDER", humanReadableQuoteAmount);
 
 
+            // TODO: Iterate this to maximize value being placed up to the limit
             // Now, using price (quote per asset) convert the asset ladder to a quote ladder
             const quoteLadderFromAssetLadder = humanReadableAssetLadder.map((a) => a * referencePrice);
             console.log("\nQUOTE LADDER FROM ASSET LADDER", quoteLadderFromAssetLadder);
