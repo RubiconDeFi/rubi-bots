@@ -33,7 +33,7 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
             QUOTER_INTERFACE,
             reader
         );
-        uniFee ? this.uniFee = uniFee : this.uniFee = 3000;
+        uniFee ? this.uniFee = uniFee : this.uniFee = 500;
         // console.log("this is the uniFee: ", this.uniFee);
 
     }
