@@ -2,6 +2,7 @@
 // at a configurable DISCOUNT/improvement to the targeted liquidity venue's perceived curve (better price)
 // Does NOT externally rebalance - only rebalances against market fill
 
+import { MIN_ORDER_SIZES } from "../../configuration/config";
 import { GenericLiquidityVenue } from "../../liquidityVenues/generic";
 import { GenericMarketMakingStrategy } from "./genericMarketMaking";
 
@@ -63,6 +64,59 @@ export class TargetVenueOutBidStrategy extends GenericMarketMakingStrategy {
                     }
                 });
             }
+            // Replace all undefined elements from this.targetBook with orders that have a size of zero and price of zero
+            this.targetBook.bids = this.targetBook.bids.map((bid) => {
+                if (bid == undefined) {
+                    return {
+                        price: 0,
+                        size: 0
+                    }
+                }
+
+                const bidSymbol = this.getAssetPair().quote.symbol;
+                // Assuming "asset" to represent the asset name for this order
+                var minSize = MIN_ORDER_SIZES[bidSymbol];
+
+                const adjustedSize = minSize / bid.price;
+
+                minSize = adjustedSize;
+                if (minSize == undefined) {
+                    minSize = 0;
+                    console.log("Min size is undefined for asset: ", bidSymbol);
+                }
+
+                if (bid.size < minSize) {
+                    console.log(`Bid size ${bid.size} for asset ${bidSymbol} is less than minimum ${minSize}. Adjusting to minimum size.`);
+                    bid.size = minSize;
+                }
+                return bid;
+            });
+            this.targetBook.asks = this.targetBook.asks.map((ask) => {
+                if (ask == undefined) {
+                    return {
+                        price: 0,
+                        size: 0
+                    }
+                }
+
+                const askSymbol = this.getAssetPair().asset.symbol;
+                // Assuming "asset" to represent the asset name for this order
+                var minSize = MIN_ORDER_SIZES[askSymbol];
+
+                // console.log("This is ASSET minSize: ", minSize);
+
+                if (minSize == undefined) {
+                    minSize = 0;
+                    console.log("Min size is undefined for asset: ", askSymbol);
+                }
+
+                if (ask.size < minSize) {
+                    console.log(`Ask size ${ask.size} for asset ${minSize} is less than minimum ${minSize}. Adjusting to minimum size.`);
+                    ask.size = minSize;
+                }
+                return ask;
+            });
+
             // Replace all undefined elements from this.targetBook with orders that have a size of zero and price of zero
             this.targetBook.bids = this.targetBook.bids.map((bid) => {
                 if (bid == undefined) {

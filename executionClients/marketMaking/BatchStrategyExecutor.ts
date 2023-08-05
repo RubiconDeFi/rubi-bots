@@ -63,7 +63,7 @@ class BatchStrategyExecutor extends (EventEmitter as { new(): BatchStrategyExecu
   private startPolling(): void {
     // Set an arbitrary polling interval in milliseconds (e.g., 5000 ms or 5 seconds)
     // TODO: move to config
-    const pollingInterval = 2000;
+    const pollingInterval = 5000;
 
     setInterval(() => {
       if (!this.batchInProgress && this.batch.length > 0) {
