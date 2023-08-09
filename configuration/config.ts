@@ -16,6 +16,7 @@ export enum Network {
     ARBITRUM_MAINNET = 42161,
     ARBITRUM_TESTNET = 421613,
     ERROR = 0,
+    BASE_MAINNET = 8453
 };
 
 // https://docs.rubicon.finance/docs/protocol/deployments
@@ -25,6 +26,7 @@ export const marketAddressesByNetwork: Record<number, string> = {
     [Network.POLYGON_MUMBAI]: getAddress('0x10418D9e730fa659b0Baf0b640ee41FcF4EA2aaE'),
     [Network.ARBITRUM_TESTNET]: getAddress('0x506407f25B746C39807c03A96DD595a6BE223211'),
     [Network.ARBITRUM_MAINNET]: getAddress('0xC715a30FDe987637A082Cf5F19C74648b67f2db8'),
+    [Network.BASE_MAINNET]: getAddress('0x9A5215E96E1185d4e6002C95C3Cc0aB6eEaD354F')
 };
 
 // https://docs.rubicon.finance/docs/protocol/deployments
@@ -34,6 +36,7 @@ export const marketAidFactoriesByNetwork: Record<number, string> = {
     [Network.POLYGON_MUMBAI]: getAddress('0x4841DcC66F6CfC600382ec98f34d43332c535B9B'),
     [Network.ARBITRUM_TESTNET]: getAddress('0x746750031Cc56Ccb386D9a6a0fcAb34C0A138BbD'),
     [Network.ARBITRUM_MAINNET]: getAddress('0x6CB24A263732579EfD56f3E071851e989d78cE75'),
+    [Network.BASE_MAINNET]: getAddress('0xc2b33a7601f3f0ecFF2eE4b5b7c647770069A836')
 };
 
 // Input tokens 
@@ -359,6 +362,42 @@ export const tokenList: TokenList = {
             symbol: "TEST",
             decimals: 18,
             name: "Test Coin",
+        },
+
+        // *** BASE MAINNET ***
+        {
+            name: 'Wrapped Ether',
+            symbol: 'WETH',
+            chainId: Network.BASE_MAINNET,
+            address: '0x4200000000000000000000000000000000000006',
+            decimals: 18,
+        },
+        {
+            name: 'USD Base Coin',
+            symbol: 'USDC',
+            chainId: Network.BASE_MAINNET,
+            address: '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA',
+            decimals: 6,
+            extensions: {
+                quote: true,
+            },
+        },
+        {
+            name: 'Coinbase Wrapped Staked ETH',
+            symbol: 'cbETH',
+            chainId: Network.BASE_MAINNET,
+            address: '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22',
+            decimals: 18,
+        },
+        {
+            name: 'Dai Stablecoin',
+            symbol: 'DAI',
+            chainId: Network.BASE_MAINNET,
+            address: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
+            decimals: 18,
+            extensions: {
+                quote: true,
+            },
         },
     ],
 };

@@ -15,7 +15,8 @@ export async function tickToBook(
     leftQuoteBIDERC20: TokenInfo,
     rightAssetASKERC20: TokenInfo,
     uniFee: BigNumber,
-    stretch: number
+    stretch: number,
+    isv2?: boolean
 ): Promise<SimpleBook> {
     STRETCH_FACTOR = stretch;
     /*// we have to precompose the Wei source ladder with the ETH conversion factor
@@ -46,7 +47,8 @@ export async function tickToBook(
         uniFee,
         SQRT_PRICE_LIMIT_x96_LTR,
         SQRT_PRICE_LIMIT_x96_RTL,
-        quoterContract
+        quoterContract,
+        isv2
     );
 
     let formatted_book = formatBook(book);
@@ -63,7 +65,8 @@ export async function buildPairedLadderHuman(
     leftSizeLadder: Array<BigNumber>, // we assume that this is in native units (wei)
     fee: BigNumber,
     sqrtPriceLimitX96: BigNumber,
-    quoterContract: ethers.Contract
+    quoterContract: ethers.Contract,
+    isv2?: boolean
 ): Promise<{ sizes: Array<number>; prices: Array<number> }> {
     let leftSizeCDF = sizeLaddderToCDF(leftSizeLadder);
     let rightSizeCDF = await Promise.all(
@@ -74,10 +77,28 @@ export async function buildPairedLadderHuman(
                 right.address,
                 fee,
                 item,
-                sqrtPriceLimitX96
+                sqrtPriceLimitX96,
+                isv2
             )
         )
     );
+
+    // console.log("rightSizeCDF length" + rightSizeCDF.length);
+
+    // console.log("rightSizeCDF: " + rightSizeCDF);
+
+    // Turn rightSizeCDF into an array that is every 4th element starting with the first one
+    // rightSizeCDF = rightSizeCDF.filter((_, i) => i % 4 == 0);
+
+    if (isv2 == true) {
+        rightSizeCDF = rightSizeCDF.map(subArray => subArray[0]);
+    }
+    // console.log(firstElements.map(item => item.toString()));
+
+    // console.log("rightSizeCDFAFTER: " + rightSizeCDF);
+
+    // const firstElements2 = rightSizeCDF.filter((_, i) => i % 4 === 0);
+    // console.log(firstElements2);
 
     if (rightSizeCDF == undefined) throw "Got an undefined response on quoteExactInputSingleStatic calls"
     // can we go get the amount of ether that comes out of each bin?
@@ -134,7 +155,8 @@ export async function buildBook(
     fee: BigNumber,
     sqrtPriceLimitX96LTR: BigNumber, // Source to target
     sqrtPriceLimitX96RTL: BigNumber, // target to source
-    quoterContract: ethers.Contract
+    quoterContract: ethers.Contract,
+    isv2?: boolean
 ): Promise<{
     sourceToTarget: { sizes: Array<number>; prices: Array<number> };
     targetToSource: { sizes: Array<number>; prices: Array<number> };
@@ -146,7 +168,8 @@ export async function buildBook(
         leftSizeLadder,
         fee,
         sqrtPriceLimitX96LTR,
-        quoterContract
+        quoterContract,
+        isv2
     );
     // output is valued in left units (not wei)
     let leftBookPromise = buildPairedLadderHuman(
@@ -155,7 +178,8 @@ export async function buildBook(
         rightSizeLadder,
         fee,
         sqrtPriceLimitX96RTL,
-        quoterContract
+        quoterContract,
+        isv2
     );
 
     // await the books
@@ -231,7 +255,8 @@ export function quoteExactInputSingleStatic(
     tokenOut: any,
     fee: BigNumber,
     amountIn: BigNumber,
-    sqrtPriceLimitX96: BigNumber
+    sqrtPriceLimitX96: BigNumber,
+    isv2?: boolean
 ): Promise<BigNumber> {
     // let options = { gasLimit: 8500000 }; // cost us 35000 gas I think
     // console.log("\nquoteExactInputSingleStatic");
@@ -240,6 +265,21 @@ export function quoteExactInputSingleStatic(
     // console.log("fee", fee.toString());
     // console.log("amountIn", formatUnits(amountIn));
     // console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
+
+    if (isv2 != undefined && isv2 == true) {
+        // console.log("calling v2");
+
+        return poolContract.callStatic.quoteExactInputSingle(
+            {
+                tokenIn,
+                tokenOut,
+                amountIn,
+                fee,
+                sqrtPriceLimitX96,
+            }
+            // options
+        );
+    }
 
     return poolContract.callStatic.quoteExactInputSingle(
         tokenIn,
