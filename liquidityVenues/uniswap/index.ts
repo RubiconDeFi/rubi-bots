@@ -8,6 +8,8 @@ import { GenericLiquidityVenue, BidAndAsk, AssetPair } from "../generic";
 import { SimpleBook } from "../../configuration/config";
 import { ethers, BigNumber } from "ethers";
 import QUOTER_INTERFACE from "../../configuration/abis/Quoter";
+import QUOTER_INTERFACE_V2 from "../../configuration/abis/Quoterv2";
+
 import { tickToBook } from "./data";
 import { formatUnits } from "ethers/lib/utils";
 
@@ -18,11 +20,13 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
     pairContract: ethers.Contract;
     quoterContract: ethers.Contract;
     uniFee: number;
+    isV2: boolean;
 
     constructor(
         assetPair: AssetPair,
         reader: ethers.providers.JsonRpcProvider | ethers.providers.WebSocketProvider,
-        uniFee?: number
+        uniFee?: number,
+        v2Quoter?: boolean
     ) {
         super(assetPair);
         this.assetPair = assetPair;
@@ -33,6 +37,17 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
             QUOTER_INTERFACE,
             reader
         );
+        if (v2Quoter == true) {
+            console.log("Using v2 quoter");
+            
+            this.quoterContract = new ethers.Contract(
+                "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a", // NOTE: THIS IS AN ASSUMED CONSTANT TODO: EXTRAPOLATE TO CONFIG
+                QUOTER_INTERFACE_V2,
+                reader
+            );
+            this.isV2 = true;
+        }
+
         uniFee ? this.uniFee = uniFee : this.uniFee = 500;
         // console.log("this is the uniFee: ", this.uniFee);
 
@@ -52,7 +67,8 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
                 this.assetPair.quote,
                 this.assetPair.asset,
                 BigNumber.from(this.uniFee),
-                stretchScalar ? stretchScalar : 1
+                stretchScalar ? stretchScalar : 1,
+                this.isV2 ? true : undefined
             );
 
             this.liveBook = {
@@ -86,7 +102,7 @@ export class UniswapLiquidityVenue extends GenericLiquidityVenue {
         setInterval(async () => {
             const data = await getSizeLadderWei();
             // console.log("UPDATE UNI LIVEBOOK", data.assetLadder.map((x) => formatUnits(x, 18)), data.quoteLadder.map((x) => formatUnits(x, 18)));
-            
+
             this.updateLiveBook(data.quoteLadder, data.assetLadder);
         }, interval);
     }

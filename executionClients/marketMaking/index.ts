@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 
 import { ethers } from "ethers";
-import { BotConfiguration, BotType, MarketMakingStrategy, tokenList } from "../../configuration/config";
+import { BotConfiguration, BotType, MarketMakingStrategy, Network, tokenList } from "../../configuration/config";
 import { getAddress } from "ethers/lib/utils";
 import MARKET_AID_INTERFACE from "../../configuration/abis/MarketAid";
 import { RiskMinimizedStrategy } from "../../strategies/marketMaking/riskMinimizedUpOnly";
@@ -185,7 +185,8 @@ async function startBatchExecutorBotFromArgs(): Promise<void> {
             {
                 asset: assetTokenInfo,
                 quote: quoteTokenInfo
-            }, staticJsonRpc, chainId == 10 ? 500 : undefined // TODO: make this configurable
+            }, staticJsonRpc, chainId == 10 ? 500 : undefined, // TODO: make this configurable
+            chainId == Network.BASE_MAINNET ? true : undefined // TODO: hacky
         );
 
         const strategyInstance = getStrategyFromArg(strategy, referenceLiquidityVenue, parseFloat(botConfig.strategyArgs));
