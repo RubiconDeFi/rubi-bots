@@ -83,9 +83,9 @@ export async function buildPairedLadderHuman(
         )
     );
 
-    console.log("rightSizeCDF length" + rightSizeCDF.length);
+    // console.log("rightSizeCDF length" + rightSizeCDF.length);
 
-    console.log("rightSizeCDF: " + rightSizeCDF);
+    // console.log("rightSizeCDF: " + rightSizeCDF);
 
     // Turn rightSizeCDF into an array that is every 4th element starting with the first one
     // rightSizeCDF = rightSizeCDF.filter((_, i) => i % 4 == 0);
@@ -95,7 +95,7 @@ export async function buildPairedLadderHuman(
     }
     // console.log(firstElements.map(item => item.toString()));
 
-    console.log("rightSizeCDFAFTER: " + rightSizeCDF);
+    // console.log("rightSizeCDFAFTER: " + rightSizeCDF);
 
     // const firstElements2 = rightSizeCDF.filter((_, i) => i % 4 === 0);
     // console.log(firstElements2);
@@ -267,7 +267,7 @@ export function quoteExactInputSingleStatic(
     // console.log("sqrtPriceLimitX96", sqrtPriceLimitX96);
 
     if (isv2 != undefined && isv2 == true) {
-        console.log("calling v2");
+        // console.log("calling v2");
 
         return poolContract.callStatic.quoteExactInputSingle(
             {
